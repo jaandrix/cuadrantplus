@@ -1,0 +1,3716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Bitacora</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+               CSS VARIABLES & TEMAS
+            ============================================================ */
+        :root {
+            --bg-app: #0a0a0f;
+            --bg-sidebar: #12121f;
+            --bg-card: #12121f;
+            --bg-card-hover: #1a1a2e;
+            --bg-input: #1a1a2e;
+            --bg-modal: #12121f;
+            --bg-fab: #e2e8f0;
+            --border: #1a1a2e;
+            --border-strong: #2a2a3a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #6b7280;
+            --text-muted: #4a4a5a;
+            --accent: #e2e8f0;
+            --accent-contrast: #0a0a0f;
+            --badge-pending-bg: #422f00;
+            --badge-pending-text: #fcd34d;
+            --badge-progress-bg: #1e3a5f;
+            --badge-progress-text: #93c5fd;
+            --badge-done-bg: #14532d;
+            --badge-done-text: #86efac;
+            --badge-default-bg: #2a2a3a;
+            --badge-default-text: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --radius: 14px;
+        }
+
+        body.light {
+            --bg-app: #f5f5f7;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #fafafa;
+            --bg-input: #f5f5f7;
+            --bg-modal: #ffffff;
+            --bg-fab: #1c1c1e;
+            --border: #e2e8f0;
+            --border-strong: #d1d1d6;
+            --text-primary: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --text-muted: #aeaeb2;
+            --accent: #1c1c1e;
+            --accent-contrast: #f5f5f7;
+            --badge-pending-bg: #fef3c7;
+            --badge-pending-text: #92400e;
+            --badge-progress-bg: #dbeafe;
+            --badge-progress-text: #1d4ed8;
+            --badge-done-bg: #dcfce7;
+            --badge-done-text: #15803d;
+            --badge-default-bg: #e2e8f0;
+            --badge-default-text: #1c1c1e;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        body.beige {
+            --bg-app: #f2ead9;
+            --bg-sidebar: #ece1cb;
+            --bg-card: #f7f0e2;
+            --bg-card-hover: #efe4cd;
+            --bg-input: #ece0c8;
+            --bg-modal: #f7f0e2;
+            --bg-fab: #6b5c3f;
+            --border: #ddccaa;
+            --border-strong: #cdb98c;
+            --text-primary: #3d3324;
+            --text-secondary: #8a7a5c;
+            --text-muted: #b5a68a;
+            --accent: #6b5c3f;
+            --accent-contrast: #f7f0e2;
+            --badge-pending-bg: #fef3c7;
+            --badge-pending-text: #92400e;
+            --badge-progress-bg: #dbeafe;
+            --badge-progress-text: #1d4ed8;
+            --badge-done-bg: #dcfce7;
+            --badge-done-text: #15803d;
+            --badge-default-bg: #ddccaa;
+            --badge-default-text: #3d3324;
+            --shadow: 0 4px 20px rgba(60,50,30,0.15);
+        }
+
+        /* ============================================================
+               RESET
+            ============================================================ */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg-app);
+            color: var(--text-primary);
+            height: 100dvh;
+            overflow: hidden;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        /* ============================================================
+               APP LAYOUT
+            ============================================================ */
+        #app {
+            display: flex;
+            height: 100dvh;
+            margin: 0 auto;
+            max-width: 1200px;
+            background: var(--bg-app);
+            transition: background 0.25s ease;
+            position: relative;
+        }
+
+        /* ============================================================
+               SIDEBAR
+            ============================================================ */
+        #sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-strong);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px 16px 16px;
+            flex-shrink: 0;
+            transition: background 0.25s ease, border-color 0.25s ease;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+        .sidebar-brand .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .sidebar-brand .brand-name {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sidebar-nav .nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            padding: 12px 8px 6px 8px;
+        }
+
+        .sidebar-nav button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: none;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+        }
+        .sidebar-nav button:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        .sidebar-nav button.active {
+            background: var(--border-strong);
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav button .nav-icon {
+            font-size: 16px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .sidebar-nav button .nav-text {
+            flex: 1;
+        }
+
+        .sidebar-actions {
+            border-top: 1px solid var(--border-strong);
+            padding-top: 12px;
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .sidebar-actions button {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.15s ease;
+        }
+        .sidebar-actions button:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        /* ============================================================
+               MOBILE MENU
+            ============================================================ */
+        #mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #mobile-menu-overlay.open {
+            display: block;
+        }
+
+        #mobile-menu-panel {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100dvh;
+            background: var(--bg-sidebar);
+            z-index: 101;
+            transition: left 0.3s ease;
+            padding: 24px 16px 16px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        #mobile-menu-panel.open {
+            left: 0;
+        }
+
+        #mobile-menu-panel .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #mobile-menu-panel .menu-header .brand {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        #mobile-menu-panel .menu-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        #mobile-menu-panel .menu-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        #mobile-menu-panel .menu-nav .nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            padding: 12px 8px 6px 8px;
+        }
+        #mobile-menu-panel .menu-nav button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: none;
+            border: none;
+            padding: 10px 10px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+        }
+        #mobile-menu-panel .menu-nav button:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        #mobile-menu-panel .menu-nav button.active {
+            background: var(--border-strong);
+            color: var(--text-primary);
+        }
+        #mobile-menu-panel .menu-nav button .nav-icon {
+            font-size: 16px;
+            width: 24px;
+            text-align: center;
+        }
+
+        #mobile-menu-panel .menu-actions {
+            border-top: 1px solid var(--border-strong);
+            padding-top: 12px;
+            display: flex;
+            gap: 6px;
+        }
+        #mobile-menu-panel .menu-actions button {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        #mobile-menu-panel .menu-actions button:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        /* ============================================================
+               MAIN
+            ============================================================ */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: var(--bg-app);
+            transition: background 0.25s ease;
+        }
+
+        /* ============================================================
+               HEADER
+            ============================================================ */
+        #main-header {
+            padding: 20px 32px 14px 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.25s ease;
+        }
+
+        #main-header .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #main-header .menu-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        #main-header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        /* ============================================================
+               CONTENT
+            ============================================================ */
+        #content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 32px 32px 32px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ============================================================
+               FAB (Floting Action Button)
+            ============================================================ */
+        #fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
+            border: none;
+            font-size: 28px;
+            font-weight: 300;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        #fab:hover {
+            transform: scale(1.05);
+        }
+        #fab:active {
+            transform: scale(0.92);
+        }
+
+        #fab-menu {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 8px 0;
+            box-shadow: var(--shadow);
+            z-index: 51;
+            display: none;
+            min-width: 200px;
+            border: 1px solid var(--border-strong);
+        }
+        #fab-menu.open {
+            display: block;
+        }
+
+        #fab-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        #fab-menu button:hover {
+            background: var(--bg-card-hover);
+        }
+
+        @media (max-width: 768px) {
+            #fab {
+                bottom: 90px;
+                right: 20px;
+                width: 52px;
+                height: 52px;
+                font-size: 24px;
+            }
+            #fab-menu {
+                bottom: 150px;
+                right: 20px;
+            }
+        }
+
+        /* ============================================================
+               RESPONSIVE
+            ============================================================ */
+        @media (max-width: 768px) {
+            #sidebar {
+                display: none !important;
+            }
+            #main-header .menu-hamburger {
+                display: block !important;
+            }
+            #main-header {
+                padding: 14px 16px 10px 16px;
+            }
+            #main-header h1 {
+                font-size: 17px;
+            }
+            #content {
+                padding: 16px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #sidebar {
+                width: 200px;
+                min-width: 200px;
+            }
+            #main-header {
+                padding: 18px 24px 12px 24px;
+            }
+            #content {
+                padding: 20px 24px 24px 24px;
+            }
+        }
+
+        /* ============================================================
+               COMMON STYLES
+            ============================================================ */
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .card .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+        }
+        .card .card-value {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+        .card .card-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state .empty-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+        .empty-state .empty-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .empty-state .empty-sub {
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .entry-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 8px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border-radius: 6px;
+        }
+        .entry-item:hover {
+            background: var(--bg-card-hover);
+        }
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+
+        .entry-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .entry-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .entry-info .entry-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .entry-info .entry-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .entry-actions button {
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            transition: all 0.15s ease;
+        }
+        .entry-actions button:hover {
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+        .entry-actions button.delete {
+            color: #dc2626;
+        }
+        .entry-actions button.delete:hover {
+            background: #2a1515;
+        }
+        body.light .entry-actions button.delete:hover {
+            background: #fee2e2;
+        }
+        body.beige .entry-actions button.delete:hover {
+            background: #f3e0d8;
+        }
+
+        .progress-bar-bg {
+            height: 6px;
+            background: var(--border);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.4s ease;
+        }
+
+        /* ============================================================
+               BADGES
+            ============================================================ */
+        .badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .badge-pending {
+            background: var(--badge-pending-bg);
+            color: var(--badge-pending-text);
+        }
+        .badge-progress {
+            background: var(--badge-progress-bg);
+            color: var(--badge-progress-text);
+        }
+        .badge-done {
+            background: var(--badge-done-bg);
+            color: var(--badge-done-text);
+        }
+        .badge-default {
+            background: var(--badge-default-bg);
+            color: var(--badge-default-text);
+        }
+
+        /* ============================================================
+               TOAST
+            ============================================================ */
+        #toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
+            box-shadow: var(--shadow);
+        }
+        #toast.show {
+            opacity: 1;
+        }
+        #toast.error {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        /* ============================================================
+               MODAL
+            ============================================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-sheet {
+            background: var(--bg-modal);
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90dvh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            transition: background 0.25s ease;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-primary);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0 4px;
+        }
+
+        .modal-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s ease;
+            margin-bottom: 12px;
+        }
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+        .modal-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .modal-row {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-row>* {
+            flex: 1;
+        }
+
+        .btn-modal-primary {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent);
+            color: var(--accent-contrast);
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+            margin-top: 4px;
+        }
+        .btn-modal-primary:hover {
+            opacity: 0.85;
+        }
+
+        .btn-modal-danger {
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            border: none;
+            background: #2a1515;
+            color: #dc2626;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+            margin-top: 6px;
+        }
+        .btn-modal-danger:hover {
+            opacity: 0.85;
+        }
+        body.light .btn-modal-danger {
+            background: #fee2e2;
+        }
+        body.beige .btn-modal-danger {
+            background: #f3e0d8;
+        }
+
+        /* ============================================================
+               SCROLLBAR
+            ============================================================ */
+        #content::-webkit-scrollbar,
+        .modal-sheet::-webkit-scrollbar,
+        #sidebar::-webkit-scrollbar,
+        #mobile-menu-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        #content::-webkit-scrollbar-track,
+        .modal-sheet::-webkit-scrollbar-track,
+        #sidebar::-webkit-scrollbar-track,
+        #mobile-menu-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #content::-webkit-scrollbar-thumb,
+        .modal-sheet::-webkit-scrollbar-thumb,
+        #sidebar::-webkit-scrollbar-thumb,
+        #mobile-menu-panel::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 4px;
+        }
+
+        /* ============================================================
+               EXAMENES: NOTA FINAL
+            ============================================================ */
+        .nota-final {
+            font-size: 24px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .nota-aprobado {
+            color: #16a34a;
+        }
+        .nota-suspenso {
+            color: #dc2626;
+        }
+        .nota-matricula {
+            color: #d4af37;
+        }
+
+        /* ============================================================
+               INVERSIONES
+            ============================================================ */
+        .inversion-positiva {
+            color: #16a34a;
+        }
+        .inversion-negativa {
+            color: #dc2626;
+        }
+        .inversion-neutral {
+            color: var(--text-secondary);
+        }
+
+        /* ============================================================
+               LOGIN
+            ============================================================ */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-app);
+            z-index: 1000;
+        }
+        #login-box {
+            width: 100%;
+            max-width: 320px;
+            padding: 32px 28px;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+        }
+        #login-box h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+        #login-box p.sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        #login-box input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+        #login-box button {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            background: #2563eb;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        #login-box button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+        #login-error {
+            color: #e74c3c;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 14px;
+        }
+        #login-success {
+            color: #2ecc71;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 14px;
+        }
+        .login-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 14px;
+        }
+        .login-links a {
+            font-size: 12px;
+            color: #2563eb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .login-links a:hover {
+            text-decoration: underline;
+        }
+        .login-back {
+            display: block;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 14px;
+            cursor: pointer;
+        }
+        .login-back:hover {
+            color: #2563eb;
+        }
+
+        /* ============================================================
+               DOCUMENTOS
+            ============================================================ */
+        .doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-card);
+            margin-bottom: 10px;
+        }
+        .doc-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .doc-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .doc-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .doc-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .doc-actions button {
+            background: none;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+        .doc-actions button:hover {
+            background: var(--bg-card-hover);
+        }
+        .doc-upload-box {
+            border: 2px dashed var(--border-strong);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .doc-upload-box:hover {
+            border-color: #2563eb;
+        }
+
+        #app {
+            display: none;
+        }
+        #app.ready {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================================
+    LOGIN SCREEN
+    ============================================================ -->
+    <div id="login-screen">
+        <div id="login-box">
+            <div id="mode-login">
+                <h1>Bitacora</h1>
+                <p class="sub">Inicia sesion para continuar</p>
+                <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+                <input type="password" id="login-password" placeholder="Contrasena" autocomplete="current-password">
+                <button id="login-btn" onclick="handleLogin()">Entrar</button>
+                <div id="login-error"></div>
+                <div class="login-links">
+                    <a onclick="showAuthMode('signup')">Crear cuenta</a>
+                    <a onclick="showAuthMode('forgot')">Olvidaste tu contrasena?</a>
+                </div>
+            </div>
+
+            <div id="mode-signup" style="display:none">
+                <h1>Crear cuenta</h1>
+                <p class="sub">Registrate para empezar a usar Bitacora</p>
+                <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
+                <input type="password" id="signup-password" placeholder="Contrasena (min. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="signup-password2" placeholder="Repite la contrasena" autocomplete="new-password">
+                <button id="signup-btn" onclick="handleSignup()">Crear cuenta</button>
+                <div id="signup-error"></div>
+                <div id="signup-success"></div>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesion</a>
+            </div>
+
+            <div id="mode-forgot" style="display:none">
+                <h1>Recuperar contrasena</h1>
+                <p class="sub">Te enviaremos un enlace a tu email</p>
+                <input type="email" id="forgot-email" placeholder="Email" autocomplete="username">
+                <button id="forgot-btn" onclick="handleForgotPassword()">Enviar enlace</button>
+                <div id="forgot-error"></div>
+                <div id="forgot-success"></div>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesion</a>
+            </div>
+
+            <div id="mode-reset" style="display:none">
+                <h1>Nueva contrasena</h1>
+                <p class="sub">Elige tu nueva contrasena</p>
+                <input type="password" id="reset-password" placeholder="Nueva contrasena (min. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="reset-password2" placeholder="Repite la contrasena" autocomplete="new-password">
+                <button id="reset-btn" onclick="handleResetPassword()">Guardar contrasena</button>
+                <div id="reset-error"></div>
+                <div id="reset-success"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    APP
+    ============================================================ -->
+    <div id="app">
+        <!-- SIDEBAR -->
+        <div id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"></div>
+                <span class="brand-name">Bitacora</span>
+            </div>
+
+            <div class="sidebar-nav">
+                <span class="nav-label">General</span>
+                <button class="active" onclick="switchView('calendar')" data-view="calendar">
+                    <span class="nav-icon">◷</span>
+                    <span class="nav-text">Calendario</span>
+                </button>
+                <button onclick="switchView('home')" data-view="home">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Centro resumen</span>
+                </button>
+                <button onclick="switchView('stats')" data-view="stats">
+                    <span class="nav-icon">▦</span>
+                    <span class="nav-text">Estadisticas</span>
+                </button>
+
+                <span class="nav-label">Registro</span>
+                <button onclick="switchView('goals')" data-view="goals">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Objetivos</span>
+                </button>
+                <button onclick="switchView('projects')" data-view="projects">
+                    <span class="nav-icon">⊞</span>
+                    <span class="nav-text">Proyectos</span>
+                </button>
+                <button onclick="switchView('travels')" data-view="travels">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Viajes</span>
+                </button>
+                <button onclick="switchView('work')" data-view="work">
+                    <span class="nav-icon">◫</span>
+                    <span class="nav-text">Trabajo</span>
+                </button>
+                <button onclick="switchView('cultura')" data-view="cultura">
+                    <span class="nav-icon">◊</span>
+                    <span class="nav-text">Cultura</span>
+                </button>
+                <button onclick="switchView('documents')" data-view="documents">
+                    <span class="nav-icon">📄</span>
+                    <span class="nav-text">Documentos</span>
+                </button>
+
+                <span class="nav-label">Nuevo</span>
+                <button onclick="switchView('exams')" data-view="exams">
+                    <span class="nav-icon">◊</span>
+                    <span class="nav-text">Examenes</span>
+                </button>
+                <button onclick="switchView('events')" data-view="events">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Eventos</span>
+                </button>
+                <button onclick="switchView('shopping')" data-view="shopping">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Listas</span>
+                </button>
+                <button onclick="switchView('ideas')" data-view="ideas">
+                    <span class="nav-icon">⊞</span>
+                    <span class="nav-text">Ideas</span>
+                </button>
+                <button onclick="switchView('investments')" data-view="investments">
+                    <span class="nav-icon">◫</span>
+                    <span class="nav-text">Inversiones</span>
+                </button>
+                <button onclick="switchView('services')" data-view="services">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Servicios</span>
+                </button>
+                <button onclick="switchView('watchlist')" data-view="watchlist">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Pendientes</span>
+                </button>
+                <button onclick="switchView('wishlist')" data-view="wishlist">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Wishlist</span>
+                </button>
+                <button onclick="switchView('tasks')" data-view="tasks">
+                    <span class="nav-icon">⊞</span>
+                    <span class="nav-text">Tareas</span>
+                </button>
+                <button onclick="switchView('links')" data-view="links">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Enlaces</span>
+                </button>
+            </div>
+
+            <div class="sidebar-actions">
+                <button onclick="exportData()" title="Exportar">⬇</button>
+                <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
+                <button onclick="toggleTheme()" id="theme-btn" title="Tema">◐</button>
+                <button onclick="toggleMode()" id="mode-btn" title="Modo">⊞</button>
+                <button onclick="handleLogout()" title="Cerrar sesion">⏻</button>
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div id="main">
+            <div id="main-header">
+                <div class="header-left">
+                    <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
+                    <h1 id="page-title">Calendario</h1>
+                </div>
+            </div>
+            <div id="content"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    FAB
+    ============================================================ -->
+    <button id="fab" onclick="toggleFabMenu()">+</button>
+    <div id="fab-menu">
+        <button onclick="openNewEntry('entry')">Entrada</button>
+        <button onclick="openNewEntry('goal')">Objetivo</button>
+        <button onclick="openNewEntry('project')">Proyecto</button>
+        <button onclick="openNewEntry('travel')">Viaje</button>
+        <button onclick="openNewEntry('work')">Trabajo</button>
+        <button onclick="openNewEntry('library')">Cultura</button>
+        <button onclick="openNewEntry('exam')">Examen</button>
+        <button onclick="openNewEntry('event')">Evento</button>
+        <button onclick="openNewEntry('shopping')">Lista</button>
+        <button onclick="openNewEntry('idea')">Idea</button>
+        <button onclick="openNewEntry('investment')">Inversion</button>
+        <button onclick="openNewEntry('service')">Servicio</button>
+        <button onclick="openNewEntry('watchlist')">Pendiente</button>
+        <button onclick="openNewEntry('wishlist')">Wishlist</button>
+        <button onclick="openNewEntry('task')">Tarea</button>
+        <button onclick="openNewEntry('link')">Enlace</button>
+    </div>
+
+    <!-- ============================================================
+    MOBILE MENU
+    ============================================================ -->
+    <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu-panel">
+        <div class="menu-header">
+            <span class="brand">Bitacora</span>
+            <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
+        </div>
+        <div class="menu-nav">
+            <span class="nav-label">General</span>
+            <button class="active" onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
+                <span class="nav-icon">◷</span> Calendario
+            </button>
+            <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
+                <span class="nav-icon">⌂</span> Centro resumen
+            </button>
+            <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
+                <span class="nav-icon">▦</span> Estadisticas
+            </button>
+
+            <span class="nav-label">Registro</span>
+            <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
+                <span class="nav-icon">◉</span> Objetivos
+            </button>
+            <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
+                <span class="nav-icon">⊞</span> Proyectos
+            </button>
+            <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
+                <span class="nav-icon">◈</span> Viajes
+            </button>
+            <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
+                <span class="nav-icon">◫</span> Trabajo
+            </button>
+            <button onclick="switchView('cultura');toggleMobileMenu()" data-view="cultura">
+                <span class="nav-icon">◊</span> Cultura
+            </button>
+            <button onclick="switchView('documents');toggleMobileMenu()" data-view="documents">
+                <span class="nav-icon">📄</span> Documentos
+            </button>
+
+            <span class="nav-label">Nuevo</span>
+            <button onclick="switchView('exams');toggleMobileMenu()" data-view="exams">
+                <span class="nav-icon">◊</span> Examenes
+            </button>
+            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
+                <span class="nav-icon">◈</span> Eventos
+            </button>
+            <button onclick="switchView('shopping');toggleMobileMenu()" data-view="shopping">
+                <span class="nav-icon">◉</span> Listas
+            </button>
+            <button onclick="switchView('ideas');toggleMobileMenu()" data-view="ideas">
+                <span class="nav-icon">⊞</span> Ideas
+            </button>
+            <button onclick="switchView('investments');toggleMobileMenu()" data-view="investments">
+                <span class="nav-icon">◫</span> Inversiones
+            </button>
+            <button onclick="switchView('services');toggleMobileMenu()" data-view="services">
+                <span class="nav-icon">⌂</span> Servicios
+            </button>
+            <button onclick="switchView('watchlist');toggleMobileMenu()" data-view="watchlist">
+                <span class="nav-icon">◉</span> Pendientes
+            </button>
+            <button onclick="switchView('wishlist');toggleMobileMenu()" data-view="wishlist">
+                <span class="nav-icon">◈</span> Wishlist
+            </button>
+            <button onclick="switchView('tasks');toggleMobileMenu()" data-view="tasks">
+                <span class="nav-icon">⊞</span> Tareas
+            </button>
+            <button onclick="switchView('links');toggleMobileMenu()" data-view="links">
+                <span class="nav-icon">⌂</span> Enlaces
+            </button>
+        </div>
+        <div class="menu-actions">
+            <button onclick="exportData()" title="Exportar">⬇</button>
+            <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
+            <button onclick="toggleTheme()" title="Tema">◐</button>
+            <button onclick="toggleMode()" title="Modo">⊞</button>
+            <button onclick="handleLogout()" title="Cerrar sesion">⏻</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    MODAL CONTAINER
+    ============================================================ -->
+    <div id="modal-container"></div>
+    <div id="toast"></div>
+
+    <!-- ============================================================
+    HIDDEN INPUTS
+    ============================================================ -->
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+    <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
+
+    <!-- ============================================================
+    SUPABASE
+    ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+    </script>
+    <script>
+        // ============================================================
+        //  SUPABASE CONFIG
+        // ============================================================
+        const SUPABASE_URL = 'https://avdqtnukgbejorieuunj.supabase.co';
+        const SUPABASE_ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ============================================================
+        //  AUTH FUNCTIONS
+        // ============================================================
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            errorEl.textContent = '';
+            if (!email || !password) { errorEl.textContent = 'Introduce email y contrasena.'; return; }
+            btn.disabled = true;
+            btn.textContent = 'Entrando...';
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            btn.disabled = false;
+            btn.textContent = 'Entrar';
+            if (error) { errorEl.textContent = 'Credenciales incorrectas o error de conexion.'; return; }
+            await startApp();
+        }
+
+        async function handleLogout() {
+            await sb.auth.signOut();
+            document.getElementById('app').classList.remove('ready');
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            showAuthMode('login');
+        }
+
+        async function startApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').classList.add('ready');
+            await init();
+        }
+
+        function showAuthMode(mode) {
+            ['login', 'signup', 'forgot', 'reset'].forEach(m => {
+                document.getElementById('mode-' + m).style.display = (m === mode) ? 'block' : 'none';
+            });
+        }
+
+        async function handleSignup() {
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const password2 = document.getElementById('signup-password2').value;
+            const errorEl = document.getElementById('signup-error');
+            const successEl = document.getElementById('signup-success');
+            const btn = document.getElementById('signup-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!email || !password || !password2) { errorEl.textContent = 'Rellena todos los campos.'; return; }
+            if (password.length < 6) { errorEl.textContent = 'La contrasena debe tener al menos 6 caracteres.'; return; }
+            if (password !== password2) { errorEl.textContent = 'Las contrasenas no coinciden.'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+            const { data, error } = await sb.auth.signUp({ email, password });
+            btn.disabled = false;
+            btn.textContent = 'Crear cuenta';
+
+            if (error) { errorEl.textContent = 'No se pudo crear la cuenta: ' + error.message; return; }
+            if (data.session) { await startApp(); } else {
+                successEl.textContent =
+                'Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.';
+                document.getElementById('signup-email').value = '';
+                document.getElementById('signup-password').value = '';
+                document.getElementById('signup-password2').value = '';
+            }
+        }
+
+        async function handleForgotPassword() {
+            const email = document.getElementById('forgot-email').value.trim();
+            const errorEl = document.getElementById('forgot-error');
+            const successEl = document.getElementById('forgot-success');
+            const btn = document.getElementById('forgot-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!email) { errorEl.textContent = 'Introduce tu email.'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            const { error } = await sb.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname
+            });
+            btn.disabled = false;
+            btn.textContent = 'Enviar enlace';
+
+            if (error) { errorEl.textContent = 'No se pudo enviar el enlace: ' + error.message; return; }
+            successEl.textContent =
+            'Si el email existe, te hemos enviado un enlace para restablecer tu contrasena.';
+        }
+
+        async function handleResetPassword() {
+            const password = document.getElementById('reset-password').value;
+            const password2 = document.getElementById('reset-password2').value;
+            const errorEl = document.getElementById('reset-error');
+            const successEl = document.getElementById('reset-success');
+            const btn = document.getElementById('reset-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!password || !password2) { errorEl.textContent = 'Rellena ambos campos.'; return; }
+            if (password.length < 6) { errorEl.textContent = 'La contrasena debe tener al menos 6 caracteres.'; return; }
+            if (password !== password2) { errorEl.textContent = 'Las contrasenas no coinciden.'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+            const { error } = await sb.auth.updateUser({ password });
+            btn.disabled = false;
+            btn.textContent = 'Guardar contrasena';
+
+            if (error) { errorEl.textContent = 'No se pudo actualizar la contrasena: ' + error.message; return; }
+            successEl.textContent = 'Contrasena actualizada. Ya puedes usar la app.';
+            setTimeout(() => startApp(), 1200);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const pw = document.getElementById('login-password');
+            if (pw) pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+        });
+
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app').classList.remove('ready');
+                showAuthMode('reset');
+            }
+        });
+
+        (async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) { await startApp(); }
+        })();
+    </script>
+
+    <script>
+        // ============================================================
+        //  DATA
+        // ============================================================
+        let entries = [];
+        let categories = [];
+        let editId = null;
+        let editType = null;
+        let filteredEntries = [];
+        let saveInFlight = null;
+        let savePending = false;
+
+        // ============================================================
+        //  ENTRY TYPES (SIN EMOJIS)
+        // ============================================================
+        const ENTRY_TYPES = {
+            ENTRY: 'entry',
+            GOAL: 'goal',
+            PROJECT: 'project',
+            TRAVEL: 'travel',
+            WORK: 'work',
+            LIBRARY: 'library',
+            EXAM: 'exam',
+            EVENT: 'event',
+            SHOPPING: 'shopping',
+            IDEA: 'idea',
+            INVESTMENT: 'investment',
+            SERVICE: 'service',
+            WATCHLIST: 'watchlist',
+            WISHLIST: 'wishlist',
+            TASK: 'task',
+            LINK: 'link'
+        };
+
+        const TYPE_ICONS = {
+            entry: '◈',
+            goal: '◉',
+            project: '⊞',
+            travel: '◈',
+            work: '◫',
+            library: '◊',
+            exam: '◊',
+            event: '◈',
+            shopping: '◉',
+            idea: '⊞',
+            investment: '◫',
+            service: '⌂',
+            watchlist: '◉',
+            wishlist: '◈',
+            task: '⊞',
+            link: '⌂'
+        };
+
+        const TYPE_LABELS = {
+            entry: 'Entrada',
+            goal: 'Objetivo',
+            project: 'Proyecto',
+            travel: 'Viaje',
+            work: 'Trabajo',
+            library: 'Cultura',
+            exam: 'Examen',
+            event: 'Evento',
+            shopping: 'Lista',
+            idea: 'Idea',
+            investment: 'Inversion',
+            service: 'Servicio',
+            watchlist: 'Pendiente',
+            wishlist: 'Wishlist',
+            task: 'Tarea',
+            link: 'Enlace'
+        };
+
+        // Tipos que NO aparecen en el calendario
+        const NON_CALENDAR_TYPES = ['service', 'watchlist', 'wishlist', 'task', 'link'];
+
+        // ============================================================
+        //  DEFAULT COLORS
+        // ============================================================
+        const DEFAULT_COLORS = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+            '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
+            '#fd79a8', '#0984e3', '#fdcb6e', '#00cec9', '#a29bfe'
+        ];
+
+        // ============================================================
+        //  LOAD / SAVE
+        // ============================================================
+        async function loadData() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { entries = [];
+                    categories = getDefaultCategories();
+                    filteredEntries = []; return; }
+                const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
+                if (error) throw error;
+                const saved = (data && data.data) ? data.data : {};
+                entries = saved.entries || [];
+                categories = saved.categories || getDefaultCategories();
+            } catch (e) {
+                console.error('Error cargando datos de Supabase:', e);
+                entries = [];
+                categories = getDefaultCategories();
+            }
+            if (!categories || categories.length === 0) categories = getDefaultCategories();
+            categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2,
+                    6); });
+            filteredEntries = [...entries];
+        }
+
+        async function saveData() {
+            if (saveInFlight) { savePending = true; return; }
+            saveInFlight = (async () => {
+                try {
+                    const { data: { user } } = await sb.auth.getUser();
+                    if (!user) return;
+                    const { error } = await sb.from('bitacora').upsert({
+                        user_id: user.id,
+                        data: { entries, categories },
+                        updated_at: new Date().toISOString()
+                    });
+                    if (error) console.error('Error guardando en Supabase:', error);
+                } catch (e) {
+                    console.error('Error guardando en Supabase:', e);
+                } finally {
+                    saveInFlight = null;
+                    if (savePending) { savePending = false;
+                        saveData(); }
+                }
+            })();
+        }
+
+        // ============================================================
+        //  DEFAULT CATEGORIES
+        // ============================================================
+        function getDefaultCategories() {
+            return [
+                { id: 'cat_general', name: 'General', color: '#6b7280' },
+                { id: 'cat_viaje', name: 'Viaje', color: '#e84393' },
+                { id: 'cat_objetivo', name: 'Objetivo', color: '#6c5ce7' },
+                { id: 'cat_proyecto', name: 'Proyecto', color: '#00b894' },
+                { id: 'cat_trabajo', name: 'Trabajo', color: '#e67e22' },
+                { id: 'cat_libro', name: 'Libro', color: '#3498db' },
+                { id: 'cat_pelicula', name: 'Pelicula', color: '#f39c12' },
+                { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
+                { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
+                { id: 'cat_examen', name: 'Examen', color: '#8b5cf6' },
+                { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
+                { id: 'cat_lista', name: 'Lista', color: '#14b8a6' },
+                { id: 'cat_idea', name: 'Idea', color: '#f59e0b' },
+                { id: 'cat_inversion', name: 'Inversion', color: '#10b981' },
+                { id: 'cat_servicio', name: 'Servicio', color: '#8b5cf6' },
+                { id: 'cat_watchlist', name: 'Pendiente', color: '#f59e0b' },
+                { id: 'cat_wishlist', name: 'Wishlist', color: '#ec4899' },
+                { id: 'cat_tarea', name: 'Tarea', color: '#14b8a6' },
+                { id: 'cat_enlace', name: 'Enlace', color: '#6b7280' },
+            ];
+        }
+
+        // ============================================================
+        //  THEME
+        // ============================================================
+        const THEMES = ['dark', 'light', 'beige'];
+
+        function loadTheme() {
+            const theme = localStorage.getItem('bitacora_theme') || 'dark';
+            THEMES.forEach(t => document.body.classList.remove(t));
+            if (theme !== 'dark') document.body.classList.add(theme);
+            updateThemeIcon(theme);
+        }
+
+        function toggleTheme() {
+            const current = THEMES.find(t => document.body.classList.contains(t)) || 'dark';
+            const idx = (THEMES.indexOf(current) + 1) % THEMES.length;
+            const next = THEMES[idx];
+            THEMES.forEach(t => document.body.classList.remove(t));
+            if (next !== 'dark') document.body.classList.add(next);
+            localStorage.setItem('bitacora_theme', next);
+            updateThemeIcon(next);
+        }
+
+        function updateThemeIcon(theme) {
+            const icons = { dark: '◐', light: '☀', beige: '◐' };
+            document.getElementById('theme-btn').textContent = icons[theme] || '◐';
+        }
+
+        let modeWide = false;
+
+        function toggleMode() {
+            modeWide = !modeWide;
+            document.getElementById('app').style.maxWidth = modeWide ? '100%' : '1200px';
+        }
+
+        // ============================================================
+        //  TOAST
+        // ============================================================
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = isError ? 'error' : '';
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ============================================================
+        //  NAVIGATION
+        // ============================================================
+        let currentView = 'calendar';
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                b.classList.toggle('active', b.dataset.view === view);
+            });
+            const titles = {
+                'calendar': 'Calendario',
+                'home': 'Centro resumen',
+                'stats': 'Estadisticas',
+                'goals': 'Objetivos',
+                'projects': 'Proyectos',
+                'travels': 'Viajes',
+                'work': 'Trabajo',
+                'cultura': 'Cultura',
+                'documents': 'Documentos',
+                'exams': 'Examenes',
+                'events': 'Eventos',
+                'shopping': 'Listas',
+                'ideas': 'Ideas',
+                'investments': 'Inversiones',
+                'services': 'Servicios',
+                'watchlist': 'Pendientes',
+                'wishlist': 'Wishlist',
+                'tasks': 'Tareas',
+                'links': 'Enlaces'
+            };
+            document.getElementById('page-title').textContent = titles[view] || 'Calendario';
+            render();
+        }
+
+        // ============================================================
+        //  MOBILE MENU
+        // ============================================================
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobile-menu-overlay');
+            const panel = document.getElementById('mobile-menu-panel');
+            overlay.classList.toggle('open');
+            panel.classList.toggle('open');
+        }
+
+        // ============================================================
+        //  FAB
+        // ============================================================
+        function toggleFabMenu() {
+            document.getElementById('fab-menu').classList.toggle('open');
+        }
+
+        function closeFabMenu() {
+            document.getElementById('fab-menu').classList.remove('open');
+        }
+
+        // ============================================================
+        //  OPEN NEW ENTRY (FAB)
+        // ============================================================
+        function openNewEntry(type) {
+            closeFabMenu();
+            editId = null;
+            editType = type;
+            document.getElementById('modal-container').innerHTML = renderEntryModal(type, null);
+        }
+
+        // ============================================================
+        //  OPEN EDIT ENTRY
+        // ============================================================
+        function openEditEntry(id) {
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+            editId = id;
+            editType = entry.type;
+            document.getElementById('modal-container').innerHTML = renderEntryModal(entry.type, entry);
+        }
+
+        // ============================================================
+        //  CLOSE MODAL
+        // ============================================================
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+            editId = null;
+            editType = null;
+        }
+
+        // ============================================================
+        //  RENDER ENTRY MODAL
+        // ============================================================
+        function renderEntryModal(type, entry) {
+            const isEdit = !!entry;
+            const today = new Date().toISOString().slice(0, 10);
+            const icon = TYPE_ICONS[type] || '◈';
+            const label = TYPE_LABELS[type] || 'Entrada';
+            const title = isEdit ? 'Editar ' + label : 'Nueva ' + label;
+
+            let extraFields = '';
+
+            // ===== ENTRY (básico) =====
+            if (type === 'entry') {
+                extraFields = `
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.notes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== GOAL =====
+            else if (type === 'goal') {
+                extraFields = `
+                    <div class="modal-label">Categoria de plazo</div>
+                    <select id="modal-goal-category" class="modal-input">
+                        <option value="Corto plazo" ${isEdit && entry.goalCategory === 'Corto plazo' ? 'selected' : ''}>Corto plazo</option>
+                        <option value="Medio plazo" ${isEdit && entry.goalCategory === 'Medio plazo' ? 'selected' : ''}>Medio plazo</option>
+                        <option value="Largo plazo" ${isEdit && entry.goalCategory === 'Largo plazo' ? 'selected' : ''}>Largo plazo</option>
+                    </select>
+                    <div class="modal-label">Progreso (%)</div>
+                    <input type="number" id="modal-progress" class="modal-input" value="${isEdit ? entry.progress || 0 : 0}" min="0" max="100">
+                    <div class="modal-label">Fecha limite</div>
+                    <input type="date" id="modal-deadline" class="modal-input" value="${isEdit ? entry.deadline || '' : ''}">
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="En progreso" ${isEdit && entry.status === 'En progreso' ? 'selected' : ''}>En progreso</option>
+                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
+                    </select>
+                `;
+            }
+
+            // ===== PROJECT =====
+            else if (type === 'project') {
+                extraFields = `
+                    <div class="modal-label">Descripcion</div>
+                    <textarea id="modal-desc" class="modal-input" rows="2" placeholder="Descripcion...">${isEdit ? entry.description || '' : ''}</textarea>
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin previsto</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="En curso" ${isEdit && entry.status === 'En curso' ? 'selected' : ''}>En curso</option>
+                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
+                    </select>
+                    <div class="modal-label">Presupuesto (€)</div>
+                    <input type="number" id="modal-budget" class="modal-input" step="0.01" value="${isEdit ? entry.budget || '' : ''}" placeholder="0.00">
+                    <div class="modal-label">Tareas (una por linea, marcar completadas con ✅)</div>
+                    <textarea id="modal-tasks" class="modal-input" rows="3" placeholder="Tarea 1&#10;Tarea 2 ✅">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✅' : '')).join('\n') : ''}</textarea>
+                    <div class="modal-label">Notas del proyecto</div>
+                    <textarea id="modal-project-notes" class="modal-input" rows="2" placeholder="Notas adicionales...">${isEdit ? entry.projectNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== TRAVEL =====
+            else if (type === 'travel') {
+                extraFields = `
+                    <div class="modal-label">Pais</div>
+                    <input id="modal-country" class="modal-input" value="${isEdit ? entry.country || '' : ''}" placeholder="Ej: Italia">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Valoracion (1-5)</div>
+                    <select id="modal-rating" class="modal-input">
+                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                    </select>
+                    <div class="modal-label">Recuerdos / Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Experiencias, lugares visitados...">${isEdit ? entry.notes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== WORK =====
+            else if (type === 'work') {
+                extraFields = `
+                    <div class="modal-label">Empresa</div>
+                    <input id="modal-company" class="modal-input" value="${isEdit ? entry.company || '' : ''}" placeholder="Ej: Empresa X">
+                    <div class="modal-label">Puesto</div>
+                    <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logistico">
+                    <div class="modal-label">Tipo de puesto</div>
+                    <select id="modal-work-type" class="modal-input">
+                        <option value="normal" ${isEdit && entry.workType === 'normal' ? 'selected' : ''}>Puesto normal</option>
+                        <option value="practicas" ${isEdit && entry.workType === 'practicas' ? 'selected' : ''}>Practicas</option>
+                    </select>
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Horario</div>
+                    <input id="modal-schedule" class="modal-input" value="${isEdit ? entry.schedule || '' : ''}" placeholder="L-V 9:00-18:00">
+                    <div class="modal-label">Dias de fiesta</div>
+                    <input type="number" id="modal-holidays" class="modal-input" value="${isEdit ? entry.holidays || 0 : 0}" min="0">
+                    <div class="modal-label">Funciones</div>
+                    <textarea id="modal-functions" class="modal-input" rows="2" placeholder="Funciones realizadas...">${isEdit ? entry.functions || '' : ''}</textarea>
+                    <div class="modal-label">Habilidades</div>
+                    <input id="modal-skills" class="modal-input" value="${isEdit ? entry.skills || '' : ''}" placeholder="Ej: Gestion de equipos, Excel">
+                `;
+            }
+
+            // ===== LIBRARY =====
+            else if (type === 'library') {
+                const libTypes = [
+                    { value: 'libro', label: 'Libro' },
+                    { value: 'musica', label: 'Musica' },
+                    { value: 'videojuego', label: 'Videojuego' },
+                    { value: 'video', label: 'Video' }
+                ];
+                extraFields = `
+                    <div class="modal-label">Tipo de contenido</div>
+                    <select id="modal-lib-type" class="modal-input">
+                        ${libTypes.map(t => `<option value="${t.value}" ${isEdit && entry.libType === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                    <div class="modal-label">Autor / Creador</div>
+                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel Garcia Marquez">
+                    <div class="modal-label">Plataforma (opcional)</div>
+                    <input id="modal-platform" class="modal-input" value="${isEdit ? entry.platform || '' : ''}" placeholder="Ej: Netflix, PC, PS5">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Valoracion (1-5)</div>
+                    <select id="modal-rating" class="modal-input">
+                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                    </select>
+                `;
+            }
+
+            // ===== EXAM =====
+            else if (type === 'exam') {
+                extraFields = `
+                    <div class="modal-label">Titulacion / Asignatura</div>
+                    <input id="modal-subject" class="modal-input" value="${isEdit ? entry.subject || '' : ''}" placeholder="Ej: Algebra Lineal">
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-exam-type" class="modal-input">
+                        <option value="examen" ${isEdit && entry.examType === 'examen' ? 'selected' : ''}>Examen</option>
+                        <option value="trabajo" ${isEdit && entry.examType === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="practica" ${isEdit && entry.examType === 'practica' ? 'selected' : ''}>Practica</option>
+                        <option value="titulacion" ${isEdit && entry.examType === 'titulacion' ? 'selected' : ''}>Titulacion</option>
+                    </select>
+                    <div class="modal-row">
+                        <div><div class="modal-label">Peso (%)</div><input type="number" id="modal-weight" class="modal-input" value="${isEdit ? entry.weight || 0 : 0}" min="0" max="100" step="0.5"></div>
+                        <div><div class="modal-label">Nota</div><input type="number" id="modal-grade" class="modal-input" value="${isEdit ? entry.grade || '' : ''}" min="0" max="10" step="0.1" placeholder="0-10"></div>
+                    </div>
+                    <div class="modal-label">Fecha del examen</div>
+                    <input type="date" id="modal-exam-date" class="modal-input" value="${isEdit ? entry.examDate || '' : ''}">
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-exam-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.examStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Aprobado" ${isEdit && entry.examStatus === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
+                        <option value="Suspenso" ${isEdit && entry.examStatus === 'Suspenso' ? 'selected' : ''}>Suspenso</option>
+                        <option value="Matricula" ${isEdit && entry.examStatus === 'Matricula' ? 'selected' : ''}>Matricula</option>
+                    </select>
+                `;
+            }
+
+            // ===== EVENT =====
+            else if (type === 'event') {
+                extraFields = `
+                    <div class="modal-label">Tipo de evento</div>
+                    <select id="modal-event-type" class="modal-input">
+                        <option value="social" ${isEdit && entry.eventType === 'social' ? 'selected' : ''}>Social</option>
+                        <option value="teatro" ${isEdit && entry.eventType === 'teatro' ? 'selected' : ''}>Teatro</option>
+                        <option value="cine" ${isEdit && entry.eventType === 'cine' ? 'selected' : ''}>Cine</option>
+                        <option value="concierto" ${isEdit && entry.eventType === 'concierto' ? 'selected' : ''}>Concierto</option>
+                        <option value="deporte" ${isEdit && entry.eventType === 'deporte' ? 'selected' : ''}>Deporte</option>
+                        <option value="otro" ${isEdit && entry.eventType === 'otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Lugar</div>
+                    <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
+                    <div class="modal-label">Fecha del evento</div>
+                    <input type="date" id="modal-event-date" class="modal-input" value="${isEdit ? entry.eventDate || '' : ''}">
+                    <div class="modal-label">Hora del evento (opcional)</div>
+                    <input type="time" id="modal-event-time" class="modal-input" value="${isEdit ? entry.eventTime || '' : ''}">
+                    <div class="modal-label">Acompanantes</div>
+                    <input id="modal-companions" class="modal-input" value="${isEdit ? entry.companions || '' : ''}" placeholder="Ana, Carlos, ...">
+                    <div class="modal-label">Valoracion (1-10)</div>
+                    <input type="number" id="modal-event-rating" class="modal-input" value="${isEdit ? entry.eventRating || 5 : 5}" min="1" max="10">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-event-notes" class="modal-input" rows="2" placeholder="Experiencia, recuerdos...">${isEdit ? entry.eventNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== SHOPPING =====
+            else if (type === 'shopping') {
+                extraFields = `
+                    <div class="modal-label">Categoria</div>
+                    <select id="modal-list-category" class="modal-input">
+                        <option value="Alimentacion" ${isEdit && entry.listCategory === 'Alimentacion' ? 'selected' : ''}>Alimentacion</option>
+                        <option value="Hogar" ${isEdit && entry.listCategory === 'Hogar' ? 'selected' : ''}>Hogar</option>
+                        <option value="Tecnologia" ${isEdit && entry.listCategory === 'Tecnologia' ? 'selected' : ''}>Tecnologia</option>
+                        <option value="Ropa" ${isEdit && entry.listCategory === 'Ropa' ? 'selected' : ''}>Ropa</option>
+                        <option value="Ocio" ${isEdit && entry.listCategory === 'Ocio' ? 'selected' : ''}>Ocio</option>
+                        <option value="Otro" ${isEdit && entry.listCategory === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Precio estimado (€)</div>
+                    <input type="number" id="modal-list-price" class="modal-input" value="${isEdit ? entry.listPrice || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Prioridad</div>
+                    <select id="modal-list-priority" class="modal-input">
+                        <option value="Alta" ${isEdit && entry.listPriority === 'Alta' ? 'selected' : ''}>Alta</option>
+                        <option value="Media" ${isEdit && entry.listPriority === 'Media' ? 'selected' : ''}>Media</option>
+                        <option value="Baja" ${isEdit && entry.listPriority === 'Baja' ? 'selected' : ''}>Baja</option>
+                    </select>
+                    <div class="modal-label">Comprado</div>
+                    <select id="modal-list-done" class="modal-input">
+                        <option value="0" ${isEdit && !entry.listDone ? 'selected' : ''}>No</option>
+                        <option value="1" ${isEdit && entry.listDone ? 'selected' : ''}>Si</option>
+                    </select>
+                `;
+            }
+
+            // ===== IDEA =====
+            else if (type === 'idea') {
+                extraFields = `
+                    <div class="modal-label">Categoria</div>
+                    <select id="modal-idea-category" class="modal-input">
+                        <option value="Proyecto" ${isEdit && entry.ideaCategory === 'Proyecto' ? 'selected' : ''}>Proyecto</option>
+                        <option value="Personal" ${isEdit && entry.ideaCategory === 'Personal' ? 'selected' : ''}>Personal</option>
+                        <option value="Trabajo" ${isEdit && entry.ideaCategory === 'Trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="Creativa" ${isEdit && entry.ideaCategory === 'Creativa' ? 'selected' : ''}>Creativa</option>
+                        <option value="Otro" ${isEdit && entry.ideaCategory === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Contenido</div>
+                    <textarea id="modal-idea-content" class="modal-input" rows="4" placeholder="Describe tu idea...">${isEdit ? entry.ideaContent || '' : ''}</textarea>
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-idea-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.ideaStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="En progreso" ${isEdit && entry.ideaStatus === 'En progreso' ? 'selected' : ''}>En progreso</option>
+                        <option value="Completada" ${isEdit && entry.ideaStatus === 'Completada' ? 'selected' : ''}>Completada</option>
+                        <option value="Descartada" ${isEdit && entry.ideaStatus === 'Descartada' ? 'selected' : ''}>Descartada</option>
+                    </select>
+                `;
+            }
+
+            // ===== INVESTMENT =====
+            else if (type === 'investment') {
+                extraFields = `
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-inv-type" class="modal-input">
+                        <option value="Acciones" ${isEdit && entry.invType === 'Acciones' ? 'selected' : ''}>Acciones</option>
+                        <option value="Fondos" ${isEdit && entry.invType === 'Fondos' ? 'selected' : ''}>Fondos</option>
+                        <option value="Criptomonedas" ${isEdit && entry.invType === 'Criptomonedas' ? 'selected' : ''}>Criptomonedas</option>
+                        <option value="Bonos" ${isEdit && entry.invType === 'Bonos' ? 'selected' : ''}>Bonos</option>
+                        <option value="Inmobiliaria" ${isEdit && entry.invType === 'Inmobiliaria' ? 'selected' : ''}>Inmobiliaria</option>
+                        <option value="Otro" ${isEdit && entry.invType === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Cantidad invertida (€)</div>
+                    <input type="number" id="modal-inv-invested" class="modal-input" value="${isEdit ? entry.invInvested || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Valor actual (€)</div>
+                    <input type="number" id="modal-inv-current" class="modal-input" value="${isEdit ? entry.invCurrent || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Fecha de inversion</div>
+                    <input type="date" id="modal-inv-date" class="modal-input" value="${isEdit ? entry.invDate || '' : ''}">
+                    <div class="modal-label">Aportacion mensual (€)</div>
+                    <input type="number" id="modal-inv-monthly" class="modal-input" value="${isEdit ? entry.invMonthly || 0 : 0}" step="0.01" placeholder="0">
+                    <div class="modal-label">Rentabilidad anual estimada (%)</div>
+                    <input type="number" id="modal-inv-rate" class="modal-input" value="${isEdit ? entry.invRate || 7 : 7}" step="0.1" placeholder="7">
+                    <div class="modal-label">Horizonte (anos)</div>
+                    <input type="number" id="modal-inv-years" class="modal-input" value="${isEdit ? entry.invYears || 10 : 10}" min="1" step="1">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-inv-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.invNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== SERVICE =====
+            else if (type === 'service') {
+                extraFields = `
+                    <div class="modal-label">URL del sitio</div>
+                    <input id="modal-service-url" class="modal-input" placeholder="https://..." value="${isEdit ? entry.serviceUrl || '' : ''}">
+                    <div class="modal-label">Email / usuario</div>
+                    <input id="modal-service-email" class="modal-input" placeholder="tucorreo@..." value="${isEdit ? entry.serviceEmail || '' : ''}">
+                    <div class="modal-label">Metodo de registro</div>
+                    <select id="modal-service-method" class="modal-input">
+                        <option value="Email/contraseña" ${isEdit && entry.serviceMethod === 'Email/contraseña' ? 'selected' : ''}>Email/contraseña</option>
+                        <option value="Google" ${isEdit && entry.serviceMethod === 'Google' ? 'selected' : ''}>Google</option>
+                        <option value="Apple" ${isEdit && entry.serviceMethod === 'Apple' ? 'selected' : ''}>Apple</option>
+                        <option value="Facebook" ${isEdit && entry.serviceMethod === 'Facebook' ? 'selected' : ''}>Facebook</option>
+                        <option value="Otro" ${isEdit && entry.serviceMethod === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Notas (2FA, alias, etc.)</div>
+                    <textarea id="modal-service-notes" class="modal-input" rows="2">${isEdit ? entry.serviceNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== WATCHLIST =====
+            else if (type === 'watchlist') {
+                extraFields = `
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-watch-type" class="modal-input">
+                        <option value="libro" ${isEdit && entry.watchType === 'libro' ? 'selected' : ''}>Libro</option>
+                        <option value="pelicula" ${isEdit && entry.watchType === 'pelicula' ? 'selected' : ''}>Pelicula</option>
+                        <option value="serie" ${isEdit && entry.watchType === 'serie' ? 'selected' : ''}>Serie</option>
+                    </select>
+                    <div class="modal-label">Prioridad</div>
+                    <select id="modal-watch-priority" class="modal-input">
+                        <option value="Alta" ${isEdit && entry.watchPriority === 'Alta' ? 'selected' : ''}>Alta</option>
+                        <option value="Media" ${isEdit && entry.watchPriority === 'Media' ? 'selected' : ''}>Media</option>
+                        <option value="Baja" ${isEdit && entry.watchPriority === 'Baja' ? 'selected' : ''}>Baja</option>
+                    </select>
+                    <div class="modal-label">Notas / recomendacion</div>
+                    <textarea id="modal-watch-notes" class="modal-input" rows="2">${isEdit ? entry.watchNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== WISHLIST =====
+            else if (type === 'wishlist') {
+                extraFields = `
+                    <div class="modal-label">Precio (€)</div>
+                    <input type="number" id="modal-wish-price" class="modal-input" step="0.01" value="${isEdit ? entry.wishPrice || '' : ''}" placeholder="0.00">
+                    <div class="modal-label">URL del producto</div>
+                    <input id="modal-wish-url" class="modal-input" value="${isEdit ? entry.wishUrl || '' : ''}" placeholder="https://...">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-wish-notes" class="modal-input" rows="2">${isEdit ? entry.wishNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== TASK =====
+            else if (type === 'task') {
+                extraFields = `
+                    <div class="modal-row">
+                        <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-task-start" class="modal-input" value="${isEdit ? entry.taskStart || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha fin prevista</div><input type="date" id="modal-task-due" class="modal-input" value="${isEdit ? entry.taskDue || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-task-notes" class="modal-input" rows="2">${isEdit ? entry.taskNotes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== LINK =====
+            else if (type === 'link') {
+                extraFields = `
+                    <div class="modal-label">URL</div>
+                    <input id="modal-link-url" class="modal-input" placeholder="https://www.amazon.es" value="${isEdit ? entry.linkUrl || '' : ''}">
+                    <div class="modal-label">Icono (opcional)</div>
+                    <input id="modal-link-icon" class="modal-input" placeholder="◈" value="${isEdit ? entry.linkIcon || '' : ''}">
+                `;
+            }
+
+            const catOptions = categories.map(c =>
+                `<option value="${c.id}" ${isEdit && entry?.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`
+            ).join('');
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">
+                        ${icon} ${title}
+                        <button class="modal-close" onclick="closeModal()">✕</button>
+                    </div>
+
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date : today}">
+
+                    <div class="modal-label">Titulo</div>
+                    <input id="modal-title" class="modal-input" value="${isEdit ? entry.title : ''}" placeholder="Escribe un titulo...">
+
+                    <div class="modal-label">Categoria</div>
+                    <select id="modal-category" class="modal-input">
+                        ${catOptions}
+                        <option value="__new">+ Crear nueva categoria</option>
+                    </select>
+
+                    ${extraFields}
+
+                    <button class="btn-modal-primary" onclick="saveEntry()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteEntry('${entry.id}')">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  SAVE ENTRY
+        // ============================================================
+        function saveEntry() {
+            const date = document.getElementById('modal-date').value;
+            if (!date) { showToast('Selecciona una fecha', true); return; }
+
+            const title = document.getElementById('modal-title').value.trim();
+            if (!title) { showToast('Escribe un titulo', true); return; }
+
+            let categoryId = document.getElementById('modal-category').value;
+
+            if (categoryId === '__new') {
+                const newCatName = prompt('Nombre de la nueva categoria:');
+                if (!newCatName) { showToast('Escribe un nombre', true); return; }
+                const color = DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)];
+                const newCat = { id: 'cat_' + Date.now(), name: newCatName, color: color };
+                categories.push(newCat);
+                categoryId = newCat.id;
+                saveData();
+            }
+
+            const type = editType;
+            const entry = {
+                id: editId || 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                date: date,
+                title: title,
+                categoryId: categoryId,
+                type: type
+            };
+
+            // Campos especificos por tipo
+            if (type === 'entry') {
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+            } else if (type === 'goal') {
+                entry.goalCategory = document.getElementById('modal-goal-category')?.value || 'Medio plazo';
+                entry.progress = parseInt(document.getElementById('modal-progress')?.value) || 0;
+                entry.deadline = document.getElementById('modal-deadline')?.value || '';
+                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
+            } else if (type === 'project') {
+                entry.description = document.getElementById('modal-desc')?.value?.trim() || '';
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
+                entry.budget = parseFloat(document.getElementById('modal-budget')?.value) || null;
+                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
+                entry.tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
+                entry.projectNotes = document.getElementById('modal-project-notes')?.value?.trim() || '';
+            } else if (type === 'travel') {
+                entry.country = document.getElementById('modal-country')?.value?.trim() || '';
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+            } else if (type === 'work') {
+                entry.company = document.getElementById('modal-company')?.value?.trim() || '';
+                entry.position = document.getElementById('modal-position')?.value?.trim() || '';
+                entry.workType = document.getElementById('modal-work-type')?.value || 'normal';
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.schedule = document.getElementById('modal-schedule')?.value?.trim() || '';
+                entry.holidays = parseInt(document.getElementById('modal-holidays')?.value) || 0;
+                entry.functions = document.getElementById('modal-functions')?.value?.trim() || '';
+                entry.skills = document.getElementById('modal-skills')?.value?.trim() || '';
+            } else if (type === 'library') {
+                entry.libType = document.getElementById('modal-lib-type')?.value || 'libro';
+                entry.author = document.getElementById('modal-author')?.value?.trim() || '';
+                entry.platform = document.getElementById('modal-platform')?.value?.trim() || '';
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+            } else if (type === 'exam') {
+                entry.subject = document.getElementById('modal-subject')?.value?.trim() || '';
+                entry.examType = document.getElementById('modal-exam-type')?.value || 'examen';
+                entry.weight = parseFloat(document.getElementById('modal-weight')?.value) || 0;
+                entry.grade = parseFloat(document.getElementById('modal-grade')?.value) || null;
+                entry.examDate = document.getElementById('modal-exam-date')?.value || '';
+                entry.examStatus = document.getElementById('modal-exam-status')?.value || 'Pendiente';
+            } else if (type === 'event') {
+                entry.eventType = document.getElementById('modal-event-type')?.value || 'otro';
+                entry.place = document.getElementById('modal-place')?.value?.trim() || '';
+                entry.eventDate = document.getElementById('modal-event-date')?.value || '';
+                entry.eventTime = document.getElementById('modal-event-time')?.value || '';
+                entry.companions = document.getElementById('modal-companions')?.value?.trim() || '';
+                entry.eventRating = parseInt(document.getElementById('modal-event-rating')?.value) || 5;
+                entry.eventNotes = document.getElementById('modal-event-notes')?.value?.trim() || '';
+            } else if (type === 'shopping') {
+                entry.listCategory = document.getElementById('modal-list-category')?.value || 'Otro';
+                entry.listPrice = parseFloat(document.getElementById('modal-list-price')?.value) || null;
+                entry.listPriority = document.getElementById('modal-list-priority')?.value || 'Media';
+                entry.listDone = document.getElementById('modal-list-done')?.value === '1';
+            } else if (type === 'idea') {
+                entry.ideaCategory = document.getElementById('modal-idea-category')?.value || 'Otro';
+                entry.ideaContent = document.getElementById('modal-idea-content')?.value?.trim() || '';
+                entry.ideaStatus = document.getElementById('modal-idea-status')?.value || 'Pendiente';
+            } else if (type === 'investment') {
+                entry.invType = document.getElementById('modal-inv-type')?.value || 'Otro';
+                entry.invInvested = parseFloat(document.getElementById('modal-inv-invested')?.value) || 0;
+                entry.invCurrent = parseFloat(document.getElementById('modal-inv-current')?.value) || 0;
+                entry.invDate = document.getElementById('modal-inv-date')?.value || '';
+                entry.invMonthly = parseFloat(document.getElementById('modal-inv-monthly')?.value) || 0;
+                entry.invRate = parseFloat(document.getElementById('modal-inv-rate')?.value) || 0;
+                entry.invYears = parseInt(document.getElementById('modal-inv-years')?.value) || 0;
+                entry.invNotes = document.getElementById('modal-inv-notes')?.value?.trim() || '';
+            } else if (type === 'service') {
+                entry.serviceUrl = document.getElementById('modal-service-url')?.value?.trim() || '';
+                entry.serviceEmail = document.getElementById('modal-service-email')?.value?.trim() || '';
+                entry.serviceMethod = document.getElementById('modal-service-method')?.value || 'Otro';
+                entry.serviceNotes = document.getElementById('modal-service-notes')?.value?.trim() || '';
+            } else if (type === 'watchlist') {
+                entry.watchType = document.getElementById('modal-watch-type')?.value || 'libro';
+                entry.watchPriority = document.getElementById('modal-watch-priority')?.value || 'Media';
+                entry.watchNotes = document.getElementById('modal-watch-notes')?.value?.trim() || '';
+            } else if (type === 'wishlist') {
+                entry.wishPrice = parseFloat(document.getElementById('modal-wish-price')?.value) || 0;
+                entry.wishUrl = document.getElementById('modal-wish-url')?.value?.trim() || '';
+                entry.wishNotes = document.getElementById('modal-wish-notes')?.value?.trim() || '';
+                entry.wishAddedDate = isEdit ? entries.find(x => x.id === editId)?.wishAddedDate || today : today;
+            } else if (type === 'task') {
+                entry.taskStart = document.getElementById('modal-task-start')?.value || '';
+                entry.taskDue = document.getElementById('modal-task-due')?.value || '';
+                entry.taskNotes = document.getElementById('modal-task-notes')?.value?.trim() || '';
+                entry.taskDone = isEdit ? entries.find(x => x.id === editId)?.taskDone || false : false;
+                entry.taskCompletedDate = entry.taskDone ? new Date().toISOString().slice(0, 10) : '';
+            } else if (type === 'link') {
+                entry.linkUrl = document.getElementById('modal-link-url')?.value?.trim() || '';
+                entry.linkIcon = document.getElementById('modal-link-icon')?.value?.trim() || '';
+            }
+
+            if (editId) {
+                const idx = entries.findIndex(e => e.id === editId);
+                if (idx >= 0) entries[idx] = entry;
+            } else {
+                entries.push(entry);
+            }
+
+            entries.sort((a, b) => b.date.localeCompare(a.date));
+            filteredEntries = [...entries];
+            saveData();
+            closeModal();
+            render();
+            showToast('Guardado');
+        }
+
+        // ============================================================
+        //  DELETE ENTRY
+        // ============================================================
+        function deleteEntry(id) {
+            if (!confirm('Eliminar esta entrada?')) return;
+            entries = entries.filter(e => e.id !== id);
+            filteredEntries = [...entries];
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminado');
+        }
+
+        // ============================================================
+        //  EXPORT / IMPORT
+        // ============================================================
+        function exportData() {
+            const data = { entries, categories };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.entries) entries = data.entries;
+                    if (data.categories) categories = data.categories;
+                    filteredEntries = [...entries];
+                    saveData();
+                    render();
+                    showToast('Importado correctamente');
+                } catch (err) {
+                    showToast('Error al importar', true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
+        //  EXPORT SECTION (HTML standalone)
+        // ============================================================
+        function exportSection(title, itemsHtml) {
+            const doc = `<!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8">
+        <title>${title} - Bitacora</title>
+        <style>
+            body{font-family:'Georgia',serif;max-width:700px;margin:60px auto;padding:0 24px;color:#1c1c1e;background:#faf8f3}
+            h1{font-family:Arial,sans-serif;border-bottom:3px solid #1c1c1e;padding-bottom:10px}
+            .item{padding:16px 0;border-bottom:1px solid #ddd}
+            .item h3{margin:0 0 4px 0}
+            .meta{color:#777;font-size:13px}
+            footer{margin-top:40px;font-size:12px;color:#999;text-align:center}
+        </style>
+        </head>
+        <body>
+            <h1>${title}</h1>
+            ${itemsHtml}
+            <footer>Exportado desde Bitacora el ${new Date().toLocaleDateString('es-ES')}</footer>
+        </body>
+        </html>`;
+            const blob = new Blob([doc], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${title.toLowerCase().replace(/\s+/g,'_')}.html`;
+            a.click();
+        }
+
+        // ============================================================
+        //  COMPOUND INTEREST CALCULATION
+        // ============================================================
+        function calcCompoundProjection(principal, monthlyContribution, annualRatePct, years) {
+            const monthlyRate = annualRatePct / 100 / 12;
+            const months = years * 12;
+            let balance = principal;
+            const yearlySnapshots = [{ year: 0, balance: Math.round(balance) }];
+
+            for (let m = 1; m <= months; m++) {
+                balance = balance * (1 + monthlyRate) + monthlyContribution;
+                if (m % 12 === 0) {
+                    yearlySnapshots.push({ year: m / 12, balance: Math.round(balance) });
+                }
+            }
+            const totalContributed = principal + monthlyContribution * months;
+            return {
+                finalBalance: Math.round(balance),
+                totalContributed: Math.round(totalContributed),
+                totalInterest: Math.round(balance - totalContributed),
+                yearlySnapshots
+            };
+        }
+
+        function renderInvestmentProjection(entry) {
+            if (!entry.invYears) return '';
+            const proj = calcCompoundProjection(entry.invCurrent || entry.invInvested || 0, entry.invMonthly || 0, entry
+                .invRate || 0, entry.invYears);
+            const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
+            return `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Proyeccion a ${entry.invYears} anos (${entry.invRate}% anual)</div>
+                <div style="font-size:20px;font-weight:800;margin:4px 0;color:var(--text-primary)">${proj.finalBalance.toLocaleString('es-ES')}€</div>
+                <div style="font-size:12px;color:var(--text-secondary)">Aportado: ${proj.totalContributed.toLocaleString('es-ES')}€ · Intereses: +${proj.totalInterest.toLocaleString('es-ES')}€</div>
+                <div style="display:flex;gap:4px;align-items:flex-end;height:60px;margin-top:8px">
+                    ${proj.yearlySnapshots.map(s => `
+                        <div style="flex:1;height:${Math.max(4,(s.balance/max)*100)}%;background:var(--accent);border-radius:2px 2px 0 0;min-height:4px" title="Ano ${s.year}: ${s.balance}€"></div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  WISHLIST: DAYS UNLOCK
+        // ============================================================
+        function daysUntilUnlock(wishAddedDate) {
+            if (!wishAddedDate) return 0;
+            const added = new Date(wishAddedDate + 'T00:00:00');
+            const unlock = new Date(added.getTime() + 15 * 24 * 60 * 60 * 1000);
+            const diff = Math.ceil((unlock - new Date()) / (24 * 60 * 60 * 1000));
+            return Math.max(0, diff);
+        }
+
+        // ============================================================
+        //  WATCHLIST: MOVE TO CULTURA
+        // ============================================================
+        function moveWatchlistToStarted(id) {
+            const w = entries.find(e => e.id === id);
+            if (!w) return;
+            entries.push({
+                id: 'entry_' + Date.now(),
+                type: 'library',
+                title: w.title,
+                date: new Date().toISOString().slice(0, 10),
+                categoryId: w.categoryId,
+                libType: w.watchType || 'libro',
+                startDate: new Date().toISOString().slice(0, 10),
+                endDate: '',
+                author: '',
+                platform: '',
+                rating: 0
+            });
+            entries = entries.filter(e => e.id !== id);
+            saveData();
+            render();
+            showToast('Movido a Cultura como "en curso"');
+        }
+
+        // ============================================================
+        //  TASK: TOGGLE DONE
+        // ============================================================
+        function toggleTaskDone(id) {
+            const t = entries.find(e => e.id === id);
+            if (!t) return;
+            t.taskDone = !t.taskDone;
+            t.taskCompletedDate = t.taskDone ? new Date().toISOString().slice(0, 10) : '';
+            saveData();
+            render();
+        }
+
+        function showCompletedTasksModal() {
+            const done = entries.filter(e => e.type === 'task' && e.taskDone);
+            const html = `
+            <div class="modal-overlay" id="completed-overlay" onclick="if(event.target===this)this.remove()">
+                <div class="modal-sheet">
+                    <div class="modal-title">Tareas completadas <button class="modal-close" onclick="document.getElementById('completed-overlay').remove()">✕</button></div>
+                    ${done.length ? done.map(t => `
+                        <div class="entry-item">
+                            <div class="entry-info"><div class="entry-title" style="text-decoration:line-through;opacity:0.6">${t.title}</div>
+                            <div class="entry-meta">Completada: ${t.taskCompletedDate}</div></div>
+                            <button class="delete" onclick="deleteEntry('${t.id}');document.getElementById('completed-overlay').remove()">✕ Borrar</button>
+                        </div>`).join('') : '<p style="color:var(--text-secondary)">No hay tareas completadas</p>'}
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // ============================================================
+        //  ALERTAS DE EVENTOS DEL DIA
+        // ============================================================
+        function checkTodayAlerts() {
+            const today = new Date().toISOString().slice(0, 10);
+            const dismissedKey = 'bitacora_alerts_dismissed_' + today;
+            if (sessionStorage.getItem(dismissedKey)) return;
+
+            const todayEvents = entries.filter(e => e.type === 'event' && e.eventDate === today);
+            if (!todayEvents.length) return;
+
+            showAlertModal(todayEvents);
+            sessionStorage.setItem(dismissedKey, '1');
+        }
+
+        function showAlertModal(events) {
+            const html = `
+            <div class="modal-overlay" id="alert-overlay" onclick="if(event.target===this)document.getElementById('alert-overlay').remove()">
+                <div class="modal-sheet" style="max-width:400px;text-align:center">
+                    <div class="modal-title" style="justify-content:center;position:relative">
+                        Hoy tienes
+                        <button class="modal-close" style="position:absolute;right:0" onclick="document.getElementById('alert-overlay').remove()">✕</button>
+                    </div>
+                    ${events.map(e => `
+                        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+                            <div style="font-weight:700;font-size:15px;color:var(--text-primary)">${e.title}</div>
+                            ${e.place ? `<div style="font-size:13px;color:var(--text-secondary)">${e.place}</div>` : ''}
+                            <div style="font-size:13px;color:var(--text-secondary)">${e.eventTime ? e.eventTime : 'Sin hora fijada'}</div>
+                        </div>`).join('')}
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // ============================================================
+        //  RENDER
+        // ============================================================
+        function render() {
+            const content = document.getElementById('content');
+            if (currentView === 'calendar') content.innerHTML = renderCalendar();
+            else if (currentView === 'home') content.innerHTML = renderHome();
+            else if (currentView === 'stats') content.innerHTML = renderStats();
+            else if (currentView === 'goals') content.innerHTML = renderGoals();
+            else if (currentView === 'projects') content.innerHTML = renderProjects();
+            else if (currentView === 'travels') content.innerHTML = renderTravels();
+            else if (currentView === 'work') content.innerHTML = renderWork();
+            else if (currentView === 'cultura') content.innerHTML = renderCultura();
+            else if (currentView === 'exams') content.innerHTML = renderExams();
+            else if (currentView === 'events') content.innerHTML = renderEvents();
+            else if (currentView === 'shopping') content.innerHTML = renderShopping();
+            else if (currentView === 'ideas') content.innerHTML = renderIdeas();
+            else if (currentView === 'investments') content.innerHTML = renderInvestments();
+            else if (currentView === 'documents') { content.innerHTML = renderDocuments();
+                loadDocuments(); } else if (currentView === 'services') content.innerHTML = renderServices();
+            else if (currentView === 'watchlist') content.innerHTML = renderWatchlist();
+            else if (currentView === 'wishlist') content.innerHTML = renderWishlist();
+            else if (currentView === 'tasks') content.innerHTML = renderTasks();
+            else if (currentView === 'links') content.innerHTML = renderLinks();
+        }
+
+        // ============================================================
+        //  RENDER: CALENDAR
+        // ============================================================
+        let calYear = new Date().getFullYear();
+        let calMonth = new Date().getMonth();
+
+        function renderCalendar() {
+            const entriesByDate = {};
+            entries.forEach(e => {
+                if (NON_CALENDAR_TYPES.includes(e.type)) return;
+                if (!entriesByDate[e.date]) entriesByDate[e.date] = [];
+                entriesByDate[e.date].push(e);
+            });
+
+            const today = new Date().toISOString().slice(0, 10);
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+            const dayNames = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+            const firstDay = new Date(calYear, calMonth, 1).getDay();
+            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+            const offset = (firstDay + 6) % 7;
+
+            const prevMonth = new Date(calYear, calMonth, 0);
+            const daysInPrevMonth = prevMonth.getDate();
+
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary)" onclick="changeMonth(-1)">‹</button>
+                <span style="font-size:17px;font-weight:700;color:var(--text-primary)">${monthNames[calMonth]} ${calYear}</span>
+                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary)" onclick="changeMonth(1)">›</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+
+            dayNames.forEach(d => {
+                html +=
+                    `<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);padding:6px 0 10px 0">${d}</div>`;
+            });
+
+            for (let i = 0; i < offset; i++) {
+                const day = daysInPrevMonth - offset + i + 1;
+                html +=
+                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr =
+                    `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isToday = dateStr === today;
+                const dayEntries = entriesByDate[dateStr] || [];
+
+                const colors = [];
+                const seen = new Set();
+                dayEntries.forEach(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    if (cat && !seen.has(cat.color)) {
+                        seen.add(cat.color);
+                        colors.push(cat.color);
+                    }
+                });
+
+                const barsHtml = colors.slice(0, 4).map(color =>
+                    `<span style="width:20px;height:3px;border-radius:4px;display:block;background:${color}"></span>`
+                ).join('');
+
+                const extra = colors.length > 4 ?
+                    `<span style="width:12px;height:3px;border-radius:4px;display:block;background:var(--text-muted);font-size:7px;text-align:center;color:var(--text-secondary)">+${colors.length - 4}</span>` :
+                    '';
+
+                html += `
+                <div style="background:var(--bg-card);border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid ${isToday ? 'var(--accent)' : 'transparent'};cursor:pointer;transition:background 0.15s ease" onclick="switchView('calendar');showDayEntries('${dateStr}')">
+                    <span style="font-size:13px;font-weight:700;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
+                    <div style="display:flex;flex-direction:column;gap:2px;align-items:center">${barsHtml}${extra}</div>
+                </div>`;
+            }
+
+            const totalDays = offset + daysInMonth;
+            const remaining = (7 - (totalDays % 7)) % 7;
+            for (let d = 1; d <= remaining; d++) {
+                html +=
+                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
+            }
+
+            html += `</div>`;
+
+            if (window._selectedDate) {
+                html += renderDayEntries(window._selectedDate);
+            }
+
+            return html;
+        }
+
+        function changeMonth(delta) {
+            calMonth += delta;
+            if (calMonth < 0) { calMonth = 11;
+                calYear--; }
+            if (calMonth > 11) { calMonth = 0;
+                calYear++; }
+            render();
+        }
+
+        function showDayEntries(date) {
+            window._selectedDate = date;
+            render();
+        }
+
+        function renderDayEntries(date) {
+            const dayEntries = entries.filter(e => e.date === date && e.type !== 'work');
+            const activeJobs = entries.filter(e =>
+                e.type === 'work' &&
+                e.startDate && e.startDate <= date &&
+                (!e.endDate || e.endDate >= date)
+            );
+            const all = [...dayEntries, ...activeJobs];
+            if (!all.length) return '';
+
+            const dateObj = new Date(date + 'T12:00:00');
+            const dateLabel = dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long',
+                day: 'numeric' });
+
+            let html = `
+            <div style="margin-top:20px">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <span>${dateLabel}</span>
+                    <button class="btn-secondary" onclick="window._selectedDate=null;render()">✕ Cerrar</button>
+                </div>`;
+
+            all.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const catName = cat?.name || 'Sin categoria';
+                const icon = TYPE_ICONS[e.type] || '◈';
+
+                html += `
+                <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                    <div class="entry-color-dot" style="background:${color}"></div>
+                    <div class="entry-info">
+                        <div class="entry-title">${icon} ${e.title}</div>
+                        <div class="entry-meta">${catName}${e.notes ? ' · ' + e.notes : ''}</div>
+                    </div>
+                    <div class="entry-actions">
+                        <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
+                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
+                    </div>
+                </div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: HOME (con filtros)
+        // ============================================================
+        let homeFilter = 'month';
+
+        function getFilterRange(filter) {
+            const now = new Date();
+            let start;
+            if (filter === 'week') { start = new Date(now);
+                start.setDate(now.getDate() - 7); } else if (filter === 'month') { start = new Date(now.getFullYear(), now
+                    .getMonth(), 1); } else if (filter === 'year') { start = new Date(now.getFullYear(), 0, 1); } else
+                return null;
+            return start.toISOString().slice(0, 10);
+        }
+
+        function setHomeFilter(f) { homeFilter = f;
+            render(); }
+
+        function renderHome() {
+            const range = getFilterRange(homeFilter);
+            const filtered = range ? entries.filter(e => e.date >= range) : entries;
+            const today = new Date().toISOString().slice(0, 10);
+            const todayEntries = filtered.filter(e => e.date === today);
+
+            const activeGoals = filtered.filter(e => e.type === 'goal' && e.status !== 'Completado');
+            const activeProjects = filtered.filter(e => e.type === 'project' && e.status !== 'Completado');
+
+            const upcoming = filtered.filter(e => {
+                if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
+                if (e.type === 'project' && e.endDate && e.endDate > today) return true;
+                if (e.type === 'goal' && e.deadline && e.deadline > today) return true;
+                if (e.type === 'work' && e.endDate && e.endDate > today) return true;
+                if (e.type === 'event' && e.eventDate && e.eventDate > today) return true;
+                if (e.type === 'exam' && e.examDate && e.examDate > today) return true;
+                return false;
+            }).sort((a, b) => {
+                const dateA = a.startDate || a.endDate || a.deadline || a.eventDate || a.examDate || '';
+                const dateB = b.startDate || b.endDate || b.deadline || b.eventDate || b.examDate || '';
+                return dateA.localeCompare(dateB);
+            }).slice(0, 5);
+
+            const recentEntries = filtered.slice(0, 5);
+
+            let html = `
+            <div style="max-width:800px">
+                <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+                    ${['week','month','year','all'].map(f => `
+                        <button onclick="setHomeFilter('${f}')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border-strong);background:${homeFilter===f?'var(--accent)':'transparent'};color:${homeFilter===f?'var(--accent-contrast)':'var(--text-primary)'};cursor:pointer;font-size:12px;font-weight:600">
+                            ${({week:'Semana',month:'Mes',year:'Ano',all:'Todo'})[f]}
+                        </button>`).join('')}
+                </div>
+
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
+
+                <div class="card-grid">
+                    <div class="card"><div class="card-title">Objetivos activos</div><div class="card-value">${activeGoals.length}</div></div>
+                    <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${filtered.filter(e=>e.type==='travel').length}</div></div>
+                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${filtered.filter(e=>e.type==='library').length}</div></div>
+                    <div class="card"><div class="card-title">Examenes</div><div class="card-value">${filtered.filter(e=>e.type==='exam').length}</div></div>
+                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${filtered.filter(e=>e.type==='investment').length}</div></div>
+                </div>
+
+                ${upcoming.length ? `
+                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Proximamente</div>
+                    ${upcoming.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        const icon = TYPE_ICONS[e.type] || '◈';
+                        const dateInfo = e.startDate || e.endDate || e.deadline || e.eventDate || e.examDate || '';
+                        return `
+                            <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${icon} ${e.title}</div>
+                                    <div class="entry-meta">${dateInfo}</div>
+                                </div>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
+
+                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Actividad reciente</div>
+                ${recentEntries.length ? recentEntries.map(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || 'var(--text-secondary)';
+                    const icon = TYPE_ICONS[e.type] || '◈';
+                    return `
+                        <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${icon} ${e.title}</div>
+                                <div class="entry-meta">${e.date}</div>
+                            </div>
+                        </div>`;
+                }).join('') : `<div style="color:var(--text-secondary);padding:12px 0">No hay actividad reciente</div>`}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: STATS
+        // ============================================================
+        function renderStats() {
+            const totalEntries = entries.length;
+            const byType = {};
+            Object.keys(ENTRY_TYPES).forEach(key => {
+                const type = ENTRY_TYPES[key];
+                byType[type] = entries.filter(e => e.type === type).length;
+            });
+
+            const monthCount = {};
+            entries.forEach(e => {
+                const m = e.date.slice(0, 7);
+                if (!monthCount[m]) monthCount[m] = 0;
+                monthCount[m]++;
+            });
+            const sortedMonths = Object.keys(monthCount).sort().slice(-6);
+            const maxMonth = Math.max(...Object.values(monthCount), 1);
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Estadisticas</div>
+                <div style="color:var(--text-secondary);margin-bottom:20px">Resumen de tu actividad</div>
+
+                <div class="card-grid">
+                    <div class="card"><div class="card-title">Total entradas</div><div class="card-value">${totalEntries}</div></div>
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${byType.goal || 0}</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${byType.travel || 0}</div></div>
+                    <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${byType.work || 0}</div></div>
+                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${byType.library || 0}</div></div>
+                    <div class="card"><div class="card-title">Examenes</div><div class="card-value">${byType.exam || 0}</div></div>
+                    <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
+                    <div class="card"><div class="card-title">Ideas</div><div class="card-value">${byType.idea || 0}</div></div>
+                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${byType.investment || 0}</div></div>
+                    <div class="card"><div class="card-title">Servicios</div><div class="card-value">${byType.service || 0}</div></div>
+                    <div class="card"><div class="card-title">Tareas</div><div class="card-value">${byType.task || 0}</div></div>
+                </div>`;
+
+            if (sortedMonths.length) {
+                html += `
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:20px 0 12px 0">Entradas por mes</div>
+                <div style="display:flex;gap:8px;align-items:flex-end;height:100px;padding-top:8px">`;
+                sortedMonths.forEach(m => {
+                    const count = monthCount[m] || 0;
+                    const pct = (count / maxMonth) * 100;
+                    const label = m.slice(5);
+                    html += `
+                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <div style="font-weight:600;font-size:12px;color:var(--text-primary)">${count}</div>
+                        <div style="width:100%;height:${Math.max(4, pct)}px;background:var(--border-strong);border-radius:4px 4px 0 0;min-height:4px"></div>
+                        <div style="font-size:10px;color:var(--text-secondary)">${label}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: GOALS
+        // ============================================================
+        function renderGoals() {
+            const goals = entries.filter(e => e.type === 'goal');
+            if (!goals.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin objetivos</div><div class="empty-sub">Pulsa el boton + y selecciona "Objetivo"</div></div>`;
+            }
+            let html = '';
+            ['Corto plazo', 'Medio plazo', 'Largo plazo'].forEach(cat => {
+                const filtered = goals.filter(g => g.goalCategory === cat);
+                if (!filtered.length) return;
+                html += `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">${cat}</div>`;
+                filtered.forEach(g => {
+                    const pct = g.progress || 0;
+                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
+                    const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'En progreso' ?
+                        'badge-progress' : 'badge-pending';
+                    html += `
+                        <div class="card" style="margin-bottom:8px;padding:14px 16px;cursor:pointer" onclick="openEditEntry('${g.id}')">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <span style="font-weight:600;color:var(--text-primary)">${g.title}</span>
+                                <span class="badge ${statusClass}">${g.status}</span>
+                            </div>
+                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-top:4px">
+                                <span>${pct}% completado</span>
+                                ${g.deadline ? `<span>Limite: ${g.deadline}</span>` : ''}
+                            </div>
+                        </div>`;
+                });
+                html += `</div>`;
+            });
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: PROJECTS
+        // ============================================================
+        function renderProjects() {
+            const projects = [...entries.filter(e => e.type === 'project')].sort((a, b) => {
+                const rank = s => s === 'En curso' ? 0 : s === 'Pendiente' ? 1 : 2;
+                return rank(a.status) - rank(b.status) || (b.startDate || '').localeCompare(a.startDate || '');
+            });
+            if (!projects.length) {
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el boton + y selecciona "Proyecto"</div></div>`;
+            }
+
+            let html = `
+            <div style="max-width:800px">
+                <button class="btn-modal-primary" style="width:auto;padding:8px 16px;margin-bottom:16px" onclick="exportProjects()">⬇ Exportar proyectos</button>`;
+
+            projects.forEach(p => {
+                const totalTasks = p.tasks?.length || 0;
+                const doneTasks = p.tasks?.filter(t => t.done).length || 0;
+                const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                const statusClass = p.status === 'Completado' ? 'badge-done' : p.status === 'En curso' ?
+                    'badge-progress' : 'badge-pending';
+
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${p.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${p.title}</span>
+                        <span class="badge ${statusClass}">${p.status}</span>
+                    </div>
+                    ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${p.description}</div>` : ''}
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
+                    ${p.budget !== null && p.budget !== undefined && p.budget > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Presupuesto: ${p.budget}€</div>` : ''}
+                    ${totalTasks > 0 ? `
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
+                        <div style="margin-top:6px">
+                            ${p.tasks.map((t, i) => `
+                                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+                                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleProjectTask('${p.id}', ${i})" style="cursor:pointer">
+                                    <span style="${t.done ? 'text-decoration:line-through;opacity:0.5' : ''}">${t.text}</span>
+                                </div>`).join('')}
+                        </div>
+                    ` : ''}
+                    ${p.projectNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${p.projectNotes}</div>` : ''}
+                </div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        function toggleProjectTask(id, idx) {
+            const e = entries.find(e => e.id === id);
+            if (!e) return;
+            e.tasks[idx].done = !e.tasks[idx].done;
+            saveData();
+            render();
+        }
+
+        function exportProjects() {
+            const items = entries.filter(e => e.type === 'project').map(p => `
+                <div class="item"><h3>${p.title}</h3><div class="meta">${p.status} · ${p.startDate||''} ${p.endDate ? '→ '+p.endDate:''}</div>
+                <p>${p.description||''}</p></div>`).join('');
+            exportSection('Proyectos', items);
+        }
+
+        // ============================================================
+        //  RENDER: TRAVELS
+        // ============================================================
+        function renderTravels() {
+            const travels = entries.filter(e => e.type === 'travel');
+            if (!travels.length) {
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el boton + y selecciona "Viaje"</div></div>`;
+            }
+            let html = '';
+            travels.forEach(t => {
+                const stars = t.rating ? '⭐'.repeat(t.rating) : '';
+                html += `
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${t.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
+                            <span style="font-size:13px;color:var(--text-secondary)">${t.country || ''}</span>
+                        </div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
+                        ${stars ? `<div style="margin-top:4px">${stars}</div>` : ''}
+                        ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${t.notes}</div>` : ''}
+                    </div>`;
+            });
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: WORK
+        // ============================================================
+        function renderWork() {
+            const work = entries.filter(e => e.type === 'work');
+            if (!work.length) {
+                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el boton + y selecciona "Trabajo"</div></div>`;
+            }
+
+            const sorted = [...work].sort((a, b) => {
+                const aActive = !a.endDate,
+                    bActive = !b.endDate;
+                if (aActive !== bActive) return aActive ? -1 : 1;
+                return (b.startDate || '').localeCompare(a.startDate || '');
+            });
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(w => {
+                const typeLabel = w.workType === 'practicas' ? 'Practicas' : 'Puesto normal';
+                html += `
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${w.title}</span>
+                            <span style="font-size:12px;color:var(--text-secondary)">${w.position || ''}</span>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+                            <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
+                            <span class="badge ${w.workType === 'practicas' ? 'badge-pending' : 'badge-done'}">${typeLabel}</span>
+                        </div>
+                        ${w.schedule ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.schedule}</div>` : ''}
+                        ${w.functions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${w.functions}</div>` : ''}
+                        ${w.skills ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: CULTURA
+        // ============================================================
+        function renderCultura() {
+            const items = entries.filter(e => e.type === 'library');
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin items culturales</div><div class="empty-sub">Pulsa el boton + y selecciona "Cultura"</div></div>`;
+            }
+
+            const LIB_TYPES = {
+                libro: { icon: '◊', label: 'Libros' },
+                musica: { icon: '♪', label: 'Musica' },
+                videojuego: { icon: '◉', label: 'Videojuegos' },
+                video: { icon: '▸', label: 'Videos' }
+            };
+
+            let html = '<div style="max-width:800px">';
+
+            Object.entries(LIB_TYPES).forEach(([key, meta]) => {
+                const subset = items.filter(i => i.libType === key);
+                if (!subset.length) return;
+                const active = subset.find(i => i.startDate && !i.endDate);
+                html += `
+                <div style="margin-bottom:24px">
+                    <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">${meta.icon} ${meta.label} (${subset.length})</div>
+                    ${active ? `<div class="card" style="border-left:3px solid var(--accent);margin-bottom:8px">
+                        <div style="font-size:11px;text-transform:uppercase;color:var(--text-secondary)">En curso</div>
+                        <div style="font-weight:700;color:var(--text-primary)">${active.title}</div>
+                    </div>` : ''}
+                    ${subset.filter(i => i !== active).map(i => `
+                        <div class="entry-item" onclick="openEditEntry('${i.id}')">
+                            <div class="entry-info">
+                                <div class="entry-title">${i.title}</div>
+                                <div class="entry-meta">${i.author || i.platform || ''} ${i.startDate||''}${i.endDate ? ' → '+i.endDate:''}${i.rating ? ' · ⭐'.repeat(i.rating):''}</div>
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: EXAMS
+        // ============================================================
+        function renderExams() {
+            const exams = entries.filter(e => e.type === 'exam');
+            if (!exams.length) {
+                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin examenes</div><div class="empty-sub">Pulsa el boton + y selecciona "Examen"</div></div>`;
+            }
+
+            const subjects = {};
+            exams.forEach(e => {
+                const key = e.subject || 'Sin asignatura';
+                if (!subjects[key]) subjects[key] = { entries: [], totalWeight: 0, weightedSum: 0 };
+                subjects[key].entries.push(e);
+                if (e.grade !== null && e.grade !== undefined && e.weight > 0) {
+                    subjects[key].totalWeight += e.weight;
+                    subjects[key].weightedSum += e.grade * e.weight;
+                }
+            });
+
+            let html = `
+            <div style="max-width:800px">
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:12px">Resumen por asignatura</div>`;
+
+            Object.keys(subjects).forEach(subject => {
+                const data = subjects[subject];
+                const finalGrade = data.totalWeight > 0 ? Math.round((data.weightedSum / data.totalWeight) * 10) / 10 :
+                null;
+                const isApproved = finalGrade !== null && finalGrade >= 5;
+                const isMatricula = finalGrade !== null && finalGrade >= 9;
+
+                let gradeClass = 'nota-suspenso';
+                let gradeLabel = 'Suspenso';
+                if (isMatricula) { gradeClass = 'nota-matricula';
+                    gradeLabel = 'Matricula'; } else if (isApproved) { gradeClass = 'nota-aprobado';
+                    gradeLabel = 'Aprobado'; }
+
+                html += `
+                <div class="card" style="margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${subject}</span>
+                        <div>
+                            ${finalGrade !== null ? `
+                                <span class="nota-final ${gradeClass}">${finalGrade}</span>
+                                <span class="badge ${isMatricula ? 'badge-done' : isApproved ? 'badge-progress' : 'badge-pending'}">${gradeLabel}</span>
+                            ` : `<span class="badge badge-pending">Sin calificacion</span>`}
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${data.entries.length} elementos · Peso total: ${data.totalWeight}%</div>
+                    <div style="margin-top:8px">`;
+                data.entries.forEach(e => {
+                    const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matricula' ?
+                        'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
+                    const icon = e.examType === 'titulacion' ? '◊' : e.examType === 'trabajo' ? '▸' : e.examType ===
+                        'practica' ? '◉' : '◈';
+                    html += `
+                        <div class="entry-item" onclick="openEditEntry('${e.id}')" style="cursor:pointer;padding:4px 0">
+                            <div class="entry-info">
+                                <div style="font-size:13px;color:var(--text-primary)">${icon} ${e.title}</div>
+                                <div style="font-size:11px;color:var(--text-secondary)">${e.examType} · Peso: ${e.weight}% ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
+                            </div>
+                            <span class="badge ${statusClass}">${e.examStatus}</span>
+                        </div>`;
+                });
+                html += `</div></div>`;
+            });
+
+            html += `
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:20px 0 12px 0">Todos los examenes</div>
+            ${exams.map(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matricula' ? 'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
+                return `
+                    <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${e.title}</div>
+                            <div class="entry-meta">${e.subject || 'Sin asignatura'} · ${e.examType} · ${e.examDate || 'Sin fecha'} ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
+                        </div>
+                        <span class="badge ${statusClass}">${e.examStatus}</span>
+                    </div>`;
+            }).join('')}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: EVENTS
+        // ============================================================
+        function renderEvents() {
+            const events = entries.filter(e => e.type === 'event');
+            if (!events.length) {
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el boton + y selecciona "Evento"</div></div>`;
+            }
+
+            const eventIcons = { social: '◈', teatro: '◊', cine: '▸', concierto: '♪', deporte: '◉', otro: '◈' };
+            const sorted = [...events].sort((a, b) => (b.eventDate || '').localeCompare(a.eventDate || ''));
+
+            let html =
+                `<div style="max-width:700px">`;
+            sorted.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const icon = eventIcons[e.eventType] || '◈';
+                const stars = e.eventRating ? '⭐'.repeat(Math.floor(e.eventRating / 2)) : '';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${icon} ${e.title}</span>
+                        <span style="font-size:13px;color:var(--text-secondary)">${e.eventDate || ''}${e.eventTime ? ' · ' + e.eventTime : ''}</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.place || 'Sin lugar'}</div>
+                    ${e.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${e.companions}</div>` : ''}
+                    ${stars ? `<div style="margin-top:4px;font-size:14px">${stars}</div>` : ''}
+                    ${e.eventNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.eventNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: SHOPPING
+        // ============================================================
+        function renderShopping() {
+            const items = entries.filter(e => e.type === 'shopping');
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin items en listas</div><div class="empty-sub">Pulsa el boton + y selecciona "Lista"</div></div>`;
+            }
+
+            const pending = items.filter(e => !e.listDone);
+            const done = items.filter(e => e.listDone);
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="display:flex;gap:16px;margin-bottom:16px">
+                    <div class="card" style="flex:1"><div class="card-title">Pendientes</div><div class="card-value">${pending.length}</div></div>
+                    <div class="card" style="flex:1"><div class="card-title">Comprados</div><div class="card-value">${done.length}</div></div>
+                </div>
+
+                ${pending.length ? `
+                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Pendientes</div>
+                    ${pending.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        const priorityColor = e.listPriority === 'Alta' ? '#dc2626' : e.listPriority === 'Media' ? '#d97706' : 'var(--text-secondary)';
+                        return `
+                            <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${e.title}</div>
+                                    <div class="entry-meta">${e.listCategory || 'Sin categoria'} · ${e.listPrice !== null ? e.listPrice + '€' : ''} · <span style="color:${priorityColor}">${e.listPriority}</span></div>
+                                </div>
+                                <span class="badge badge-pending">Pendiente</span>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
+
+                ${done.length ? `
+                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:16px 0 8px 0">Comprados</div>
+                    ${done.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        return `
+                            <div class="entry-item" onclick="openEditEntry('${e.id}')" style="opacity:0.6">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title"><s>${e.title}</s></div>
+                                    <div class="entry-meta">${e.listCategory || 'Sin categoria'} · ${e.listPrice !== null ? e.listPrice + '€' : ''}</div>
+                                </div>
+                                <span class="badge badge-done">Comprado</span>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: IDEAS
+        // ============================================================
+        function renderIdeas() {
+            const ideas = entries.filter(e => e.type === 'idea');
+            if (!ideas.length) {
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin ideas</div><div class="empty-sub">Pulsa el boton + y selecciona "Idea"</div></div>`;
+            }
+
+            const sorted = [...ideas].sort((a, b) => b.date.localeCompare(a.date));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const statusClass = e.ideaStatus === 'Completada' ? 'badge-done' : e.ideaStatus === 'En progreso' ?
+                    'badge-progress' : e.ideaStatus === 'Descartada' ? 'badge-pending' : 'badge-pending';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
+                        <span class="badge ${statusClass}">${e.ideaStatus}</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${e.ideaCategory || 'Sin categoria'} · ${e.date}</div>
+                    ${e.ideaContent ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px;white-space:pre-wrap">${e.ideaContent.substring(0, 150)}${e.ideaContent.length > 150 ? '...' : ''}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: INVESTMENTS
+        // ============================================================
+        function renderInvestments() {
+            const investments = entries.filter(e => e.type === 'investment');
+            if (!investments.length) {
+                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin inversiones</div><div class="empty-sub">Pulsa el boton + y selecciona "Inversion"</div></div>`;
+            }
+
+            let totalInvested = 0;
+            let totalCurrent = 0;
+
+            investments.forEach(e => {
+                totalInvested += e.invInvested || 0;
+                totalCurrent += e.invCurrent || 0;
+            });
+
+            const profit = totalCurrent - totalInvested;
+            const profitPct = totalInvested > 0 ? Math.round((profit / totalInvested) * 100) : 0;
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+                    <div class="card"><div class="card-title">Invertido</div><div class="card-value">${totalInvested.toFixed(2)}€</div></div>
+                    <div class="card"><div class="card-title">Valor actual</div><div class="card-value">${totalCurrent.toFixed(2)}€</div></div>
+                    <div class="card"><div class="card-title">Rentabilidad</div>
+                        <div class="card-value ${profit > 0 ? 'inversion-positiva' : profit < 0 ? 'inversion-negativa' : 'inversion-neutral'}">
+                            ${profit > 0 ? '+' : ''}${profit.toFixed(2)}€ (${profitPct}%)
+                        </div>
+                    </div>
+                </div>`;
+
+            const sorted = [...investments].sort((a, b) => (b.invDate || '').localeCompare(a.invDate || ''));
+
+            sorted.forEach(e => {
+                const profitItem = (e.invCurrent || 0) - (e.invInvested || 0);
+                const pctItem = e.invInvested > 0 ? Math.round((profitItem / e.invInvested) * 100) : 0;
+                const isPositive = profitItem > 0;
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
+                        <span style="font-size:13px;color:var(--text-secondary)">${e.invType || 'Otro'}</span>
+                    </div>
+                    <div style="display:flex;gap:16px;margin-top:4px;flex-wrap:wrap">
+                        <span style="font-size:13px;color:var(--text-secondary)">Invertido: ${(e.invInvested || 0).toFixed(2)}€</span>
+                        <span style="font-size:13px;color:var(--text-secondary)">Actual: ${(e.invCurrent || 0).toFixed(2)}€</span>
+                        <span style="font-size:13px;font-weight:700;${isPositive ? 'color:#16a34a' : 'color:#dc2626'}">
+                            ${isPositive ? '+' : ''}${profitItem.toFixed(2)}€ (${pctItem}%)
+                        </span>
+                    </div>
+                    ${e.invDate ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${e.invDate}</div>` : ''}
+                    ${renderInvestmentProjection(e)}
+                    ${e.invNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.invNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: SERVICES
+        // ============================================================
+        function renderServices() {
+            const services = entries.filter(e => e.type === 'service');
+            if (!services.length) {
+                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin servicios</div><div class="empty-sub">Pulsa el boton + y selecciona "Servicio"</div></div>`;
+            }
+
+            let html = `<div style="max-width:700px">`;
+            services.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
+                        <span style="font-size:12px;color:var(--text-secondary)">${e.serviceMethod || 'Otro'}</span>
+                    </div>
+                    ${e.serviceEmail ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.serviceEmail}</div>` : ''}
+                    ${e.serviceUrl ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px"><a href="${e.serviceUrl}" target="_blank" style="color:var(--accent);text-decoration:none">${e.serviceUrl}</a></div>` : ''}
+                    ${e.serviceNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.serviceNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: WATCHLIST
+        // ============================================================
+        function renderWatchlist() {
+            const items = entries.filter(e => e.type === 'watchlist');
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin pendientes</div><div class="empty-sub">Pulsa el boton + y selecciona "Pendiente"</div></div>`;
+            }
+
+            const types = { libro: 'Libros', pelicula: 'Peliculas', serie: 'Series' };
+            let html = `<div style="max-width:700px">`;
+
+            Object.entries(types).forEach(([key, label]) => {
+                const subset = items.filter(i => i.watchType === key).sort((a, b) => {
+                    const order = { Alta: 0, Media: 1, Baja: 2 };
+                    return (order[a.watchPriority] || 1) - (order[b.watchPriority] || 1);
+                });
+                if (!subset.length) return;
+
+                html += `
+                <div style="margin-bottom:20px">
+                    <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">${label} (${subset.length})</div>
+                    ${subset.map(e => {
+                        const priorityColor = e.watchPriority === 'Alta' ? '#dc2626' : e.watchPriority === 'Media' ? '#d97706' : 'var(--text-secondary)';
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        return `
+                            <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${e.title}</div>
+                                    <div class="entry-meta">Prioridad: <span style="color:${priorityColor}">${e.watchPriority}</span>${e.watchNotes ? ' · ' + e.watchNotes : ''}</div>
+                                </div>
+                                <div class="entry-actions">
+                                    <button class="btn-modal-primary" style="width:auto;padding:4px 10px;font-size:11px" onclick="event.stopPropagation();moveWatchlistToStarted('${e.id}')">Empezar</button>
+                                </div>
+                            </div>`;
+                    }).join('')}
+                </div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: WISHLIST
+        // ============================================================
+        function renderWishlist() {
+            const items = entries.filter(e => e.type === 'wishlist');
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin items en wishlist</div><div class="empty-sub">Pulsa el boton + y selecciona "Wishlist"</div></div>`;
+            }
+
+            let html = `<div style="max-width:700px">`;
+            items.forEach(e => {
+                const daysLeft = daysUntilUnlock(e.wishAddedDate);
+                const unlocked = daysLeft === 0;
+                const pct = e.wishAddedDate ? Math.min(100, ((15 - daysLeft) / 15) * 100) : 0;
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
+                        <span style="font-weight:700;color:var(--text-primary)">${e.wishPrice ? e.wishPrice + '€' : ''}</span>
+                    </div>
+                    <div style="margin-top:4px">
+                        ${unlocked
+                            ? `<span class="badge badge-done">Desbloqueado — comprar?</span>`
+                            : `<span class="badge badge-pending">Bloqueado — ${daysLeft} dias</span>
+                               <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:var(--accent)"></div></div>`}
+                    </div>
+                    ${e.wishUrl ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px"><a href="${e.wishUrl}" target="_blank" style="color:var(--accent);text-decoration:none">Ver producto</a></div>` : ''}
+                    ${e.wishNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.wishNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: TASKS
+        // ============================================================
+        function renderTasks() {
+            const tasks = entries.filter(e => e.type === 'task');
+            if (!tasks.length) {
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin tareas</div><div class="empty-sub">Pulsa el boton + y selecciona "Tarea"</div></div>`;
+            }
+
+            const pending = tasks.filter(e => !e.taskDone)
+                .sort((a, b) => (a.taskDue || '9999').localeCompare(b.taskDue || '9999'));
+            const done = tasks.filter(e => e.taskDone);
+
+            let html = `
+            <div style="max-width:700px">
+                <button class="btn-modal-primary" style="width:auto;padding:8px 16px;margin-bottom:16px" onclick="showCompletedTasksModal()">Ver completadas</button>
+
+                ${pending.length ? `
+                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Pendientes (${pending.length})</div>
+                    ${pending.map(t => {
+                        const cat = categories.find(c => c.id === t.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        return `
+                            <div class="entry-item">
+                                <input type="checkbox" onchange="toggleTaskDone('${t.id}')" style="width:18px;height:18px;cursor:pointer">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info" onclick="openEditEntry('${t.id}')" style="cursor:pointer">
+                                    <div class="entry-title">${t.title}</div>
+                                    <div class="entry-meta">${t.taskStart||'?'} → ${t.taskDue||'sin fecha'}${t.taskNotes ? ' · ' + t.taskNotes : ''}</div>
+                                </div>
+                            </div>`;
+                    }).join('')}
+                ` : `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin tareas pendientes</div></div>`}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: LINKS
+        // ============================================================
+        function renderLinks() {
+            const links = entries.filter(e => e.type === 'link');
+            if (!links.length) {
+                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin enlaces</div><div class="empty-sub">Pulsa el boton + y selecciona "Enlace"</div></div>`;
+            }
+
+            return `
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;max-width:700px">
+                ${links.map(l => `
+                    <div class="card" style="text-align:center;cursor:pointer" onclick="window.open('${l.linkUrl}','_blank')">
+                        <div style="font-size:28px;color:var(--text-primary)">${l.linkIcon || '◈'}</div>
+                        <div style="font-weight:600;margin-top:6px;font-size:13px;color:var(--text-primary)">${l.title}</div>
+                    </div>`).join('')}
+            </div>`;
+        }
+
+        // ============================================================
+        //  DOCUMENTS
+        // ============================================================
+        function renderDocuments() {
+            return `
+                <div style="max-width:700px">
+                    <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
+                        <div style="font-size:28px;margin-bottom:6px">📄</div>
+                        <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Pulsa aqui para elegir un archivo</div>
+                    </div>
+                    <div id="doc-list">Cargando documentos...</div>
+                </div>`;
+        }
+
+        async function loadDocuments() {
+            const listEl = document.getElementById('doc-list');
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { documents = [];
+                    if (listEl) listEl.innerHTML = ''; return; }
+                const { data, error } = await sb.storage.from('documents').list(user.id, {
+                    sortBy: { column: 'created_at', order: 'desc' }
+                });
+                if (error) throw error;
+                documents = data || [];
+                if (listEl) renderDocList();
+            } catch (e) {
+                console.error('Error cargando documentos:', e);
+                if (listEl) listEl.innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">Comprueba que el bucket "documents" existe en Supabase Storage</div></div>`;
+            }
+        }
+
+        let documents = [];
+
+        function renderDocList() {
+            const listEl = document.getElementById('doc-list');
+            if (!listEl) return;
+            if (!documents.length) {
+                listEl.innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el boton de arriba</div></div>`;
+                return;
+            }
+            listEl.innerHTML = documents.map(doc => {
+                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                return `
+                    <div class="doc-item">
+                        <div class="doc-info">
+                            <span style="font-size:20px">📄</span>
+                            <div style="min-width:0">
+                                <div class="doc-name">${doc.name}</div>
+                                <div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                            </div>
+                        </div>
+                        <div class="doc-actions">
+                            <button onclick="downloadDocument('${doc.name}')">⬇ Descargar</button>
+                            <button onclick="deleteDocument('${doc.name}')">🗑</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function handleDocUpload(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (file.type !== 'application/pdf') { showToast('Solo se admiten archivos PDF', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${Date.now()}_${file.name}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+                if (error) throw error;
+                showToast('Documento subido correctamente');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Error subiendo documento:', e);
+                showToast('Error al subir el documento', true);
+            }
+        }
+
+        async function downloadDocument(name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${name}`;
+                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 60);
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (e) {
+                console.error('Error descargando documento:', e);
+                showToast('Error al descargar el documento', true);
+            }
+        }
+
+        async function deleteDocument(name) {
+            if (!confirm('Eliminar este documento? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${name}`;
+                const { error } = await sb.storage.from('documents').remove([path]);
+                if (error) throw error;
+                showToast('Documento eliminado');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Error eliminando documento:', e);
+                showToast('Error al eliminar el documento', true);
+            }
+        }
+
+        // ============================================================
+        //  INIT
+        // ============================================================
+        let appInitialized = false;
+
+        async function init() {
+            loadTheme();
+            await loadData();
+
+            if (window.innerWidth <= 768) {
+                document.querySelector('.menu-hamburger').style.display = 'block';
+            }
+
+            if (!appInitialized) {
+                appInitialized = true;
+
+                document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
+                    if (this.classList.contains('open')) toggleMobileMenu();
+                });
+
+                document.addEventListener('click', function(e) {
+                    const fab = document.getElementById('fab');
+                    const menu = document.getElementById('fab-menu');
+                    if (!fab.contains(e.target) && !menu.contains(e.target)) {
+                        menu.classList.remove('open');
+                    }
+                });
+
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        const isMobile = window.innerWidth <= 768;
+                        document.querySelector('.menu-hamburger').style.display = isMobile ? 'block' :
+                        'none';
+                    }, 200);
+                });
+            }
+
+            render();
+            checkTodayAlerts();
+        }
+
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            .btn-secondary.active {
+                background: var(--accent);
+                color: var(--accent-contrast);
+                border-color: var(--accent);
+            }
+        `;
+        document.head.appendChild(styleEl);
+    </script>
+
+</body>
+</html>
