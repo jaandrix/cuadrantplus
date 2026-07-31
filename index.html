@@ -486,6 +486,9 @@ function aplicarTema(modo) {
   document.documentElement.setAttribute('data-theme', modo);
   state.tema = modo;
   localStorage.setItem('theme', modo);
+  // Actualizar botón
+  const btn = document.querySelector('.theme-toggle');
+  if (btn) btn.textContent = modo === 'claro' ? '🌙' : '☀️';
   // Guardar en Supabase si hay usuario
   if (currentUserAuth && state.centroId) {
     sb.from('perfiles').update({ tema: modo }).eq('id', currentUserAuth.id).then(() => {}).catch(() => {});
@@ -527,7 +530,6 @@ async function loadUserProfile() {
   if (!currentUserAuth) return false;
   lastAuthError = null;
   
-  // Obtener perfil
   const { data: perfil, error: errPerfil } = await sb
     .from('perfiles')
     .select('*')
@@ -540,16 +542,12 @@ async function loadUserProfile() {
   }
   
   if (!perfil) {
-    // Intentar crear perfil para usuario nuevo
     return await createFirstUserProfile();
   }
   
   state.userProfile = perfil;
-  
-  // Cargar centros disponibles
   await cargarCentrosDisponibles();
   
-  // Si hay centros disponibles, usar el primero
   if (state.centrosDisponibles.length > 0) {
     const primeraMembresia = state.centrosDisponibles[0];
     state.centroId = primeraMembresia.centro_id;
@@ -559,7 +557,6 @@ async function loadUserProfile() {
     state.centroId = perfil.centro_id;
   }
   
-  // Cargar datos del centro
   if (state.centroId) {
     await loadData();
     actualizarNombreHeader();
@@ -645,7 +642,6 @@ async function createFirstUserProfile() {
     return false;
   }
 
-  // Insertar perfil
   const { error: errPerfil } = await sb
     .from('perfiles')
     .insert({
@@ -659,7 +655,6 @@ async function createFirstUserProfile() {
     return false;
   }
 
-  // Insertar membresía como administrador
   const { error: errMembresia } = await sb
     .from('miembros_centro')
     .insert({
@@ -870,7 +865,8 @@ function setupRealtime() {
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        document.getElementById('header-sub').textContent += ' · En directo';
+        const sub = document.getElementById('header-sub');
+        if (sub) sub.textContent += ' · En directo';
       }
     });
 }
@@ -1107,8 +1103,10 @@ function renderLogin(mensajeError) {
       </div>
     </div>
   `;
-  document.getElementById('header-sub').textContent = 'Inicia sesión';
-  document.getElementById('nav').style.display = 'none';
+  const sub = document.getElementById('header-sub');
+  if (sub) sub.textContent = 'Inicia sesión';
+  const nav = document.getElementById('nav');
+  if (nav) nav.style.display = 'none';
   document.getElementById('login-email')?.focus();
 }
 
@@ -1289,7 +1287,6 @@ function renderCuadrante() {
   }
   html += `<th style="border:0.5px solid var(--border);padding:6px 4px;text-align:center;background:var(--info-bg);position:sticky;right:0;">H</th></tr></thead><tbody id="cuad-tbody">`;
   
-  // Generar filas
   const filtrados = state.trabajadores.filter(t => t.nombre.toLowerCase().includes(cuadFiltro.toLowerCase()));
   for (let idx = 0; idx < filtrados.length; idx++) {
     const t = filtrados[idx];
@@ -1309,7 +1306,6 @@ function renderCuadrante() {
     html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;font-weight:700;background:var(--info-bg);position:sticky;right:0;" id="total-${idx}">${total}</td></tr>`;
   }
   
-  // Fila de cobertura
   html += `<tr style="background:var(--success-bg);font-weight:700;"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--success-bg);">Cobertura M/T/N</td>`;
   for (let d = 0; d < dias; d++) {
     const cob = coberturaDelDia(d, mes, anio);
@@ -1461,7 +1457,6 @@ async function guardarZona(id) {
   if (currentView === 'cuadrante') {
     renderCuadrante();
   } else {
-    // Si el modal de zonas está abierto, refrescarlo
     pintarZonasEnModal();
   }
   mostrarToast(`Zona "${nombre}" guardada`);
@@ -1830,7 +1825,6 @@ function renderAjustes() {
       </div>
     </div>`;
   
-  // Parámetros legales (solo admin)
   if (esAdmin) {
     html += `
     <div class="card">
@@ -1863,7 +1857,6 @@ function renderAjustes() {
     </div>`;
   }
   
-  // Compartir/Recibir
   html += `
     <div class="card">
       <div class="card-header">Compartir cuadrante</div>
@@ -1883,7 +1876,6 @@ function renderAjustes() {
       </div>
     </div>`;
   
-  // Historial
   html += `
     <div class="card">
       <div class="card-header">Historial de cambios</div>
@@ -1895,7 +1887,6 @@ function renderAjustes() {
       </div>
     </div>`;
   
-  // Miembros (solo admin)
   if (esAdmin) {
     html += `
     <div class="card">
@@ -1908,7 +1899,6 @@ function renderAjustes() {
   
   content.innerHTML = html;
   actualizarNombreHeader();
-  
   if (esAdmin) cargarMiembros();
 }
 
@@ -1981,7 +1971,6 @@ function copiarCodigoCompartido() {
   navigator.clipboard?.writeText(codigo).then(() => {
     mostrarToast('Código copiado');
   }).catch(() => {
-    // Fallback
     const input = document.createElement('input');
     input.value = codigo;
     document.body.appendChild(input);
@@ -1994,12 +1983,16 @@ function copiarCodigoCompartido() {
 
 async function regenerarCodigo() {
   if (!confirm('¿Regenerar el código de compartición? Esto invalidará el código anterior.')) return;
-  const { data, error } = await sb.rpc('generar_codigo_centro');
-  if (error) { mostrarToast('Error al regenerar código', true); return; }
-  await sb.from('centros').update({ codigo_compartido: data }).eq('id', state.centroId);
-  await cargarCentrosDisponibles();
-  renderAjustes();
-  mostrarToast('Código regenerado');
+  try {
+    const { data, error } = await sb.rpc('generar_codigo_centro');
+    if (error) throw error;
+    await sb.from('centros').update({ codigo_compartido: data }).eq('id', state.centroId);
+    await cargarCentrosDisponibles();
+    renderAjustes();
+    mostrarToast('Código regenerado');
+  } catch (e) {
+    mostrarToast('Error al regenerar código', true);
+  }
 }
 
 async function recibirCuadrante() {
@@ -2013,7 +2006,6 @@ async function recibirCuadrante() {
     .maybeSingle();
   if (error || !centro) { mostrarToast('Código no válido', true); return; }
   
-  // Verificar si ya es miembro
   const { data: existe } = await sb
     .from('miembros_centro')
     .select('id')
@@ -2185,7 +2177,6 @@ function render() {
 // INICIALIZACIÓN
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('version-number').textContent = APP_VERSION;
   cargarTemaGuardado();
   
   const authed = await checkAuth();
@@ -2266,9 +2257,6 @@ document.getElementById('file-import-personal')?.addEventListener('change', (eve
   r.readAsText(file);
   event.target.value = '';
 });
-
-// Función RPC para regenerar código (se ejecuta en Supabase)
-// Nota: esta función debe crearse en Supabase con el SQL del documento
 </script>
 </body>
 </html>
