@@ -4,10 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gestión Cuadrantes">
 <meta name="theme-color" content="#0f172a">
-<title>Gestión Cuadrantes 🧹 v27 · Supabase</title>
+<title>Gestión Cuadrantes 🧹 v27 - Supabase</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: #f0f4f8; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #0f172a; overflow: hidden; height: 100dvh; }
@@ -202,7 +201,7 @@
 <div id="app">
   <div id="header">
     <div id="header-left">
-      <h1>🧹 Gestión Cuadrantes <small>v<span id="version-number">27</span></small></h1>
+      <h1>🧹 Gestión Cuadrantes <small>v27</small></h1>
       <p id="header-sub">Conectando...</p>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
@@ -213,17 +212,17 @@
   <div id="banner-convenio" class="hidden">⚠️ Convenio vencido. Trabajando en ultraactividad. ⚠️</div>
   <div id="content"></div>
   <nav id="nav">
-    <button class="active" onclick="showView('home')"      id="nav-home">     <span class="ni">🏠</span><span class="nl">Inicio</span></button>
-    <button onclick="showView('cuadrante')"  id="nav-cuadrante"><span class="ni">📅</span><span class="nl">Cuadrante</span></button>
-    <button onclick="showView('personal')"   id="nav-personal"> <span class="ni">👥</span><span class="nl">Personal</span></button>
-    <button onclick="showView('zonas')"      id="nav-zonas">    <span class="ni">🏥</span><span class="nl">Zonas</span></button>
-    <button onclick="showView('tareas')"     id="nav-tareas">   <span class="ni">✅</span><span class="nl">Tareas</span></button>
-    <button onclick="showView('seguro')"     id="nav-seguro">   <span class="ni">🔒</span><span class="nl">Seguro</span></button>
+    <button class="active" onclick="showView('home')" id="nav-home"><span class="ni">🏠</span><span class="nl">Inicio</span></button>
+    <button onclick="showView('cuadrante')" id="nav-cuadrante"><span class="ni">📅</span><span class="nl">Cuadrante</span></button>
+    <button onclick="showView('personal')" id="nav-personal"><span class="ni">👥</span><span class="nl">Personal</span></button>
+    <button onclick="showView('zonas')" id="nav-zonas"><span class="ni">🏥</span><span class="nl">Zonas</span></button>
+    <button onclick="showView('tareas')" id="nav-tareas"><span class="ni">✅</span><span class="nl">Tareas</span></button>
+    <button onclick="showView('seguro')" id="nav-seguro"><span class="ni">🔒</span><span class="nl">Seguro</span></button>
   </nav>
 </div>
 <div id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script>
 // ==================== SUPABASE CONFIG ====================
 const SUPABASE_URL = "https://zmeewiepjuznlhdzdodc.supabase.co";
@@ -263,7 +262,7 @@ let state = {
   trabajadores: [],
   zonas: [],
   tareas: [],
-  turnos: {}, // { "2026-0": { trabajador_id: { dia: codigo } } }
+  turnos: {},
   historial: [],
   parametros: {
     jornadaMaxDiaria: 9,
@@ -289,7 +288,6 @@ let personalFiltroZona = "todas";
 let personalFiltroTurno = "todos";
 let homeMes = new Date().getMonth();
 let undoStack = [];
-let isRealtimeSubscribed = false;
 let realtimeChannel = null;
 let currentUserAuth = null;
 
@@ -356,7 +354,6 @@ async function loadUserProfile() {
     .maybeSingle();
   if (error) { console.error('Error loading profile:', error); return; }
   if (!data) {
-    // Si no tiene perfil, es el primer usuario → lo hacemos coordinador
     await createFirstUserProfile();
     return;
   }
@@ -382,7 +379,6 @@ async function createFirstUserProfile() {
   
   let centroId = centro?.id;
   if (!centroId) {
-    // Crear centro por defecto
     const { data: newCentro } = await sb
       .from('centros')
       .insert({ nombre: 'Hospital Calatayud Limpieza' })
@@ -422,11 +418,9 @@ async function signUp(email, password, nombre) {
   if (error) { mostrarToast('❌ ' + error.message, true); return false; }
   if (data.user) {
     currentUserAuth = data.user;
-    // Esperar a que el trigger cree el perfil automáticamente
     await new Promise(r => setTimeout(r, 500));
     await loadUserProfile();
     if (!state.userProfile) {
-      // Si no se creó automáticamente, crearlo manualmente
       const { data: centro } = await sb.from('centros').select('id').limit(1).maybeSingle();
       const centroId = centro?.id || '11111111-1111-1111-1111-111111111111';
       await sb.from('perfiles').insert({
@@ -571,7 +565,6 @@ function setupRealtime() {
       },
       (payload) => {
         console.log('Realtime:', payload);
-        // Evitar bucles: si el cambio lo hizo el usuario actual, no recargar
         if (payload.new?.editado_por === currentUserAuth?.id) return;
         if (payload.old?.editado_por === currentUserAuth?.id) return;
         handleTurnoChange(payload);
@@ -598,7 +591,6 @@ function handleTurnoChange(payload) {
     if (!state.turnos[key][t.trabajador_id]) state.turnos[key][t.trabajador_id] = {};
     state.turnos[key][t.trabajador_id][dia - 1] = t.codigo;
     
-    // Actualizar vista si estamos en el mes actual
     if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
       const idx = state.trabajadores.findIndex(w => w.id === t.trabajador_id);
       if (idx >= 0) actualizarCeldaEnTabla(idx, dia - 1, t.codigo);
@@ -634,7 +626,6 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   const key = clavesMes(mes, anio);
   const anterior = getTurno(trabajadorId, dia, mes, anio);
   
-  // Guardar en Supabase
   const { data: existing } = await sb
     .from('turnos')
     .select('id')
@@ -646,7 +637,6 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   let error;
   if (existing) {
     if (valor === '') {
-      // Eliminar si está vacío
       const { error: delError } = await sb
         .from('turnos')
         .delete()
@@ -678,7 +668,6 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
     return;
   }
   
-  // Actualizar estado local
   if (!state.turnos[key]) state.turnos[key] = {};
   if (!state.turnos[key][trabajadorId]) state.turnos[key][trabajadorId] = {};
   if (valor === '') {
@@ -687,11 +676,9 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
     state.turnos[key][trabajadorId][dia] = valor;
   }
   
-  // Registrar en historial local
   undoStack.push({ trabajadorId, dia, mes, anio, anterior, nuevo: valor });
   if (undoStack.length > 20) undoStack.shift();
   
-  // Actualizar vista
   if (currentView === 'cuadrante') {
     const idx = state.trabajadores.findIndex(t => t.id === trabajadorId);
     if (idx >= 0) actualizarCeldaEnTabla(idx, dia, valor);
@@ -743,7 +730,6 @@ function getTotalHorasMes(trabajadorId, mes, anio) {
     if (valor !== '') {
       total += horasCodigo(valor);
     } else {
-      // Celda vacía: reglas por grupo
       if (t?.grupo === 'manana' || t?.grupo === 'tarde') {
         total += 7;
       }
@@ -947,6 +933,7 @@ function renderHome() {
   html += `<div class="card"><div class="card-header">📋 Resumen</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px"><div style="text-align:center;padding:10px;background:#f8fafc;border-radius:10px"><div style="font-size:20px;font-weight:800">${state.trabajadores.length}</div><div style="font-size:10px">Trabajadores</div></div><div style="text-align:center;padding:10px;background:#fff5f5;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#dc2626">${enBaja}</div><div style="font-size:10px">En baja</div></div><div style="text-align:center;padding:10px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#16a34a">${state.zonas.length}</div><div style="font-size:10px">Zonas</div></div><div style="text-align:center;padding:10px;background:#fef3c7;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#d97706">${state.trabajadores.filter(t => t.sustituye_a_id).length}</div><div style="font-size:10px">Sustituciones</div></div></div></div>`;
   document.getElementById("content").innerHTML = html;
   document.getElementById("header-sub").textContent = `👤 ${state.userProfile?.nombre_completo || 'Usuario'} · ${MESES_NOMBRES[state.mesActual]} ${state.anio}`;
+  document.getElementById('nav').style.display = '';
 }
 
 function cambiarHomeMes(delta) {
@@ -1089,7 +1076,6 @@ function vaciarCuadranteActual() {
   const key = clavesMes(mes, anio);
   const turnos = state.turnos[key] || {};
   
-  // Eliminar todos los turnos del mes
   for (const trabajadorId in turnos) {
     for (const dia in turnos[trabajadorId]) {
       setCelda(trabajadorId, parseInt(dia), '', mes, anio);
@@ -1290,7 +1276,6 @@ async function iniciarBajaWorker(id) {
   
   await sb.from('trabajadores').update({ estado: 'baja', fecha_baja: `${state.anio}-${String(state.mesActual+1).padStart(2,'0')}-${String(dia+1).padStart(2,'0')}` }).eq('id', id);
   t.estado = 'baja';
-  // Marcar días de IT
   const dias = diasEnMes(state.mesActual, state.anio);
   for (let d = dia; d < dias; d++) {
     await setCelda(id, d, 'IT', state.mesActual, state.anio);
@@ -1449,7 +1434,6 @@ function exportarBackup() {
 }
 
 function guardarDatos() {
-  // No hacemos nada, todo está en Supabase
   const ind = document.getElementById('save-indicator');
   if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1800); }
 }
@@ -1555,7 +1539,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Input file para importar
 document.getElementById('file-import').addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -1563,12 +1546,9 @@ document.getElementById('file-import').addEventListener('change', (event) => {
   r.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      // Importar trabajadores
       for (const t of data.trabajadores || []) {
-        const { error } = await sb.from('trabajadores').upsert({ ...t, centro_id: state.centroId });
-        if (error) console.error('Error importing worker:', error);
+        await sb.from('trabajadores').upsert({ ...t, centro_id: state.centroId });
       }
-      // Importar turnos
       for (const key in data.turnos || {}) {
         const [anio, mes] = key.split('-').map(Number);
         for (const trabajadorId in data.turnos[key]) {
