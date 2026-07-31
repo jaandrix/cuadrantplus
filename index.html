@@ -1,99 +1,161 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="claro">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gestión Cuadrantes">
 <meta name="theme-color" content="#0f172a">
-<title>Cuadrant+</title>
+<title>Gestión Cuadrantes</title>
 <style>
+  /* ==================== VARIABLES CSS ==================== */
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f6;
+    --border: #e2e5ea;
+    --text: #16181d;
+    --text-muted: #6b7280;
+    --accent: #16181d;
+    --accent-contrast: #ffffff;
+    --danger: #b3261e;
+    --danger-bg: #fdecea;
+    --warning: #92400e;
+    --warning-bg: #fdf3e2;
+    --success: #14532d;
+    --success-bg: #eaf5ee;
+    --info: #1e3a8a;
+    --info-bg: #eaf0fb;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+    --font-base: 14px;
+  }
+
+  [data-theme="oscuro"] {
+    --bg: #101214;
+    --surface: #1a1d21;
+    --surface-alt: #202329;
+    --border: #2c3038;
+    --text: #e8e9eb;
+    --text-muted: #9aa0aa;
+    --accent: #e8e9eb;
+    --accent-contrast: #101214;
+    --danger: #f2b8b5;
+    --danger-bg: #3a1f1e;
+    --warning: #f5cf8e;
+    --warning-bg: #3a2c14;
+    --success: #a8dab5;
+    --success-bg: #16281c;
+    --info: #a9c4f5;
+    --info-bg: #17233d;
+  }
+
+  /* ==================== ESTILOS GLOBALES ==================== */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { background: #f0f4f8; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #0f172a; overflow: hidden; height: 100dvh; }
-  #app { display: flex; flex-direction: column; height: 100dvh; background: #f0f4f8; }
+  body { background: var(--bg); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text); overflow: hidden; height: 100dvh; font-size: var(--font-base); line-height: 1.5; }
+  #app { display: flex; flex-direction: column; height: 100dvh; background: var(--bg); }
 
-  #header { background: #0f172a; color: #fff; padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 10px; }
+  /* ==================== HEADER ==================== */
+  #header { background: var(--accent); color: var(--accent-contrast); padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 10px; }
   #header-left h1 { font-size: 18px; font-weight: 800; }
-  #header-left h1 small { font-size: 11px; background: #334155; padding: 2px 8px; border-radius: 20px; margin-left: 8px; font-weight: normal; }
-  #header-left p { font-size: 11px; color: #94a3b8; margin-top: 1px; }
-  #save-indicator { font-size: 11px; color: #22c55e; opacity: 0; transition: opacity .4s; white-space: nowrap; }
+  #header-left h1 small { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 8px; }
+  #save-indicator { font-size: 11px; color: var(--success); opacity: 0; transition: opacity .4s; white-space: nowrap; }
   #save-indicator.show { opacity: 1; }
-  #user-btn { background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px; }
 
-  #banner-convenio { background: #dc2626; color: white; padding: 8px 14px; font-size: 12px; text-align: center; font-weight: 600; flex-shrink: 0; }
+  .logout-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--accent-contrast); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: var(--radius); cursor: pointer; opacity: 0.8; transition: opacity .2s; }
+  .logout-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
 
+  /* ==================== BANNER ==================== */
+  #banner-convenio { background: var(--danger); color: white; padding: 8px 14px; font-size: 12px; text-align: center; font-weight: 600; flex-shrink: 0; }
+
+  /* ==================== CONTENT ==================== */
   #content { flex: 1; overflow-y: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
-  #nav { display: flex; background: #fff; border-top: 1.5px solid #e2e8f0; flex-shrink: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-  #nav button { flex: 1; background: none; border: none; padding: 10px 0 5px; cursor: pointer; color: #94a3b8; border-top: 2.5px solid transparent; font-weight: 600; }
-  #nav button.active { color: #0f172a; border-top-color: #0f172a; }
-  #nav button .ni { font-size: 20px; display: block; }
-  #nav button .nl { font-size: 10px; margin-top: 1px; }
+  
+  /* ==================== NAV ==================== */
+  #nav { display: flex; background: var(--surface); border-top: 1.5px solid var(--border); flex-shrink: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  #nav button { flex: 1; background: none; border: none; padding: 10px 0 5px; cursor: pointer; color: var(--text-muted); border-top: 2.5px solid transparent; font-weight: 600; font-size: 11px; transition: color .2s; }
+  #nav button.active { color: var(--text); border-top-color: var(--accent); }
+  #nav button .ni { display: block; font-size: 0; line-height: 0; margin-bottom: 2px; }
+  #nav button .ni svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #nav button .nl { font-size: 10px; margin-top: 2px; }
 
-  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
-  .card-header { padding: 12px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+  /* ==================== CARDS ==================== */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: var(--shadow); }
+  .card-header { padding: 12px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--border); background: var(--surface-alt); display: flex; justify-content: space-between; align-items: center; }
   .card-body { padding: 14px 16px; }
 
-  .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 600; cursor: pointer; font-size: 13px; transition: opacity .15s; width: 100%; margin-bottom: 8px; text-align: center; }
-  .btn-primary { background: #0f172a; color: #fff; }
-  .btn-secondary { background: #f1f5f9; border: 1px solid #e2e8f0; color: #0f172a; }
-  .btn-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .btn-legal { background: #1e40af; color: #fff; }
-  .btn-success { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+  /* ==================== BOTONES ==================== */
+  .btn { border: none; border-radius: var(--radius); padding: 11px 16px; font-weight: 600; cursor: pointer; font-size: 13px; transition: opacity .15s; width: 100%; margin-bottom: 8px; text-align: center; }
+  .btn-primary { background: var(--accent); color: var(--accent-contrast); }
+  .btn-secondary { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+  .btn-legal { background: var(--info-bg); color: var(--info); border: 1px solid var(--info); }
+  .btn-success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
   .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 0; width: auto; display: inline-block; }
   .btn-xs { padding: 4px 8px; border-radius: 8px; font-size: 10px; margin-bottom: 0; width: auto; display: inline-block; }
-  .btn-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .btn-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
+  .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
 
+  /* ==================== BADGES ==================== */
   .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; display: inline-block; }
-  .badge-baja { background: #dc2626; color: #fff; }
-  .badge-sustituto { background: #dc2626; color: #fff; }
-  .badge-red { background: #fee2e2; color: #991b1b; }
-  .badge-amber { background: #fef3c7; color: #92400e; }
-  .badge-green { background: #dcfce7; color: #14532d; }
-  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-baja { background: var(--danger-bg); color: var(--danger); }
+  .badge-sustituto { background: var(--danger-bg); color: var(--danger); }
+  .badge-red { background: var(--danger-bg); color: var(--danger); }
+  .badge-amber { background: var(--warning-bg); color: var(--warning); }
+  .badge-green { background: var(--success-bg); color: var(--success); }
+  .badge-blue { background: var(--info-bg); color: var(--info); }
 
-  .aviso { padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-size: 12px; border-left: 4px solid; }
-  .aviso-rojo { background: #fee2e2; border-color: #dc2626; }
-  .aviso-amber { background: #fef3c7; border-color: #d97706; }
-  .aviso-verde { background: #dcfce7; border-color: #16a34a; }
-  .aviso-azul { background: #dbeafe; border-color: #2563eb; }
-  .aviso-gris { background: #f1f5f9; border-color: #94a3b8; }
+  /* ==================== AVISOS ==================== */
+  .aviso { padding: 10px 12px; border-radius: var(--radius); margin-bottom: 8px; font-size: 12px; border-left: 4px solid; }
+  .aviso-rojo { background: var(--danger-bg); border-color: var(--danger); }
+  .aviso-amber { background: var(--warning-bg); border-color: var(--warning); }
+  .aviso-verde { background: var(--success-bg); border-color: var(--success); }
+  .aviso-azul { background: var(--info-bg); border-color: var(--info); }
+  .aviso-gris { background: var(--surface-alt); border-color: var(--text-muted); }
 
+  /* ==================== CALENDARIO ==================== */
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-  .cal-wd { font-size: 10px; font-weight: 700; color: #64748b; padding: 4px 0; }
-  .cal-day { background: #f8fafc; border-radius: 10px; padding: 8px 2px; border: 1px solid #e2e8f0; cursor: pointer; }
-  .cal-day.hoy { background: #0f172a; color: #fff; }
+  .cal-wd { font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
+  .cal-day { background: var(--surface-alt); border-radius: var(--radius); padding: 8px 2px; border: 1px solid var(--border); cursor: pointer; transition: background .2s; }
+  .cal-day:hover { background: var(--border); }
+  .cal-day.hoy { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
   .cal-day-num { font-size: 13px; font-weight: 600; }
   .cal-dot { width: 8px; height: 8px; border-radius: 50%; margin: 4px auto 0; }
-  .cal-dot.rojo { background: #dc2626; }
-  .cal-dot.amber { background: #d97706; }
-  .cal-dot.verde { background: #16a34a; }
+  .cal-dot.rojo { background: var(--danger); }
+  .cal-dot.amber { background: var(--warning); }
+  .cal-dot.verde { background: var(--success); }
   .festivo-icon { font-size: 10px; margin-left: 2px; }
 
   .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .cal-nav-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-  .cal-nav-title { font-size: 16px; font-weight: 700; }
+  .cal-nav-btn { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text); }
 
+  /* ==================== SELECTOR DE MES ==================== */
   .mes-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-  .mes-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 11px; font-size: 11px; cursor: pointer; }
-  .mes-btn.active { background: #0f172a; color: #fff; }
+  .mes-btn { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 20px; padding: 5px 11px; font-size: 11px; cursor: pointer; color: var(--text); transition: all .2s; }
+  .mes-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+  .mes-btn:hover { background: var(--border); }
 
+  /* ==================== CUADRANTE ==================== */
   .cuad-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
-  .cuad-search { flex: 1; min-width: 140px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 13px; background: #fff; outline: none; }
+  .cuad-search { flex: 1; min-width: 140px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; background: var(--surface); color: var(--text); outline: none; }
+  .cuad-search:focus { border-color: var(--accent); }
 
   .wrap { overflow-x: auto; padding-bottom: 4px; }
   table { border-collapse: collapse; font-size: 10px; min-width: 850px; width: 100%; }
-  th, td { border: 0.5px solid #cbd5e1; text-align: center; padding: 4px 3px; }
-  th { background: #f1f5f9; font-weight: 700; position: sticky; top: 0; z-index: 2; }
-  td.nombre-col { text-align: left; background: #fff; position: sticky; left: 0; z-index: 1; font-weight: 600; }
+  th, td { border: 0.5px solid var(--border); text-align: center; padding: 4px 3px; }
+  th { background: var(--surface-alt); font-weight: 700; position: sticky; top: 0; z-index: 2; }
+  td.nombre-col { text-align: left; background: var(--surface); position: sticky; left: 0; z-index: 1; font-weight: 600; }
   th.nombre-col, td.nombre-col { text-align: left; padding-left: 8px; min-width: 160px; }
-  th.total-col, td.total-col { min-width: 38px; font-weight: 700; background: #e8f4fd; position: sticky; right: 0; }
-  tr:nth-child(even) td { background: #f8fafc; }
-  .wkend { background: #eef2ff !important; }
-  .festivo-cell { background: #fff7ed !important; }
-  .editable-cell { cursor: pointer; }
-  .editable-cell:active { background: #dbeafe !important; }
-  .baja-row td { opacity: 0.55; background: #fff5f5 !important; }
-  .sustituto-row td { color: #dc2626; font-weight: 500; }
+  th.total-col, td.total-col { min-width: 38px; font-weight: 700; background: var(--info-bg); position: sticky; right: 0; }
+  tr:nth-child(even) td { background: var(--bg); }
+  .wkend { background: var(--surface-alt) !important; }
+  .festivo-cell { background: var(--warning-bg) !important; }
+  .editable-cell { cursor: pointer; transition: background .15s; }
+  .editable-cell:active { background: var(--info-bg) !important; }
+  .baja-row td { opacity: 0.55; background: var(--danger-bg) !important; }
+  .sustituto-row td { color: var(--danger); font-weight: 500; }
+
+  /* ==================== CÓDIGOS DE TURNO (colores) ==================== */
   .L { color: #1d4ed8; font-weight: 700; }
   .D { color: #15803d; font-weight: 700; }
   .E { color: #9333ea; font-weight: 700; background: #f3e8ff !important; }
@@ -108,43 +170,50 @@
   .CF { color: #0891b2; font-weight: 700; background: #cffafe !important; }
   .IT { color: #991b1b; font-weight: 700; background: #fee2e2 !important; }
   .LD, .LDA, .LD25, .LD26 { color: #b45309; font-weight: 700; background: #fffbeb !important; }
-  .cobertura-row td { background: #f0fdf4; font-weight: 700; color: #15803d; border-top: 2px solid #86efac; }
+  .cobertura-row td { background: var(--success-bg); font-weight: 700; color: var(--success); border-top: 2px solid var(--success); }
 
-  .worker-search { width: 100%; padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; }
-  .worker-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; cursor: pointer; margin-bottom: 8px; }
+  /* ==================== PERSONAL ==================== */
+  .worker-search { width: 100%; padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; margin-bottom: 12px; outline: none; background: var(--surface); color: var(--text); }
+  .worker-search:focus { border-color: var(--accent); }
+  .worker-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; margin-bottom: 8px; transition: border-color .2s; }
+  .worker-item:hover { border-color: var(--accent); }
   .worker-name { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .worker-stats { font-size: 11px; color: #64748b; margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .bolsa-pos { color: #16a34a; font-weight: 700; }
-  .bolsa-neg { color: #dc2626; font-weight: 700; }
-  .vac-bar { height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 8px; }
-  .vac-bar-fill { height: 100%; background: #16a34a; border-radius: 3px; }
+  .worker-stats { font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .bolsa-pos { color: var(--success); font-weight: 700; }
+  .bolsa-neg { color: var(--danger); font-weight: 700; }
+  .vac-bar { height: 5px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .vac-bar-fill { height: 100%; background: var(--success); border-radius: 3px; }
 
-  .tarea-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  /* ==================== TAREAS ==================== */
+  .tarea-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .tarea-info { flex: 1; }
   .tarea-nombre { font-weight: 600; font-size: 13px; }
-  .tarea-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .tarea-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-end; justify-content: center; z-index: 200; }
-  .modal-box { background: #fff; border-radius: 24px 24px 0 0; padding: 22px 20px; width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto; }
-  .modal-box.centered { border-radius: 20px; margin: 16px; max-height: 88vh; align-self: center; }
+  /* ==================== MODALES ==================== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-end; justify-content: center; z-index: 200; backdrop-filter: blur(2px); }
+  .modal-box { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 22px 20px; width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto; }
+  .modal-box.centered { border-radius: var(--radius); margin: 16px; max-height: 88vh; align-self: center; }
   .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 16px; }
-  .modal-label { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px; margin-top: 12px; display: block; }
-  .modal-input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
+  .modal-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; margin-top: 12px; display: block; }
+  .modal-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; outline: none; background: var(--surface); color: var(--text); }
+  .modal-input:focus { border-color: var(--accent); }
   .modal-btns { display: flex; gap: 8px; margin-top: 18px; }
-  .modal-btns button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
-  .btn-modal-ok { background: #0f172a; color: #fff; }
-  .btn-modal-cancel { background: #f1f5f9; color: #0f172a; }
+  .modal-btns button { flex: 1; padding: 12px; border-radius: var(--radius); border: none; font-weight: 700; cursor: pointer; }
+  .btn-modal-ok { background: var(--accent); color: var(--accent-contrast); }
+  .btn-modal-cancel { background: var(--surface-alt); color: var(--text); }
 
+  /* ==================== SELECTOR DE TURNO ==================== */
   .turno-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
-  .turno-btn { padding: 14px 4px; border-radius: 12px; border: 2px solid transparent; font-weight: 800; font-size: 16px; cursor: pointer; text-align: center; }
+  .turno-btn { padding: 14px 4px; border-radius: var(--radius); border: 2px solid transparent; font-weight: 800; font-size: 16px; cursor: pointer; text-align: center; transition: all .15s; }
   .turno-btn:active { transform: scale(0.96); }
-  .turno-btn.sel { border-color: #0f172a !important; }
+  .turno-btn.sel { border-color: var(--accent) !important; }
   .tb-L { background: #dbeafe; color: #1d4ed8; }
   .tb-D { background: #dcfce7; color: #15803d; }
   .tb-E { background: #f3e8ff; color: #9333ea; }
   .tb-F1 { background: #ffedd5; color: #ea580c; }
   .tb-N { background: #fef3c7; color: #92400e; }
-  .tb-M, .tb-T { background: #f1f5f9; color: #374151; }
+  .tb-M, .tb-T { background: var(--surface-alt); color: var(--text); }
   .tb-HE { background: #ede9fe; color: #6d28d9; }
   .tb-LIB { background: #cffafe; color: #0e7490; }
   .tb-VAC, .tb-V, .tb-VA { background: #d1fae5; color: #065f46; }
@@ -152,94 +221,152 @@
   .tb-CF { background: #cffafe; color: #0891b2; }
   .tb-IT { background: #fee2e2; color: #991b1b; }
   .tb-LD, .tb-LDA { background: #fffbeb; color: #b45309; }
-  .tb-clear { background: #f1f5f9; color: #94a3b8; }
+  .tb-clear { background: var(--surface-alt); color: var(--text-muted); }
   .turno-label { font-size: 9px; font-weight: 600; margin-top: 3px; opacity: 0.75; }
 
-  .hist-item { font-size: 11px; padding: 8px 16px; border-bottom: 1px solid #f1f5f9; color: #64748b; }
+  /* ==================== HISTORIAL ==================== */
+  .hist-item { font-size: 11px; padding: 8px 16px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
   
-  .zona-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  /* ==================== ZONAS (en modal) ==================== */
+  .zona-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
   .zona-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .zona-nombre { font-weight: 800; font-size: 14px; }
   .zona-turnos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; margin-bottom: 12px; }
-  .zona-turno-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; text-align: center; }
-  .zona-turno-label { font-size: 10px; color: #64748b; font-weight: 600; }
-  .zona-turno-num { font-size: 20px; font-weight: 800; color: #0f172a; }
+  .zona-turno-box { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; text-align: center; }
+  .zona-turno-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+  .zona-turno-num { font-size: 20px; font-weight: 800; color: var(--text); }
   .zona-workers { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
 
+  /* ==================== FILTROS ==================== */
   .filtro-tabs { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 4px; }
-  .filtro-tab { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 12px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; flex-shrink: 0; }
-  .filtro-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+  .filtro-tab { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; flex-shrink: 0; color: var(--text); transition: all .2s; }
+  .filtro-tab.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+  .filtro-tab:hover { background: var(--border); }
 
+  /* ==================== EVENTOS ==================== */
   .eventos-list { max-height: 300px; overflow-y: auto; }
-  .evento-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #f1f5f9; }
+  .evento-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--border); }
   .evento-emoji { font-size: 20px; min-width: 40px; text-align: center; }
   .evento-info { flex: 1; }
   .evento-titulo { font-weight: 700; font-size: 13px; }
-  .evento-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .evento-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .evento-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 9px; font-weight: 600; }
 
-  .text-area-import { width: 100%; height: 200px; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; resize: vertical; }
-
+  /* ==================== LOGIN ==================== */
   .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 20px; }
-  .login-box { background: #fff; border-radius: 24px; padding: 32px 24px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+  .login-box { background: var(--surface); border-radius: var(--radius); padding: 32px 24px; width: 100%; max-width: 400px; box-shadow: var(--shadow); border: 1px solid var(--border); }
   .login-box h2 { font-size: 22px; margin-bottom: 8px; }
-  .login-box p { color: #64748b; font-size: 14px; margin-bottom: 24px; }
-  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; }
-  .login-box input:focus { border-color: #0f172a; }
+  .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; margin-bottom: 12px; outline: none; background: var(--surface); color: var(--text); }
+  .login-box input:focus { border-color: var(--accent); }
   .login-box .btn { margin-bottom: 8px; }
-  .login-box .switch { text-align: center; font-size: 13px; color: #64748b; margin-top: 12px; }
-  .login-box .switch a { color: #0f172a; font-weight: 700; cursor: pointer; }
-  .login-error { display: none; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; }
+  .login-box .switch { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 12px; }
+  .login-box .switch a { color: var(--accent); font-weight: 700; cursor: pointer; }
+  .login-error { display: none; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius); padding: 10px 12px; font-size: 12px; margin-bottom: 12px; }
   .login-error.show { display: block; }
   .login-field { position: relative; margin-bottom: 12px; }
   .login-field input { margin-bottom: 0; padding-right: 42px; }
-  .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: #64748b; padding: 4px; }
-  .login-box .btn[disabled] { opacity: .6; cursor: not-allowed; }
+  .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-muted); padding: 4px; }
 
-  #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  /* ==================== TOAST ==================== */
+  #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--accent-contrast); padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #toast.show { opacity: 1; }
-  .empty { text-align: center; padding: 28px; color: #94a3b8; font-size: 13px; }
+  #toast.error { background: var(--danger); }
+
+  /* ==================== UTILIDADES ==================== */
+  .empty { text-align: center; padding: 28px; color: var(--text-muted); font-size: 13px; }
   input[type=file] { display: none; }
   .hidden { display: none !important; }
+  .mt-8 { margin-top: 8px; }
+  .mb-8 { margin-bottom: 8px; }
+  .gap-8 { gap: 8px; }
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+
+  /* ==================== CÓDIGO COMPARTIDO ==================== */
+  .codigo-compartido { font-size: 28px; font-weight: 800; letter-spacing: 4px; text-align: center; padding: 16px; background: var(--surface-alt); border-radius: var(--radius); font-family: monospace; margin: 8px 0; }
+  
+  /* ==================== SELECCIÓN DE CENTRO ==================== */
+  .centro-selector { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--surface-alt); border-radius: var(--radius); font-size: 12px; }
+  .centro-selector select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 8px; font-size: 12px; color: var(--text); outline: none; }
+
+  /* ==================== TOGGLE TEMA ==================== */
+  .theme-toggle { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; border-radius: var(--radius); color: var(--text); transition: background .2s; }
+  .theme-toggle:hover { background: var(--surface-alt); }
+
+  /* ==================== RESPONSIVE ==================== */
+  @media (max-width: 480px) {
+    .logout-btn span { display: none; }
+    .modal-box { padding: 16px; }
+    .login-box { padding: 24px 16px; }
+    .codigo-compartido { font-size: 20px; letter-spacing: 2px; }
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="header">
     <div id="header-left">
-      <h1>Cuadrant+<small>v27</small></h1>
-      <p id="header-sub">Conectando...</p>
+      <h1>Gestión Cuadrantes <small id="header-user"></small></h1>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <span id="save-indicator">✓ Guardado</span>
-      <button id="user-btn" onclick="toggleUserMenu()">👤</button>
+      <span id="save-indicator">Guardado</span>
+      <div id="centro-selector-wrap" class="centro-selector hidden">
+        <select id="centro-selector" onchange="cambiarCentroActivo(this.value)"></select>
+      </div>
+      <button class="theme-toggle" onclick="toggleTema()" title="Cambiar tema">🌓</button>
+      <button class="logout-btn" onclick="toggleUserMenu()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M7 5a8 8 0 1 0 10 0"/></svg>
+        <span>Cerrar sesión</span>
+      </button>
     </div>
   </div>
-  <div id="banner-convenio" class="hidden">⚠️ Convenio vencido. Trabajando en ultraactividad. ⚠️</div>
+  <div id="banner-convenio" class="hidden">Aviso: Convenio vencido. Trabajando en ultraactividad.</div>
   <div id="content">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:#94a3b8;font-size:13px;">Comprobando sesión…</div>
+    <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--text-muted);font-size:13px;">Conectando...</div>
   </div>
   <nav id="nav">
-    <button class="active" onclick="showView('home')" id="nav-home"><span class="ni">🏠</span><span class="nl">Inicio</span></button>
-    <button onclick="showView('cuadrante')" id="nav-cuadrante"><span class="ni">📅</span><span class="nl">Cuadrante</span></button>
-    <button onclick="showView('personal')" id="nav-personal"><span class="ni">👥</span><span class="nl">Personal</span></button>
-    <button onclick="showView('zonas')" id="nav-zonas"><span class="ni">🏥</span><span class="nl">Zonas</span></button>
-    <button onclick="showView('tareas')" id="nav-tareas"><span class="ni">✅</span><span class="nl">Tareas</span></button>
-    <button onclick="showView('seguro')" id="nav-seguro"><span class="ni">🔒</span><span class="nl">Seguro</span></button>
+    <button class="active" onclick="showView('home')" id="nav-home">
+      <span class="ni"><svg viewBox="0 0 24 24"><path d="M3 11l9-9 9 9"/><path d="M5 10v10h14V10"/></svg></span>
+      <span class="nl">Inicio</span>
+    </button>
+    <button onclick="showView('cuadrante')" id="nav-cuadrante">
+      <span class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 4v2"/><path d="M16 4v2"/></svg></span>
+      <span class="nl">Cuadrante</span>
+    </button>
+    <button onclick="showView('personal')" id="nav-personal">
+      <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5z"/><path d="M4 21v-2c0-3.31 2.69-6 6-6h4c3.31 0 6 2.69 6 6v2"/></svg></span>
+      <span class="nl">Personal</span>
+    </button>
+    <button onclick="showView('tareas')" id="nav-tareas">
+      <span class="ni"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <span class="nl">Tareas</span>
+    </button>
+    <button onclick="showView('ajustes')" id="nav-ajustes">
+      <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+      <span class="nl">Ajustes</span>
+    </button>
   </nav>
 </div>
 <div id="toast"></div>
 <input type="file" id="file-import" accept="application/json">
+<input type="file" id="file-import-personal" accept="application/json">
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script>
-// ==================== SUPABASE CONFIG ====================
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
 const SUPABASE_URL = "https://zmeewiepjuznlhdzdodc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptZWV3aWVwanV6bmxoZHpkb2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MjIxMTYsImV4cCI6MjEwMTA5ODExNn0.SkvOkeENQ8IipjjMP2ppcjJ83YQZtK_9Q8NWwW90Y1s";
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ==================== VERSIÓN Y CONSTANTES ====================
+// ============================================================
+// CONSTANTES
+// ============================================================
 const APP_VERSION = 27;
 const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ["D","L","M","X","J","V","S"];
@@ -256,23 +383,29 @@ const CODIGOS_TURNO = [
   { cod:"VA",  label:"Vacaciones Antigüedad", horas:0 },
   { cod:"CF",  label:"Conciliación Familiar", horas:0 },
   { cod:"IT",  label:"Incapacidad Temporal", horas:0 },
-  { cod:"LD",  label:"Libre Disposición (moscoso)", horas:0 },
+  { cod:"LD",  label:"Libre Disposición", horas:0 },
   { cod:"LDA", label:"Libre Disposición Antigüedad", horas:0 },
   { cod:"LIB", label:"Libranza",    horas:0 },
   { cod:"HE",  label:"Hora Extra",  horas:0 },
 ];
 
-// ==================== ESTADO GLOBAL ====================
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
 let state = {
   version: APP_VERSION,
   anio: 2026,
   mesActual: 0,
   centroId: null,
+  centroActual: null,
+  centrosDisponibles: [],
   trabajadores: [],
   zonas: [],
   tareas: [],
   turnos: {},
   historial: [],
+  userProfile: null,
+  currentUser: null,
   parametros: {
     jornadaMaxDiaria: 9,
     jornadaMinDiaria: 7,
@@ -285,12 +418,11 @@ let state = {
     convenioVencido: true,
     convenioTexto: "Convenio Limpieza Hospitalaria SALUD Aragón · Tablas 2026 (ultraactividad)"
   },
-  currentUser: null,
-  userProfile: null,
-  pinHash: null
+  tema: "claro"
 };
 
 let currentView = "home";
+let currentUserAuth = null;
 let cuadFiltro = "";
 let personalFiltro = "";
 let personalFiltroZona = "todas";
@@ -298,40 +430,44 @@ let personalFiltroTurno = "todos";
 let homeMes = new Date().getMonth();
 let undoStack = [];
 let realtimeChannel = null;
-let currentUserAuth = null;
+let lastAuthError = null;
+let filtroCuadranteTimeout = null;
+let tareaAsignadosSeleccionados = new Set();
 
-// ==================== FESTIVOS 2026 ====================
+// ============================================================
+// FESTIVOS
+// ============================================================
 const FESTIVOS_DETALLE = {
-  "2026-01-01": { nombre: "Año Nuevo", emoji: "🎆", color: "verde" },
-  "2026-01-06": { nombre: "Epifanía del Señor", emoji: "👑", color: "verde" },
-  "2026-04-02": { nombre: "Jueves Santo", emoji: "⛪", color: "verde" },
-  "2026-04-03": { nombre: "Viernes Santo", emoji: "⛪", color: "verde" },
-  "2026-04-23": { nombre: "San Jorge · Día de Aragón", emoji: "🐉", color: "verde" },
-  "2026-05-01": { nombre: "Fiesta del Trabajo", emoji: "👷", color: "verde" },
-  "2026-08-15": { nombre: "Asunción de la Virgen", emoji: "🙏", color: "verde" },
-  "2026-10-12": { nombre: "Fiesta Nacional de España", emoji: "🇪🇸", color: "verde" },
-  "2026-11-02": { nombre: "Todos los Santos", emoji: "🕯️", color: "verde" },
-  "2026-12-07": { nombre: "Día de la Constitución", emoji: "📜", color: "verde" },
-  "2026-12-08": { nombre: "Inmaculada Concepción", emoji: "🙏", color: "verde" },
-  "2026-12-25": { nombre: "Navidad", emoji: "🎄", color: "verde" },
-  "2026-12-24": { nombre: "Nochebuena (festivo convenio)", emoji: "🎅", color: "verde" },
-  "2026-12-31": { nombre: "Nochevieja (festivo convenio)", emoji: "🍾", color: "verde" },
-  "2026-01-29": { nombre: "San Valero (Zaragoza)", emoji: "🎉", color: "verde" },
-  "2026-03-05": { nombre: "Cincomarzada (Zaragoza)", emoji: "⚔️", color: "verde" }
+  "2026-01-01": { nombre: "Año Nuevo", color: "verde" },
+  "2026-01-06": { nombre: "Epifanía del Señor", color: "verde" },
+  "2026-04-02": { nombre: "Jueves Santo", color: "verde" },
+  "2026-04-03": { nombre: "Viernes Santo", color: "verde" },
+  "2026-04-23": { nombre: "San Jorge · Día de Aragón", color: "verde" },
+  "2026-05-01": { nombre: "Fiesta del Trabajo", color: "verde" },
+  "2026-08-15": { nombre: "Asunción de la Virgen", color: "verde" },
+  "2026-10-12": { nombre: "Fiesta Nacional de España", color: "verde" },
+  "2026-11-02": { nombre: "Todos los Santos", color: "verde" },
+  "2026-12-07": { nombre: "Día de la Constitución", color: "verde" },
+  "2026-12-08": { nombre: "Inmaculada Concepción", color: "verde" },
+  "2026-12-25": { nombre: "Navidad", color: "verde" },
+  "2026-12-24": { nombre: "Nochebuena (festivo convenio)", color: "verde" },
+  "2026-12-31": { nombre: "Nochevieja (festivo convenio)", color: "verde" },
+  "2026-01-29": { nombre: "San Valero (Zaragoza)", color: "verde" },
+  "2026-03-05": { nombre: "Cincomarzada (Zaragoza)", color: "verde" }
 };
 
 function esFestivo(anio, mes, dia) {
-  const fechaStr = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
-  return FESTIVOS_DETALLE.hasOwnProperty(fechaStr);
+  const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+  return FESTIVOS_DETALLE.hasOwnProperty(f);
 }
 
 function getNombreFestivo(anio, mes, dia) {
-  const fechaStr = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
-  return FESTIVOS_DETALLE[fechaStr] || { nombre: "Día festivo", emoji: "🌟", color: "verde" };
+  const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+  return FESTIVOS_DETALLE[f] || { nombre: "Día festivo", color: "verde" };
 }
 
 function diasEnMes(mes, anio) { return new Date(anio, mes + 1, 0).getDate(); }
-function esFinDeSemana(dia, mes, anio) { const dow = new Date(anio, mes, dia).getDay(); return dow === 0 || dow === 6; }
+function esFinDeSemana(dia, mes, anio) { return new Date(anio, mes, dia).getDay() === 0 || new Date(anio, mes, dia).getDay() === 6; }
 function clavesMes(mes, anio) { return `${anio}-${mes}`; }
 
 function horasCodigo(cod) {
@@ -339,11 +475,45 @@ function horasCodigo(cod) {
   const num = parseInt(cod);
   if (!isNaN(num) && num >= 2 && num <= 9) return num;
   const entry = CODIGOS_TURNO.find(c => c.cod === cod);
-  if (entry) return entry.horas;
-  return 0;
+  return entry ? entry.horas : 0;
 }
 
-// ==================== AUTH ====================
+// ============================================================
+// TEMA (Claro/Oscuro)
+// ============================================================
+function aplicarTema(modo) {
+  if (!modo) modo = state.tema || "claro";
+  document.documentElement.setAttribute('data-theme', modo);
+  state.tema = modo;
+  localStorage.setItem('theme', modo);
+  // Guardar en Supabase si hay usuario
+  if (currentUserAuth && state.centroId) {
+    sb.from('perfiles').update({ tema: modo }).eq('id', currentUserAuth.id).then(() => {}).catch(() => {});
+  }
+}
+
+function toggleTema() {
+  const nuevo = state.tema === "claro" ? "oscuro" : "claro";
+  aplicarTema(nuevo);
+}
+
+function cargarTemaGuardado() {
+  const local = localStorage.getItem('theme');
+  if (local) {
+    aplicarTema(local);
+    return;
+  }
+  // Intentar cargar desde Supabase si hay sesión
+  if (currentUserAuth) {
+    sb.from('perfiles').select('tema').eq('id', currentUserAuth.id).maybeSingle().then(({ data }) => {
+      if (data?.tema) aplicarTema(data.tema);
+    }).catch(() => {});
+  }
+}
+
+// ============================================================
+// AUTH
+// ============================================================
 async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
@@ -353,138 +523,202 @@ async function checkAuth() {
   return false;
 }
 
-let lastAuthError = null;
-
 async function loadUserProfile() {
   if (!currentUserAuth) return false;
   lastAuthError = null;
-  const { data, error } = await sb
+  
+  // Obtener perfil
+  const { data: perfil, error: errPerfil } = await sb
     .from('perfiles')
     .select('*')
     .eq('id', currentUserAuth.id)
     .maybeSingle();
-  if (error) {
-    console.error('Error loading profile:', error);
-    lastAuthError = 'No se pudo cargar tu perfil (' + (error.message || 'error de permisos') + '). Revisa las políticas RLS de la tabla "perfiles" en Supabase.';
+  if (errPerfil) {
+    console.error('Error loading profile:', errPerfil);
+    lastAuthError = 'No se pudo cargar tu perfil.';
     return false;
   }
-  if (!data) {
+  
+  if (!perfil) {
+    // Intentar crear perfil para usuario nuevo
     return await createFirstUserProfile();
   }
-  state.userProfile = data;
-  state.centroId = data.centro_id;
-  if (data.rol === 'coordinador' || data.rol === 'supervisor') {
-    await loadData();
-    document.getElementById('header-sub').textContent = `👤 ${data.nombre_completo || 'Usuario'} · ${data.rol}`;
+  
+  state.userProfile = perfil;
+  
+  // Cargar centros disponibles
+  await cargarCentrosDisponibles();
+  
+  // Si hay centros disponibles, usar el primero
+  if (state.centrosDisponibles.length > 0) {
+    const primeraMembresia = state.centrosDisponibles[0];
+    state.centroId = primeraMembresia.centro_id;
+    state.centroActual = primeraMembresia;
+    state.userProfile.rol = primeraMembresia.rol;
   } else {
-    document.getElementById('header-sub').textContent = `👤 ${data.nombre_completo || 'Usuario'} · solo lectura`;
-    await loadTrabajadores();
+    state.centroId = perfil.centro_id;
   }
-  document.getElementById('banner-convenio').classList.remove('hidden');
-  document.getElementById('user-btn').textContent = '👤';
-  return true;
+  
+  // Cargar datos del centro
+  if (state.centroId) {
+    await loadData();
+    actualizarNombreHeader();
+    actualizarSelectorCentro();
+    return true;
+  }
+  
+  lastAuthError = 'No tienes ningún centro asignado.';
+  return false;
+}
+
+async function cargarCentrosDisponibles() {
+  const { data, error } = await sb
+    .from('miembros_centro')
+    .select('rol, centros(id, nombre, codigo_compartido)')
+    .eq('user_id', currentUserAuth.id);
+  if (error) {
+    console.error('Error loading centros:', error);
+    return;
+  }
+  state.centrosDisponibles = data || [];
+}
+
+function actualizarSelectorCentro() {
+  const wrap = document.getElementById('centro-selector-wrap');
+  const select = document.getElementById('centro-selector');
+  if (!wrap || !select) return;
+  
+  if (state.centrosDisponibles.length <= 1) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  
+  wrap.classList.remove('hidden');
+  select.innerHTML = state.centrosDisponibles.map(m => 
+    `<option value="${m.centros.id}" ${m.centros.id === state.centroId ? 'selected' : ''}>
+      ${m.centros.nombre} (${m.rol})
+    </option>`
+  ).join('');
+}
+
+async function cambiarCentroActivo(centroId) {
+  state.centroId = centroId;
+  const membresia = state.centrosDisponibles.find(m => m.centros.id === centroId);
+  if (membresia) {
+    state.centroActual = membresia;
+    state.userProfile.rol = membresia.rol;
+  }
+  await loadData();
+  render();
+  mostrarToast(`Centro cambiado a ${membresia?.centros.nombre || ''}`);
 }
 
 async function createFirstUserProfile() {
-  const { data: centro, error: errCentroSel } = await sb
+  if (!currentUserAuth) return false;
+  
+  const { data: centro, error: errCentro } = await sb
     .from('centros')
-    .select('id')
+    .select('id, codigo_compartido')
     .limit(1)
     .maybeSingle();
-  if (errCentroSel) {
-    lastAuthError = 'No se pudo leer la tabla "centros" (' + errCentroSel.message + ').';
+  if (errCentro) {
+    lastAuthError = 'No se pudo leer la tabla "centros".';
     return false;
   }
 
   let centroId = centro?.id;
   if (!centroId) {
-    const { data: newCentro, error: errCentroIns } = await sb
+    const { data: newCentro, error: errNew } = await sb
       .from('centros')
       .insert({ nombre: 'Hospital Calatayud Limpieza' })
-      .select('id')
+      .select('id, codigo_compartido')
       .single();
-    if (errCentroIns) {
-      lastAuthError = 'No se pudo crear el centro inicial (' + errCentroIns.message + '). Revisa los permisos de inserción en "centros".';
+    if (errNew) {
+      lastAuthError = 'No se pudo crear el centro inicial.';
       return false;
     }
     centroId = newCentro?.id;
   }
 
   if (!centroId) {
-    lastAuthError = 'No hay ningún centro disponible para asignar al usuario.';
+    lastAuthError = 'No hay centro disponible.';
     return false;
   }
 
-  const { error } = await sb
+  // Insertar perfil
+  const { error: errPerfil } = await sb
     .from('perfiles')
     .insert({
       id: currentUserAuth.id,
       centro_id: centroId,
-      nombre_completo: currentUserAuth.email?.split('@')[0] || 'Coordinador',
-      rol: 'coordinador'
+      nombre_completo: currentUserAuth.email?.split('@')[0] || 'Administrador',
+      rol: 'administrador'
     });
-  if (error) {
-    lastAuthError = 'No se pudo crear tu perfil (' + error.message + '). Revisa los permisos de inserción en "perfiles".';
+  if (errPerfil) {
+    lastAuthError = 'No se pudo crear tu perfil.';
     return false;
   }
-  mostrarToast('✅ Perfil de coordinador creado');
+
+  // Insertar membresía como administrador
+  const { error: errMembresia } = await sb
+    .from('miembros_centro')
+    .insert({
+      centro_id: centroId,
+      user_id: currentUserAuth.id,
+      rol: 'administrador'
+    });
+  if (errMembresia) {
+    console.warn('Error creando membresía (puede que ya exista):', errMembresia);
+  }
+
+  mostrarToast('Perfil de administrador creado');
   return await loadUserProfile();
 }
 
 async function signIn(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) { mostrarErrorLogin(error.message); return false; }
+  if (error) { mostrarToast(error.message, true); return false; }
   currentUserAuth = data.user;
   const ok = await loadUserProfile();
   if (!ok) {
-    // La autenticación fue correcta pero el perfil no se pudo cargar
-    // (RLS, perfil inexistente sin permiso de creación, etc). No volvemos
-    // a un login "en blanco": mostramos el motivo real.
-    renderLogin(lastAuthError || 'Sesión iniciada, pero no se pudo cargar tu perfil de usuario.');
+    renderLogin(lastAuthError || 'No se pudo cargar el perfil.');
     return false;
   }
   render();
-  mostrarToast('✅ Sesión iniciada');
+  mostrarToast('Sesión iniciada');
   return true;
 }
 
 async function signUp(email, password, nombre) {
   const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) { mostrarErrorLogin(error.message); return false; }
-  if (!data.user) { mostrarErrorLogin('No se pudo crear el usuario.'); return false; }
+  if (error) { mostrarToast(error.message, true); return false; }
+  if (!data.user) { mostrarToast('No se pudo crear el usuario.', true); return false; }
 
-  // Si Supabase tiene activada la confirmación de email, aquí NO hay sesión
-  // todavía (data.session === null) aunque el usuario se haya creado.
-  // Antes el código seguía como si hubiera entrado, y el usuario se
-  // quedaba "colgado" sin explicación.
   if (!data.session) {
-    renderLogin('✅ Cuenta creada. Revisa tu correo (' + email + ') y confirma tu email antes de iniciar sesión.');
+    renderLogin('Cuenta creada. Revisa tu correo y confirma el email antes de iniciar sesión.');
     return true;
   }
 
   currentUserAuth = data.user;
   let ok = await loadUserProfile();
   if (!ok && !state.userProfile) {
-    const { data: centro, error: errCentro } = await sb.from('centros').select('id').limit(1).maybeSingle();
-    if (errCentro) {
-      renderLogin('No se pudo asignar un centro al usuario (' + errCentro.message + ').');
+    const { data: centro } = await sb.from('centros').select('id').limit(1).maybeSingle();
+    const cid = centro?.id;
+    if (!cid) {
+      renderLogin('No existe ningún centro en la base de datos.');
       return false;
     }
-    const centroId = centro?.id;
-    if (!centroId) {
-      renderLogin('No existe ningún centro en la base de datos al que asignar el usuario. Crea uno desde Supabase primero.');
-      return false;
-    }
-    const { error: errPerfil } = await sb.from('perfiles').insert({
+    await sb.from('perfiles').insert({
       id: data.user.id,
-      centro_id: centroId,
+      centro_id: cid,
       nombre_completo: nombre || data.user.email?.split('@')[0] || 'Usuario',
-      rol: 'coordinador'
+      rol: 'administrador'
     });
-    if (errPerfil) {
-      renderLogin('No se pudo crear tu perfil (' + errPerfil.message + ').');
-      return false;
-    }
+    await sb.from('miembros_centro').insert({
+      centro_id: cid,
+      user_id: data.user.id,
+      rol: 'administrador'
+    });
     ok = await loadUserProfile();
   }
   if (!ok) {
@@ -492,7 +726,7 @@ async function signUp(email, password, nombre) {
     return false;
   }
   render();
-  mostrarToast('✅ Usuario registrado');
+  mostrarToast('Usuario registrado');
   return true;
 }
 
@@ -501,16 +735,18 @@ async function signOut() {
   currentUserAuth = null;
   state.userProfile = null;
   state.centroId = null;
+  state.centrosDisponibles = [];
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
     realtimeChannel = null;
   }
-  document.getElementById('header-sub').textContent = 'Desconectado';
   renderLogin();
-  mostrarToast('👋 Sesión cerrada');
+  mostrarToast('Sesión cerrada');
 }
 
-// ==================== CARGA DE DATOS ====================
+// ============================================================
+// CARGA DE DATOS
+// ============================================================
 async function loadData() {
   if (!state.centroId) return;
   await Promise.all([
@@ -547,10 +783,13 @@ async function loadZonas() {
 async function loadTareas() {
   const { data, error } = await sb
     .from('tareas')
-    .select('*')
+    .select('*, tarea_asignados(trabajador_id)')
     .eq('centro_id', state.centroId);
   if (error) { console.error('Error loading tareas:', error); return; }
-  state.tareas = data || [];
+  state.tareas = (data || []).map(t => ({
+    ...t,
+    asignados: (t.tarea_asignados || []).map(a => a.trabajador_id)
+  }));
 }
 
 async function loadTurnos() {
@@ -602,7 +841,9 @@ async function loadParametros() {
   }
 }
 
-// ==================== REALTIME ====================
+// ============================================================
+// REALTIME
+// ============================================================
 function setupRealtime() {
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
@@ -622,16 +863,14 @@ function setupRealtime() {
         filter: `centro_id=eq.${state.centroId}`
       },
       (payload) => {
-        console.log('Realtime:', payload);
         if (payload.new?.editado_por === currentUserAuth?.id) return;
         if (payload.old?.editado_por === currentUserAuth?.id) return;
         handleTurnoChange(payload);
       }
     )
     .subscribe((status) => {
-      console.log('Realtime status:', status);
       if (status === 'SUBSCRIBED') {
-        document.getElementById('header-sub').textContent += ' · 🔴 En directo';
+        document.getElementById('header-sub').textContent += ' · En directo';
       }
     });
 }
@@ -652,29 +891,17 @@ function handleTurnoChange(payload) {
     if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
       const idx = state.trabajadores.findIndex(w => w.id === t.trabajador_id);
       if (idx >= 0) actualizarCeldaEnTabla(idx, dia - 1, t.codigo);
-      mostrarToast('🔄 Cuadrante actualizado por otro usuario');
+      mostrarToast('Cuadrante actualizado por otro usuario');
     }
   }
 }
 
-// ==================== FUNCIONES CUADRANTE ====================
-function getCuadranteMes(mes, anio) {
-  const key = clavesMes(mes, anio);
-  if (!state.turnos[key]) {
-    state.turnos[key] = {};
-    state.trabajadores.forEach(t => {
-      state.turnos[key][t.id] = {};
-    });
-  }
-  return state.turnos[key];
-}
-
+// ============================================================
+// FUNCIONES CUADRANTE
+// ============================================================
 function getTurno(trabajadorId, dia, mes, anio) {
   const key = clavesMes(mes || state.mesActual, anio || state.anio);
-  const turnos = state.turnos[key];
-  if (!turnos) return '';
-  if (!turnos[trabajadorId]) return '';
-  return turnos[trabajadorId][dia] || '';
+  return state.turnos[key]?.[trabajadorId]?.[dia] || '';
 }
 
 async function setCelda(trabajadorId, dia, valor, mes, anio) {
@@ -684,45 +911,29 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   const key = clavesMes(mes, anio);
   const anterior = getTurno(trabajadorId, dia, mes, anio);
   
-  const { data: existing } = await sb
-    .from('turnos')
-    .select('id')
-    .eq('centro_id', state.centroId)
-    .eq('trabajador_id', trabajadorId)
-    .eq('fecha', fecha)
-    .maybeSingle();
-  
   let error;
-  if (existing) {
-    if (valor === '') {
-      const { error: delError } = await sb
-        .from('turnos')
-        .delete()
-        .eq('id', existing.id);
-      error = delError;
-    } else {
-      const { error: updError } = await sb
-        .from('turnos')
-        .update({ codigo: valor, editado_por: currentUserAuth?.id })
-        .eq('id', existing.id);
-      error = updError;
-    }
-  } else if (valor !== '') {
-    const { error: insError } = await sb
+  if (valor === '') {
+    const { error: delError } = await sb
       .from('turnos')
-      .insert({
+      .delete()
+      .match({ centro_id: state.centroId, trabajador_id: trabajadorId, fecha });
+    error = delError;
+  } else {
+    const { error: upsertError } = await sb
+      .from('turnos')
+      .upsert({
         centro_id: state.centroId,
         trabajador_id: trabajadorId,
         fecha: fecha,
         codigo: valor,
         editado_por: currentUserAuth?.id
-      });
-    error = insError;
+      }, { onConflict: 'centro_id,trabajador_id,fecha' });
+    error = upsertError;
   }
   
   if (error) {
     console.error('Error guardando turno:', error);
-    mostrarToast('❌ Error al guardar', true);
+    mostrarToast('Error al guardar', true);
     return;
   }
   
@@ -741,36 +952,31 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
     const idx = state.trabajadores.findIndex(t => t.id === trabajadorId);
     if (idx >= 0) actualizarCeldaEnTabla(idx, dia, valor);
   }
-  mostrarToast(`✓ Turno actualizado`);
+  mostrarToast('Turno actualizado');
 }
 
 function actualizarCeldaEnTabla(fila, columna, valor) {
   const celda = document.getElementById(`celda-${fila}-${columna}`);
   if (celda) {
     celda.textContent = valor;
-    let colorClass = '';
-    if (valor === 'L') colorClass = 'L';
-    else if (valor === 'D') colorClass = 'D';
-    else if (valor === 'E') colorClass = 'E';
-    else if (valor === 'M') colorClass = 'M';
-    else if (valor === 'T') colorClass = 'T';
-    else if (valor === 'N') colorClass = 'N';
-    else if (valor === 'HE') colorClass = 'HE';
-    else if (valor === 'LIB') colorClass = 'LIB';
-    else if (valor === 'V' || valor === 'VAC') colorClass = 'V';
-    else if (valor === 'VA') colorClass = 'VA';
-    else if (valor === 'PR') colorClass = 'PR';
-    else if (valor === 'CF') colorClass = 'CF';
-    else if (valor === 'IT') colorClass = 'IT';
-    else if (valor === 'LD' || valor === 'LDA') colorClass = 'LD';
-    else if (valor && valor.startsWith('F')) colorClass = 'F1';
-    celda.className = `editable-cell ${colorClass}`;
+    celda.className = claseCelda(valor, false, false);
     const totalCelda = document.getElementById(`total-${fila}`);
     if (totalCelda) {
       const t = state.trabajadores[fila];
       if (t) totalCelda.textContent = getTotalHorasMes(t.id, state.mesActual, state.anio);
     }
   }
+}
+
+function claseCelda(valor, esFinde, esFest) {
+  const clases = ['editable-cell'];
+  if (valor) {
+    if (valor.startsWith('F') && valor !== 'F') clases.push('F1');
+    else clases.push(valor);
+  }
+  if (esFinde) clases.push('wkend');
+  if (esFest && valor && valor !== 'L' && valor !== 'D') clases.push('festivo-cell');
+  return clases.join(' ');
 }
 
 function getTotalHorasMes(trabajadorId, mes, anio) {
@@ -866,29 +1072,33 @@ function validarCuadranteCompleto() {
     if (t.estado !== 'activo') return;
     const seg = getMaxDiasSeguidos(t.id, mes, anio);
     if (seg > state.parametros.maxDiasSeguidos) {
-      incidencias.push(`⚠️ ${t.nombre}: ${seg} días seguidos trabajando (máx ${state.parametros.maxDiasSeguidos})`);
+      incidencias.push(`Aviso: ${t.nombre}: ${seg} días seguidos trabajando (máx ${state.parametros.maxDiasSeguidos})`);
     }
     const bolsa = getTotalHorasAnio(t.id) - state.parametros.jornadaAnualDiurna;
     if (bolsa < -40) {
-      incidencias.push(`📊 ${t.nombre}: bolsa ${bolsa}h (déficit > 40h)`);
+      incidencias.push(`Datos: ${t.nombre}: bolsa ${bolsa}h (déficit > 40h)`);
     }
   });
   return incidencias;
 }
 
-// ==================== VISTA LOGIN ====================
+// ============================================================
+// VISTA LOGIN
+// ============================================================
 function renderLogin(mensajeError) {
-  document.getElementById('content').innerHTML = `
+  const content = document.getElementById('content');
+  if (!content) return;
+  content.innerHTML = `
     <div class="login-container">
       <div class="login-box">
-        <h2>🧹 Gestión Cuadrantes</h2>
+        <h2>Gestión Cuadrantes</h2>
         <p>Inicia sesión para gestionar el cuadrante</p>
         <div id="login-error" class="login-error${mensajeError ? ' show' : ''}">${mensajeError || ''}</div>
         <div id="login-form">
           <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
           <div class="login-field">
             <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility()">👁️</button>
+            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility()">👁</button>
           </div>
           <button class="btn btn-primary" id="login-submit-btn" onclick="handleLogin()">Iniciar sesión</button>
           <button class="btn btn-secondary" id="login-register-btn" onclick="handleRegister()">Registrarse</button>
@@ -897,7 +1107,7 @@ function renderLogin(mensajeError) {
       </div>
     </div>
   `;
-  document.getElementById('header-sub').textContent = '🔐 Inicia sesión';
+  document.getElementById('header-sub').textContent = 'Inicia sesión';
   document.getElementById('nav').style.display = 'none';
   document.getElementById('login-email')?.focus();
 }
@@ -906,15 +1116,6 @@ function togglePasswordVisibility() {
   const pass = document.getElementById('login-password');
   if (!pass) return;
   pass.type = pass.type === 'password' ? 'text' : 'password';
-}
-
-function mostrarErrorLogin(msg) {
-  const box = document.getElementById('login-error');
-  if (box) {
-    box.textContent = msg;
-    box.classList.add('show');
-  }
-  mostrarToast('❌ ' + msg, true);
 }
 
 let loginMode = 'login';
@@ -928,21 +1129,21 @@ function toggleLoginMode() {
   const switchLink = form.querySelector('.switch a');
   
   if (loginMode === 'register') {
-    const nombreInput = document.createElement('input');
-    nombreInput.id = 'login-nombre';
-    nombreInput.type = 'text';
-    nombreInput.placeholder = 'Nombre completo';
-    nombreInput.className = 'modal-input';
-    nombreInput.style.marginBottom = '12px';
-    form.insertBefore(nombreInput, email);
+    const ni = document.createElement('input');
+    ni.id = 'login-nombre';
+    ni.type = 'text';
+    ni.placeholder = 'Nombre completo';
+    ni.className = 'modal-input';
+    ni.style.marginBottom = '12px';
+    form.insertBefore(ni, email);
     btn.textContent = 'Registrarse';
     btn.onclick = handleRegister;
     btn2.style.display = 'none';
     switchLink.textContent = 'Ya tengo cuenta';
     switchLink.onclick = toggleLoginMode;
   } else {
-    const nombreInput = document.getElementById('login-nombre');
-    if (nombreInput) nombreInput.remove();
+    const ni = document.getElementById('login-nombre');
+    if (ni) ni.remove();
     btn.textContent = 'Iniciar sesión';
     btn.onclick = handleLogin;
     btn2.style.display = '';
@@ -953,40 +1154,39 @@ function toggleLoginMode() {
 
 async function handleLogin() {
   const email = document.getElementById('login-email')?.value.trim();
-  const password = document.getElementById('login-password')?.value;
-  if (!email || !password) { mostrarErrorLogin('Email y contraseña requeridos'); return; }
+  const pass = document.getElementById('login-password')?.value;
+  if (!email || !pass) { mostrarToast('Email y contraseña requeridos', true); return; }
   const btn = document.getElementById('login-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
-  try {
-    await signIn(email, password);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
-  }
+  try { await signIn(email, pass); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; } }
 }
 
 async function handleRegister() {
   const email = document.getElementById('login-email')?.value.trim();
-  const password = document.getElementById('login-password')?.value;
+  const pass = document.getElementById('login-password')?.value;
   const nombre = document.getElementById('login-nombre')?.value;
-  if (!email || !password) { mostrarErrorLogin('Email y contraseña requeridos'); return; }
-  if (password.length < 6) { mostrarErrorLogin('La contraseña debe tener al menos 6 caracteres'); return; }
+  if (!email || !pass) { mostrarToast('Email y contraseña requeridos', true); return; }
+  if (pass.length < 6) { mostrarToast('La contraseña debe tener al menos 6 caracteres', true); return; }
   const btn = document.getElementById('login-register-btn') || document.querySelector('#login-form .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
-  try {
-    await signUp(email, password, nombre);
-  } finally {
-    if (btn) { btn.disabled = false; }
-  }
+  try { await signUp(email, pass, nombre); }
+  finally { if (btn) { btn.disabled = false; } }
 }
 
-// ==================== VISTA INICIO ====================
+// ============================================================
+// VISTA INICIO
+// ============================================================
 function renderHome() {
+  const content = document.getElementById('content');
+  if (!content) return;
   const mes = homeMes;
   const anio = state.anio;
   const dias = diasEnMes(mes, anio);
   const hoy = new Date();
   const diaHoy = hoy.getDate();
   const esHoyMes = hoy.getMonth() === mes && hoy.getFullYear() === anio;
+  
   let html = `<div class="card"><div class="card-header"><div class="cal-nav"><button class="cal-nav-btn" onclick="cambiarHomeMes(-1)">◀</button><span class="cal-nav-title">${MESES_NOMBRES[mes]} ${anio}</span><button class="cal-nav-btn" onclick="cambiarHomeMes(1)">▶</button></div></div><div class="card-body"><div class="cal-grid">`;
   DIAS_SEMANA.forEach(d => html += `<div class="cal-wd">${d}</div>`);
   const primerDia = new Date(anio, mes, 1).getDay();
@@ -1001,18 +1201,18 @@ function renderHome() {
   html += `</div></div></div>`;
   
   const tareasHoy = state.tareas.filter(t => !t.completada && new Date(t.fecha).getDate() === diaHoy && new Date(t.fecha).getMonth() === hoy.getMonth());
-  html += `<div class="card"><div class="card-header">⚠️ Tareas de hoy (${tareasHoy.length})</div><div class="card-body">`;
-  if (!tareasHoy.length) html += `<p style="color:#94a3b8">Sin tareas pendientes hoy</p>`;
+  html += `<div class="card"><div class="card-header">Tareas de hoy (${tareasHoy.length})</div><div class="card-body">`;
+  if (!tareasHoy.length) html += `<p style="color:var(--text-muted)">Sin tareas pendientes hoy</p>`;
   tareasHoy.forEach(t => html += `<div class="aviso aviso-rojo"><strong>${t.nombre}</strong></div>`);
   html += `</div></div>`;
   
   const incidencias = validarCuadranteCompleto();
   if (incidencias.length > 0) {
-    html += `<div class="card"><div class="card-header">⚠️ Alertas del cuadrante (${incidencias.length})</div><div class="card-body">`;
+    html += `<div class="card"><div class="card-header">Alertas del cuadrante (${incidencias.length})</div><div class="card-body">`;
     incidencias.slice(0, 10).forEach(inc => {
       let clase = 'aviso-amber';
-      if (inc.includes('⚠️')) clase = 'aviso-rojo';
-      if (inc.includes('📊')) clase = 'aviso-azul';
+      if (inc.includes('Aviso:')) clase = 'aviso-rojo';
+      if (inc.includes('Datos:')) clase = 'aviso-azul';
       html += `<div class="aviso ${clase}" style="font-size:11px;padding:6px 10px;">${inc}</div>`;
     });
     if (incidencias.length > 10) html += `<div class="aviso aviso-gris">... y ${incidencias.length - 10} más</div>`;
@@ -1020,17 +1220,13 @@ function renderHome() {
   }
   
   const enBaja = state.trabajadores.filter(t => t.estado === 'baja').length;
-  html += `<div class="card"><div class="card-header">📋 Resumen</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px"><div style="text-align:center;padding:10px;background:#f8fafc;border-radius:10px"><div style="font-size:20px;font-weight:800">${state.trabajadores.length}</div><div style="font-size:10px">Trabajadores</div></div><div style="text-align:center;padding:10px;background:#fff5f5;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#dc2626">${enBaja}</div><div style="font-size:10px">En baja</div></div><div style="text-align:center;padding:10px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#16a34a">${state.zonas.length}</div><div style="font-size:10px">Zonas</div></div><div style="text-align:center;padding:10px;background:#fef3c7;border-radius:10px"><div style="font-size:20px;font-weight:800;color:#d97706">${state.trabajadores.filter(t => t.sustituye_a_id).length}</div><div style="font-size:10px">Sustituciones</div></div></div></div>`;
-  document.getElementById("content").innerHTML = html;
-  document.getElementById("header-sub").textContent = `👤 ${state.userProfile?.nombre_completo || 'Usuario'} · ${MESES_NOMBRES[state.mesActual]} ${state.anio}`;
-  document.getElementById('nav').style.display = '';
+  html += `<div class="card"><div class="card-header">Resumen</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px"><div style="text-align:center;padding:10px;background:var(--surface-alt);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800">${state.trabajadores.length}</div><div style="font-size:10px;color:var(--text-muted)">Trabajadores</div></div><div style="text-align:center;padding:10px;background:var(--danger-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--danger)">${enBaja}</div><div style="font-size:10px;color:var(--text-muted)">En baja</div></div><div style="text-align:center;padding:10px;background:var(--success-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--success)">${state.zonas.length}</div><div style="font-size:10px;color:var(--text-muted)">Zonas</div></div><div style="text-align:center;padding:10px;background:var(--warning-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--warning)">${state.trabajadores.filter(t => t.sustituye_a_id).length}</div><div style="font-size:10px;color:var(--text-muted)">Sustituciones</div></div></div></div>`;
+  content.innerHTML = html;
+  actualizarNombreHeader();
 }
 
 function cambiarHomeMes(delta) {
-  let nuevoMes = homeMes + delta;
-  if (nuevoMes < 0) nuevoMes = 11;
-  if (nuevoMes > 11) nuevoMes = 0;
-  homeMes = nuevoMes;
+  homeMes = (homeMes + delta + 12) % 12;
   renderHome();
 }
 
@@ -1044,24 +1240,28 @@ function mostrarEventosDia(anio, mes, dia) {
   });
   if (esFestivo(anio, mes, dia)) {
     const fest = getNombreFestivo(anio, mes, dia);
-    eventos.push({ tipo: 'festivo', nombre: fest.nombre, emoji: fest.emoji, descripcion: 'Día festivo', color: 'verde' });
+    eventos.push({ tipo: 'festivo', nombre: fest.nombre, emoji: '🌟', descripcion: 'Día festivo', color: 'verde' });
   }
   if (eventos.length === 0) { mostrarToast('No hay eventos este día'); return; }
   const fechaStr = `${dia} de ${MESES_NOMBRES[mes]} de ${anio}`;
   let eventosHtml = `<div class="eventos-list">`;
   eventos.forEach(ev => {
-    let bgColor = ev.color === 'rojo' ? 'background:#fee2e2;color:#991b1b' : ev.color === 'amber' ? 'background:#fef3c7;color:#92400e' : 'background:#dcfce7;color:#14532d';
+    let bgColor = ev.color === 'rojo' ? 'background:var(--danger-bg);color:var(--danger)' : ev.color === 'amber' ? 'background:var(--warning-bg);color:var(--warning)' : 'background:var(--success-bg);color:var(--success)';
     eventosHtml += `<div class="evento-item"><div class="evento-emoji">${ev.emoji}</div><div class="evento-info"><div class="evento-titulo">${ev.nombre}</div><div class="evento-desc">${ev.descripcion}</div></div><div class="evento-badge" style="${bgColor}">${ev.tipo}</div></div>`;
   });
   eventosHtml += `</div>`;
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.innerHTML = `<div class="modal-box centered"><div class="modal-title">📅 ${fechaStr}</div>${eventosHtml}<div class="modal-btns"><button class="btn-modal-cancel" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box centered"><div class="modal-title">${fechaStr}</div>${eventosHtml}<div class="modal-btns"><button class="btn-modal-cancel" onclick="cerrarModal()">Cerrar</button></div></div>`;
   document.body.appendChild(overlay);
 }
 
-// ==================== VISTA CUADRANTE ====================
+// ============================================================
+// VISTA CUADRANTE
+// ============================================================
 function renderCuadrante() {
+  const content = document.getElementById('content');
+  if (!content) return;
   const mes = state.mesActual;
   const anio = state.anio;
   const dias = diasEnMes(mes, anio);
@@ -1071,16 +1271,25 @@ function renderCuadrante() {
   let html = `<div class="mes-selector">`;
   MESES_NOMBRES.forEach((n, i) => { html += `<button class="mes-btn${i === mes ? ' active' : ''}" onclick="cambiarMes(${i})">${n.slice(0,3)}</button>`; });
   html += `</div>`;
-  html += `<div class="cuad-toolbar"><input class="cuad-search" id="cuad-search" type="text" placeholder="🔍 Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)"><button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button><button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button><button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙️ Parámetros</button><button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">🗑 Vaciar mes</button><button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">⚠️ Validar</button></div>`;
+  html += `<div class="cuad-toolbar">
+    <input class="cuad-search" id="cuad-search" type="text" placeholder="Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)">
+    <button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button>
+    <button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button>
+    <button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button>
+    <button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>
+    <button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>
+    <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
+  </div>`;
   html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días</div>`;
-  html += `<div class="wrap"><table><thead><tr><th style="border:0.5px solid #cbd5e1;padding:6px 4px;text-align:left;position:sticky;left:0;background:#f1f5f9;min-width:180px;">Trabajador</th>`;
+  html += `<div class="wrap"><table><thead><tr><th style="border:0.5px solid var(--border);padding:6px 4px;text-align:left;position:sticky;left:0;background:var(--surface-alt);min-width:180px;">Trabajador</th>`;
   for (let d = 1; d <= dias; d++) {
     const fds = esFinDeSemana(d, mes, anio);
     const fest = esFestivo(anio, mes, d);
-    html += `<th style="border:0.5px solid #cbd5e1;padding:6px 2px;text-align:center;${fds ? 'background:#eef2ff;' : ''}${fest ? 'background:#fff7ed;' : ''}">${d}</th>`;
+    html += `<th style="border:0.5px solid var(--border);padding:6px 2px;text-align:center;${fds ? 'background:var(--surface-alt);' : ''}${fest ? 'background:var(--warning-bg);' : ''}">${d}</th>`;
   }
-  html += `<th style="border:0.5px solid #cbd5e1;padding:6px 4px;text-align:center;background:#e8f4fd;position:sticky;right:0;">H</th></tr></thead><tbody>`;
-
+  html += `<th style="border:0.5px solid var(--border);padding:6px 4px;text-align:center;background:var(--info-bg);position:sticky;right:0;">H</th></tr></thead><tbody id="cuad-tbody">`;
+  
+  // Generar filas
   const filtrados = state.trabajadores.filter(t => t.nombre.toLowerCase().includes(cuadFiltro.toLowerCase()));
   for (let idx = 0; idx < filtrados.length; idx++) {
     const t = filtrados[idx];
@@ -1088,40 +1297,20 @@ function renderCuadrante() {
     const seg = getMaxDiasSeguidos(t.id, mes, anio);
     const bolsa = getTotalHorasAnio(t.id) - state.parametros.jornadaAnualDiurna;
     let rowStyle = '';
-    if (t.estado === 'baja') rowStyle = 'opacity:0.55; background:#fff5f5;';
-    if (t.tipo === 'sustituto') rowStyle = 'color:#dc2626;';
-    html += `<tr style="${rowStyle}"><td style="border:0.5px solid #cbd5e1;padding:4px 6px;text-align:left;position:sticky;left:0;background:white;font-weight:600;">${t.nombre}${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠️' : ''}${bolsa < -40 ? ' 📉' : ''}</td>`;
-
+    if (t.estado === 'baja') rowStyle = 'opacity:0.55; background:var(--danger-bg);';
+    if (t.tipo === 'sustituto') rowStyle = 'color:var(--danger);';
+    html += `<tr style="${rowStyle}"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--surface);font-weight:600;">${t.nombre}${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠' : ''}${bolsa < -40 ? ' 📉' : ''}</td>`;
     for (let d = 0; d < dias; d++) {
       const val = turnos[t.id]?.[d] || '';
-      let cellStyle = 'border:0.5px solid #cbd5e1;padding:4px 2px;text-align:center;';
-      if (val === 'L') cellStyle += ' color:#1d4ed8;font-weight:700;';
-      else if (val === 'D') cellStyle += ' color:#15803d;font-weight:700;';
-      else if (val === 'E') cellStyle += ' color:#9333ea;font-weight:700;background:#f3e8ff;';
-      else if (val === 'M') cellStyle += ' color:#374151;font-weight:600;';
-      else if (val === 'T') cellStyle += ' color:#374151;font-weight:600;';
-      else if (val === 'N') cellStyle += ' color:#92400e;font-weight:700;';
-      else if (val === 'HE') cellStyle += ' color:#6d28d9;font-weight:700;';
-      else if (val === 'LIB') cellStyle += ' color:#0e7490;font-weight:700;';
-      else if (val === 'V' || val === 'VAC') cellStyle += ' color:#065f46;font-weight:700;background:#d1fae5;';
-      else if (val === 'VA') cellStyle += ' color:#065f46;font-weight:700;background:#d1fae5;';
-      else if (val === 'PR') cellStyle += ' color:#7c3aed;font-weight:700;background:#ede9fe;';
-      else if (val === 'CF') cellStyle += ' color:#0891b2;font-weight:700;background:#cffafe;';
-      else if (val === 'IT') cellStyle += ' color:#991b1b;font-weight:700;background:#fee2e2;';
-      else if (val === 'LD' || val === 'LDA') cellStyle += ' color:#b45309;font-weight:700;background:#fffbeb;';
-      else if (val && val.startsWith('F')) cellStyle += ' color:#ea580c;font-weight:700;';
-      
       const fds = esFinDeSemana(d + 1, mes, anio);
       const fest = esFestivo(anio, mes, d + 1);
-      if (fds) cellStyle += ' background:#eef2ff;';
-      if (fest && val && val !== 'L' && val !== 'D') cellStyle += ' background:#fff7ed;';
-      
-      html += `<td style="${cellStyle}" id="celda-${idx}-${d}" onclick="abrirSelectorTurno('${t.id}',${d})">${val}${fest && val && val !== 'L' && val !== 'D' && val !== 'V' && val !== 'VAC' && val !== 'VA' ? '🌟' : ''}</td>`;
+      html += `<td class="${claseCelda(val, fds, fest)}" id="celda-${idx}-${d}" onclick="abrirSelectorTurno('${t.id}',${d})">${val}${fest && val && val !== 'L' && val !== 'D' && val !== 'V' && val !== 'VAC' && val !== 'VA' ? '🌟' : ''}</td>`;
     }
-    html += `<td style="border:0.5px solid #cbd5e1;padding:4px 2px;text-align:center;font-weight:700;background:#e8f4fd;position:sticky;right:0;" id="total-${idx}">${total}</td></tr>`;
+    html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;font-weight:700;background:var(--info-bg);position:sticky;right:0;" id="total-${idx}">${total}</td></tr>`;
   }
-
-  html += `<tr style="background:#f0fdf4;font-weight:700;"><td style="border:0.5px solid #cbd5e1;padding:4px 6px;text-align:left;position:sticky;left:0;background:#f0fdf4;">Cobertura M/T/N</td>`;
+  
+  // Fila de cobertura
+  html += `<tr style="background:var(--success-bg);font-weight:700;"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--success-bg);">Cobertura M/T/N</td>`;
   for (let d = 0; d < dias; d++) {
     const cob = coberturaDelDia(d, mes, anio);
     let deficit = false;
@@ -1130,37 +1319,39 @@ function renderCuadrante() {
           (zona.cobertura_min_t > 0 && (cob.T || 0) < zona.cobertura_min_t) ||
           (zona.cobertura_min_n > 0 && (cob.N || 0) < zona.cobertura_min_n)) deficit = true;
     }
-    html += `<td style="${deficit ? 'border:0.5px solid #cbd5e1;padding:4px 2px;text-align:center;background:#fee2e2;color:#dc2626;' : 'border:0.5px solid #cbd5e1;padding:4px 2px;text-align:center;'}">${cob.M}/${cob.T}/${cob.N}</td>`;
+    html += `<td style="${deficit ? 'border:0.5px solid var(--border);padding:4px 2px;text-align:center;background:var(--danger-bg);color:var(--danger);' : 'border:0.5px solid var(--border);padding:4px 2px;text-align:center;'}">${cob.M}/${cob.T}/${cob.N}</td>`;
   }
-  html += `<td style="border:0.5px solid #cbd5e1;padding:4px 2px;text-align:center;background:#f0fdf4;"></td></tr>`;
+  html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;background:var(--success-bg);"></td></tr>`;
   html += `</tbody></table></div>`;
-
-  document.getElementById("content").innerHTML = html;
-  document.getElementById("header-sub").textContent = `👤 ${state.userProfile?.nombre_completo || 'Usuario'} · ${MESES_NOMBRES[mes]} ${anio}`;
-  document.getElementById('nav').style.display = '';
+  
+  content.innerHTML = html;
+  actualizarNombreHeader();
 }
 
 function cambiarMes(mes) {
   state.mesActual = mes;
   loadTurnos().then(() => {
     if (currentView === 'cuadrante') renderCuadrante();
-    mostrarToast(`📅 ${MESES_NOMBRES[mes]} ${state.anio}`);
+    mostrarToast(`${MESES_NOMBRES[mes]} ${state.anio}`);
   });
 }
 
 function filtrarCuadrante(valor) {
-  cuadFiltro = valor;
-  renderCuadrante();
+  clearTimeout(filtroCuadranteTimeout);
+  filtroCuadranteTimeout = setTimeout(() => {
+    cuadFiltro = valor;
+    renderCuadrante();
+  }, 200);
 }
 
 function mostrarAlertasCuadrante() {
   const incidencias = validarCuadranteCompleto();
-  if (incidencias.length === 0) { alert('✅ No se encontraron incidencias en el cuadrante'); return; }
-  alert('⚠️ INCIDENCIAS DETECTADAS:\n\n' + incidencias.join('\n'));
+  if (incidencias.length === 0) { alert('No se encontraron incidencias en el cuadrante'); return; }
+  alert('Incidencias detectadas:\n\n' + incidencias.join('\n'));
 }
 
 function vaciarCuadranteActual() {
-  if (!confirm(`⚠️ ¿Estás seguro de que quieres VACIAR completamente el cuadrante de ${MESES_NOMBRES[state.mesActual]} ${state.anio}?`)) return;
+  if (!confirm(`¿Estás seguro de que quieres VACIAR completamente el cuadrante de ${MESES_NOMBRES[state.mesActual]} ${state.anio}?`)) return;
   const mes = state.mesActual;
   const anio = state.anio;
   const key = clavesMes(mes, anio);
@@ -1171,14 +1362,14 @@ function vaciarCuadranteActual() {
       setCelda(trabajadorId, parseInt(dia), '', mes, anio);
     }
   }
-  mostrarToast(`🗑 Cuadrante de ${MESES_NOMBRES[mes]} vaciado`);
+  mostrarToast(`Cuadrante de ${MESES_NOMBRES[mes]} vaciado`);
 }
 
 function mostrarParametros() {
   const p = state.parametros;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">⚙️ Parámetros del cuadrante</div><ul class="param-list" style="list-style:none;padding:0;"><li>📅 Jornada máxima diaria: <strong>${p.jornadaMaxDiaria}h</strong></li><li>📅 Jornada mínima diaria: <strong>${p.jornadaMinDiaria}h</strong></li><li>📊 Jornada máxima semanal: <strong>${p.jornadaMaxSemanal}h</strong></li><li>🔄 Máx días seguidos: <strong>${p.maxDiasSeguidos} días</strong></li><li>⚠️ Preaviso legal: <strong>${p.preavisoDias} días</strong></li><li>📈 Jornada anual diurna: <strong>${p.jornadaAnualDiurna}h</strong></li><li>🌙 Jornada anual nocturna: <strong>${p.jornadaAnualNocturna}h</strong></li><li>🏖️ Vacaciones anuales: <strong>${p.vacacionesAnuales} días</strong></li><li>⚖️ Convenio: <strong>${p.convenioTexto}</strong></li></ul><div class="modal-btns"><button class="btn-modal-ok" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Parámetros del cuadrante</div><ul style="list-style:none;padding:0;font-size:13px;"><li>Jornada máxima diaria: <strong>${p.jornadaMaxDiaria}h</strong></li><li>Jornada mínima diaria: <strong>${p.jornadaMinDiaria}h</strong></li><li>Jornada máxima semanal: <strong>${p.jornadaMaxSemanal}h</strong></li><li>Máx días seguidos: <strong>${p.maxDiasSeguidos} días</strong></li><li>Preaviso legal: <strong>${p.preavisoDias} días</strong></li><li>Jornada anual diurna: <strong>${p.jornadaAnualDiurna}h</strong></li><li>Jornada anual nocturna: <strong>${p.jornadaAnualNocturna}h</strong></li><li>Vacaciones anuales: <strong>${p.vacacionesAnuales} días</strong></li><li>Convenio: <strong>${p.convenioTexto}</strong></li></ul><div class="modal-btns"><button class="btn-modal-ok" onclick="cerrarModal()">Cerrar</button></div></div>`;
   document.body.appendChild(overlay);
 }
 
@@ -1186,22 +1377,121 @@ function undoUltimoCambio() {
   if (!undoStack.length) { mostrarToast('No hay cambios que deshacer'); return; }
   const { trabajadorId, dia, mes, anio, anterior } = undoStack.pop();
   setCelda(trabajadorId, dia, anterior, mes, anio);
-  mostrarToast('↩ Cambio deshecho');
+  mostrarToast('Cambio deshecho');
 }
 
-// ==================== SELECTOR DE TURNO ====================
+// ============================================================
+// MODAL ZONAS (dentro de Cuadrante)
+// ============================================================
+function abrirModalZonas() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box centered" id="zonas-modal-body"></div>`;
+  document.body.appendChild(overlay);
+  pintarZonasEnModal();
+}
+
+function pintarZonasEnModal() {
+  const cont = document.getElementById('zonas-modal-body');
+  if (!cont) return;
+  cont.innerHTML = htmlListaZonas() + 
+    `<button class="btn btn-secondary" style="margin-top:10px" onclick="cerrarModal()">Cerrar</button>`;
+}
+
+function htmlListaZonas() {
+  let html = `<div class="modal-title">Zonas (${state.zonas.length})</div>
+    <button class="btn btn-primary btn-sm" style="margin-bottom:10px" onclick="modalNuevaZona()">+ Nueva zona</button>`;
+  for (const z of state.zonas) {
+    const trabajadoresZona = state.trabajadores.filter(t => t.zona_principal_id === z.id);
+    html += `<div class="zona-card" style="border-left:4px solid ${z.color || 'var(--border)'}">
+      <div class="zona-card-header"><div class="zona-nombre">${z.nombre}</div>
+      <div><button class="btn btn-secondary btn-xs" onclick="modalEditarZona('${z.id}')">✏</button>
+      <button class="btn btn-danger btn-xs" onclick="eliminarZona('${z.id}')">🗑</button></div></div>
+      <div class="zona-turnos">
+        <div class="zona-turno-box"><div class="zona-turno-label">MAÑANA</div><div class="zona-turno-num">${z.cobertura_min_m || 0}</div></div>
+        <div class="zona-turno-box"><div class="zona-turno-label">TARDE</div><div class="zona-turno-num">${z.cobertura_min_t || 0}</div></div>
+        <div class="zona-turno-box"><div class="zona-turno-label">NOCHE</div><div class="zona-turno-num">${z.cobertura_min_n || 0}</div></div>
+      </div>
+      ${z.notas ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${z.notas}</div>` : ''}
+      <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px">PERSONAL (${trabajadoresZona.length})</div>
+      <div class="zona-workers">${trabajadoresZona.length === 0 ? '<span style="font-size:11px;color:var(--text-muted)">Ninguno</span>' : trabajadoresZona.map(t => `<span class="badge ${t.estado==='baja'?'badge-red':'badge-green'}">${t.nombre.split(' ')[0]}</span>`).join('')}</div></div>
+    </div>`;
+  }
+  return html;
+}
+
+function modalNuevaZona() { modalEditarZona(null); }
+function modalEditarZona(id) {
+  const z = id ? state.zonas.find(z => z.id === id) : null;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">${z ? 'Editar zona' : 'Nueva zona'}</div>
+    <label class="modal-label">Nombre</label><input class="modal-input" id="z-nombre" value="${z?.nombre || ''}">
+    <label class="modal-label">Cobertura mínima</label>
+    <div style="display:flex;gap:8px;margin:8px 0">
+      <div><div style="font-size:11px;font-weight:700">M</div><input type="number" id="z-cob-M" value="${z?.cobertura_min_m ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
+      <div><div style="font-size:11px;font-weight:700">T</div><input type="number" id="z-cob-T" value="${z?.cobertura_min_t ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
+      <div><div style="font-size:11px;font-weight:700">N</div><input type="number" id="z-cob-N" value="${z?.cobertura_min_n ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
+    </div>
+    <label class="modal-label">Notas</label><textarea class="modal-input" id="z-notas" rows="2">${z?.notas || ''}</textarea>
+    <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarZona('${id || ''}')">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function guardarZona(id) {
+  const nombre = document.getElementById('z-nombre')?.value?.trim();
+  if (!nombre) { mostrarToast('Nombre requerido', true); return; }
+  const cobertura_min_m = parseInt(document.getElementById('z-cob-M')?.value) || 0;
+  const cobertura_min_t = parseInt(document.getElementById('z-cob-T')?.value) || 0;
+  const cobertura_min_n = parseInt(document.getElementById('z-cob-N')?.value) || 0;
+  const notas = document.getElementById('z-notas')?.value || '';
+  
+  if (id) {
+    const { error } = await sb.from('zonas').update({ nombre, cobertura_min_m, cobertura_min_t, cobertura_min_n, notas }).eq('id', id);
+    if (error) { mostrarToast('Error', true); return; }
+    const z = state.zonas.find(z => z.id === id);
+    if (z) { z.nombre = nombre; z.cobertura_min_m = cobertura_min_m; z.cobertura_min_t = cobertura_min_t; z.cobertura_min_n = cobertura_min_n; z.notas = notas; }
+  } else {
+    const { data, error } = await sb.from('zonas').insert({ centro_id: state.centroId, nombre, cobertura_min_m, cobertura_min_t, cobertura_min_n, notas, color: '#dbeafe' }).select().single();
+    if (error) { mostrarToast('Error', true); return; }
+    state.zonas.push(data);
+  }
+  cerrarModal();
+  if (currentView === 'cuadrante') {
+    renderCuadrante();
+  } else {
+    // Si el modal de zonas está abierto, refrescarlo
+    pintarZonasEnModal();
+  }
+  mostrarToast(`Zona "${nombre}" guardada`);
+}
+
+async function eliminarZona(id) {
+  if (!confirm('¿Eliminar esta zona?')) return;
+  await sb.from('zonas').delete().eq('id', id);
+  state.zonas = state.zonas.filter(z => z.id !== id);
+  state.trabajadores.forEach(t => { if (t.zona_principal_id === id) t.zona_principal_id = null; });
+  if (currentView === 'cuadrante') renderCuadrante();
+  pintarZonasEnModal();
+  mostrarToast('Zona eliminada');
+}
+
+// ============================================================
+// SELECTOR DE TURNO
+// ============================================================
 function abrirSelectorTurno(trabajadorId, dia) {
   const t = state.trabajadores.find(w => w.id === trabajadorId);
   if (!t) return;
   const valorActual = getTurno(trabajadorId, dia);
   const fechaCelda = new Date(state.anio, state.mesActual, dia + 1);
   const diff = Math.ceil((fechaCelda - new Date()) / 86400000);
-  if (diff > 0 && diff <= state.parametros.preavisoDias && !confirm(`⚠️ Preaviso legal (${state.parametros.preavisoDias} días). ¿Modificar igualmente?`)) return;
+  if (diff > 0 && diff <= state.parametros.preavisoDias && !confirm(`Preaviso legal (${state.parametros.preavisoDias} días). ¿Modificar igualmente?`)) return;
   const esFest = esFestivo(state.anio, state.mesActual, dia + 1);
   
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Turno — ${t.nombre.split(' ')[0]} · día ${dia+1}${esFest ? ' 🌟 FESTIVO' : ''}</div><div class="turno-grid">${CODIGOS_TURNO.map(c => `<div><button class="turno-btn tb-${c.cod === 'F1' ? 'F1' : c.cod || 'clear'}${valorActual === c.cod ? ' sel' : ''}" onclick="seleccionarTurno('${trabajadorId}',${dia},'${c.cod}')">${c.cod || '✕'}</button><div class="turno-label">${c.label}</div></div>`).join('')}</div><div style="display:flex;gap:8px;margin-top:8px"><input id="turno-manual" class="modal-input" placeholder="O escribe: 2-9, F2-F31, LD25, LD26..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="seleccionarTurnoManual('${trabajadorId}',${dia})">OK</button></div><button onclick="cerrarModal()" class="btn btn-secondary" style="margin-top:10px">Cancelar</button></div>`;
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Turno — ${t.nombre.split(' ')[0]} · día ${dia+1}${esFest ? ' FESTIVO' : ''}</div><div class="turno-grid">${CODIGOS_TURNO.map(c => `<div><button class="turno-btn tb-${c.cod === 'F1' ? 'F1' : c.cod || 'clear'}${valorActual === c.cod ? ' sel' : ''}" onclick="seleccionarTurno('${trabajadorId}',${dia},'${c.cod}')">${c.cod || '✕'}</button><div class="turno-label">${c.label}</div></div>`).join('')}</div><div style="display:flex;gap:8px;margin-top:8px"><input id="turno-manual" class="modal-input" placeholder="O escribe: 2-9, F2-F31, LD25, LD26..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="seleccionarTurnoManual('${trabajadorId}',${dia})">OK</button></div><button onclick="cerrarModal()" class="btn btn-secondary" style="margin-top:10px">Cancelar</button></div>`;
   document.body.appendChild(overlay);
 }
 
@@ -1209,7 +1499,7 @@ function seleccionarTurno(trabajadorId, dia, valor) {
   const t = state.trabajadores.find(w => w.id === trabajadorId);
   setCelda(trabajadorId, dia, valor);
   cerrarModal();
-  mostrarToast(`✓ ${t?.nombre.split(' ')[0] || ''}: día ${dia+1} → ${valor || 'vacío'}`);
+  mostrarToast(`${t?.nombre.split(' ')[0] || ''}: día ${dia+1} → ${valor || 'vacío'}`);
 }
 
 function seleccionarTurnoManual(trabajadorId, dia) {
@@ -1217,10 +1507,14 @@ function seleccionarTurnoManual(trabajadorId, dia) {
   seleccionarTurno(trabajadorId, dia, valor);
 }
 
-// ==================== VISTA PERSONAL ====================
+// ============================================================
+// VISTA PERSONAL
+// ============================================================
 function renderPersonal() {
+  const content = document.getElementById('content');
+  if (!content) return;
   const mes = state.mesActual, anio = state.anio;
-  let html = `<input class="worker-search" id="worker-search" type="text" placeholder="🔍 Buscar por nombre..." value="${personalFiltro}" onkeyup="personalFiltroChange(this.value)">`;
+  let html = `<input class="worker-search" id="worker-search" type="text" placeholder="Buscar por nombre..." value="${personalFiltro}" onkeyup="personalFiltroChange(this.value)">`;
   html += `<div class="filtro-tabs"><button class="filtro-tab${personalFiltroZona==='todas'?' active':''}" onclick="setFiltroZona('todas')">Todas</button>`;
   state.zonas.forEach(z => html += `<button class="filtro-tab${personalFiltroZona===z.id?' active':''}" onclick="setFiltroZona('${z.id}')">${z.nombre}</button>`);
   html += `<button class="filtro-tab${personalFiltroZona==='sin'?' active':''}" onclick="setFiltroZona('sin')">Sin zona</button></div>`;
@@ -1238,10 +1532,14 @@ function renderPersonal() {
     return true;
   });
   
-  html += `<div style="font-size:12px;color:#64748b;margin-bottom:10px">${filtrados.length} trabajadores</div>`;
+  html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${filtrados.length} trabajadores</div>`;
   filtrados.forEach(t => html += cardWorkerHtml(t, mes, anio));
-  html += `<button class="btn btn-primary" onclick="modalNuevoTrabajador()">➕ Añadir trabajador</button>`;
-  document.getElementById("content").innerHTML = html;
+  
+  html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <button class="btn btn-primary" onclick="modalNuevoTrabajador()">+ Añadir trabajador</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('file-import-personal').click()">+ Importar personal (JSON)</button>
+  </div>`;
+  content.innerHTML = html;
 }
 
 function cardWorkerHtml(t, mes, anio) {
@@ -1252,7 +1550,7 @@ function cardWorkerHtml(t, mes, anio) {
   const vacTot = t.vacaciones_totales || 22;
   const vacPct = Math.min(100, Math.round(vacDis / vacTot * 100));
   
-  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>📅 ${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>🔄 ${seg} días</span><span>🏖 ${vacDis}/${vacTot}</span><span>📅 ${t.antiguedad_anios || 0} años</span></div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div></div>`;
+  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span></div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div></div>`;
 }
 
 function setFiltroZona(val) { personalFiltroZona = val; renderPersonal(); }
@@ -1264,7 +1562,7 @@ function modalDetalleWorker(id) {
   if (!t) return;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">✏️ ${t.nombre}</div>
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">${t.nombre}</div>
     <label class="modal-label">Nombre</label><input class="modal-input" id="dw-nombre" value="${t.nombre}">
     <label class="modal-label">Estado</label><select class="modal-input" id="dw-estado">
       <option value="activo" ${t.estado==='activo'?'selected':''}>Activo</option>
@@ -1279,8 +1577,8 @@ function modalDetalleWorker(id) {
       <option value="sustituto" ${t.grupo==='sustituto'?'selected':''}>Sustituto</option>
     </select>
     <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarWorker('${id}')">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="iniciarBajaWorker('${id}')">🩺 Registrar baja</button>
-    <button class="btn btn-danger" style="margin-top:4px" onclick="eliminarTrabajador('${id}')">🗑 Eliminar</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="iniciarBajaWorker('${id}')">Registrar baja</button>
+    <button class="btn btn-danger" style="margin-top:4px" onclick="eliminarTrabajador('${id}')">Eliminar</button>
   </div>`;
   document.body.appendChild(overlay);
 }
@@ -1296,10 +1594,10 @@ async function guardarWorker(id) {
     .from('trabajadores')
     .update({ nombre, estado, grupo })
     .eq('id', id);
-  if (error) { mostrarToast('❌ Error al guardar', true); return; }
+  if (error) { mostrarToast('Error al guardar', true); return; }
   t.nombre = nombre; t.estado = estado; t.grupo = grupo;
-  guardarDatos(); cerrarModal(); renderPersonal();
-  mostrarToast(`✅ ${nombre.split(' ')[0]} actualizado`);
+  cerrarModal(); renderPersonal();
+  mostrarToast(`${nombre.split(' ')[0]} actualizado`);
 }
 
 async function eliminarTrabajador(id) {
@@ -1308,16 +1606,16 @@ async function eliminarTrabajador(id) {
     .from('trabajadores')
     .delete()
     .eq('id', id);
-  if (error) { mostrarToast('❌ Error al eliminar', true); return; }
+  if (error) { mostrarToast('Error al eliminar', true); return; }
   state.trabajadores = state.trabajadores.filter(w => w.id !== id);
-  guardarDatos(); renderPersonal();
-  mostrarToast('🗑 Trabajador eliminado');
+  renderPersonal();
+  mostrarToast('Trabajador eliminado');
 }
 
 function modalNuevoTrabajador() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">➕ Nuevo trabajador</div>
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Nuevo trabajador</div>
     <label class="modal-label">Nombre</label><input class="modal-input" id="nt-nombre">
     <label class="modal-label">Tipo</label><select class="modal-input" id="nt-tipo">
       <option value="fijo">Fijo</option><option value="peon">Peón</option><option value="sustituto">Sustituto</option>
@@ -1335,7 +1633,7 @@ async function crearWorker() {
   const nombre = document.getElementById('nt-nombre')?.value?.trim();
   const tipo = document.getElementById('nt-tipo')?.value || 'fijo';
   const grupo = document.getElementById('nt-grupo')?.value || 'manana';
-  if (!nombre) { mostrarToast('❌ Nombre requerido', true); return; }
+  if (!nombre) { mostrarToast('Nombre requerido', true); return; }
   const turnoBase = grupo === 'manana' ? 'M' : grupo === 'tarde' ? 'T' : grupo === 'noche' ? 'N' : 'M';
   const { data, error } = await sb
     .from('trabajadores')
@@ -1350,10 +1648,10 @@ async function crearWorker() {
     })
     .select()
     .single();
-  if (error) { mostrarToast('❌ Error al crear', true); return; }
+  if (error) { mostrarToast('Error al crear', true); return; }
   state.trabajadores.push(data);
-  guardarDatos(); cerrarModal(); renderPersonal();
-  mostrarToast(`✅ ${nombre.split(' ')[0]} añadido`);
+  cerrarModal(); renderPersonal();
+  mostrarToast(`${nombre.split(' ')[0]} añadido`);
 }
 
 async function iniciarBajaWorker(id) {
@@ -1362,7 +1660,7 @@ async function iniciarBajaWorker(id) {
   const diaInicio = prompt(`Día de inicio de la baja (1-${diasEnMes(state.mesActual, state.anio)}):`);
   if (!diaInicio) return;
   const dia = parseInt(diaInicio) - 1;
-  if (isNaN(dia) || dia < 0) { mostrarToast('❌ Día inválido', true); return; }
+  if (isNaN(dia) || dia < 0) { mostrarToast('Día inválido', true); return; }
   
   await sb.from('trabajadores').update({ estado: 'baja', fecha_baja: `${state.anio}-${String(state.mesActual+1).padStart(2,'0')}-${String(dia+1).padStart(2,'0')}` }).eq('id', id);
   t.estado = 'baja';
@@ -1370,109 +1668,121 @@ async function iniciarBajaWorker(id) {
   for (let d = dia; d < dias; d++) {
     await setCelda(id, d, 'IT', state.mesActual, state.anio);
   }
-  guardarDatos(); cerrarModal(); renderPersonal();
+  cerrarModal(); renderPersonal();
   if (currentView === 'cuadrante') renderCuadrante();
-  mostrarToast('✅ Baja registrada');
+  mostrarToast('Baja registrada');
 }
 
-// ==================== VISTA ZONAS ====================
-function renderZonas() {
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:13px;font-weight:700">${state.zonas.length} zonas</span><button class="btn btn-primary btn-sm" onclick="modalNuevaZona()">➕ Nueva zona</button></div>`;
-  for (const z of state.zonas) {
-    const trabajadoresZona = state.trabajadores.filter(t => t.zona_principal_id === z.id);
-    html += `<div class="zona-card" style="border-left:4px solid ${z.color || '#e2e8f0'}"><div class="zona-card-header"><div class="zona-nombre">${z.nombre}</div><div><button class="btn btn-secondary btn-xs" onclick="modalEditarZona('${z.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="eliminarZona('${z.id}')">🗑</button></div></div><div class="zona-turnos"><div class="zona-turno-box"><div class="zona-turno-label">🌅 MAÑANA</div><div class="zona-turno-num">${z.cobertura_min_m || 0}</div></div><div class="zona-turno-box"><div class="zona-turno-label">☀️ TARDE</div><div class="zona-turno-num">${z.cobertura_min_t || 0}</div></div><div class="zona-turno-box"><div class="zona-turno-label">🌙 NOCHE</div><div class="zona-turno-num">${z.cobertura_min_n || 0}</div></div></div>${z.notas ? `<div style="font-size:11px;color:#64748b;margin-bottom:8px">📝 ${z.notas}</div>` : ''}<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">PERSONAL (${trabajadoresZona.length})</div><div class="zona-workers">${trabajadoresZona.length === 0 ? '<span style="font-size:11px;color:#94a3b8">Ninguno</span>' : trabajadoresZona.map(t => `<span class="badge ${t.estado==='baja'?'badge-red':'badge-green'}">${t.nombre.split(' ')[0]}</span>`).join('')}</div></div></div>`;
-  }
-  document.getElementById("content").innerHTML = html;
-}
-
-function modalNuevaZona() { modalEditarZona(null); }
-function modalEditarZona(id) {
-  const z = id ? state.zonas.find(z => z.id === id) : null;
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">${z ? '✏️ Editar zona' : '➕ Nueva zona'}</div>
-    <label class="modal-label">Nombre</label><input class="modal-input" id="z-nombre" value="${z?.nombre || ''}">
-    <label class="modal-label">Cobertura mínima</label>
-    <div style="display:flex;gap:8px;margin:8px 0">
-      <div><div style="font-size:11px;font-weight:700">🌅 M</div><input type="number" id="z-cob-M" value="${z?.cobertura_min_m ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
-      <div><div style="font-size:11px;font-weight:700">☀️ T</div><input type="number" id="z-cob-T" value="${z?.cobertura_min_t ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
-      <div><div style="font-size:11px;font-weight:700">🌙 N</div><input type="number" id="z-cob-N" value="${z?.cobertura_min_n ?? 0}" min="0" max="10" style="width:60px;padding:6px;text-align:center"></div>
-    </div>
-    <label class="modal-label">Notas</label><textarea class="modal-input" id="z-notas" rows="2">${z?.notas || ''}</textarea>
-    <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarZona('${id || ''}')">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-async function guardarZona(id) {
-  const nombre = document.getElementById('z-nombre')?.value?.trim();
-  if (!nombre) { mostrarToast('❌ Nombre requerido', true); return; }
-  const cobertura_min_m = parseInt(document.getElementById('z-cob-M')?.value) || 0;
-  const cobertura_min_t = parseInt(document.getElementById('z-cob-T')?.value) || 0;
-  const cobertura_min_n = parseInt(document.getElementById('z-cob-N')?.value) || 0;
-  const notas = document.getElementById('z-notas')?.value || '';
-  
-  if (id) {
-    const { error } = await sb.from('zonas').update({ nombre, cobertura_min_m, cobertura_min_t, cobertura_min_n, notas }).eq('id', id);
-    if (error) { mostrarToast('❌ Error', true); return; }
-    const z = state.zonas.find(z => z.id === id);
-    if (z) { z.nombre = nombre; z.cobertura_min_m = cobertura_min_m; z.cobertura_min_t = cobertura_min_t; z.cobertura_min_n = cobertura_min_n; z.notas = notas; }
-  } else {
-    const { data, error } = await sb.from('zonas').insert({ centro_id: state.centroId, nombre, cobertura_min_m, cobertura_min_t, cobertura_min_n, notas, color: '#dbeafe' }).select().single();
-    if (error) { mostrarToast('❌ Error', true); return; }
-    state.zonas.push(data);
-  }
-  guardarDatos(); cerrarModal(); renderZonas();
-  mostrarToast(`✅ Zona "${nombre}" guardada`);
-}
-
-async function eliminarZona(id) {
-  if (!confirm('¿Eliminar esta zona?')) return;
-  await sb.from('zonas').delete().eq('id', id);
-  state.zonas = state.zonas.filter(z => z.id !== id);
-  state.trabajadores.forEach(t => { if (t.zona_principal_id === id) t.zona_principal_id = null; });
-  guardarDatos(); renderZonas();
-  mostrarToast('🗑 Zona eliminada');
-}
-
-// ==================== VISTA TAREAS ====================
+// ============================================================
+// VISTA TAREAS (con asignación a personal)
+// ============================================================
 function renderTareas() {
-  let html = `<div class="card"><div class="card-header">✅ Tareas</div><div class="card-body">`;
+  const content = document.getElementById('content');
+  if (!content) return;
+  let html = `<div class="card"><div class="card-header">Tareas</div><div class="card-body">`;
   const pendientes = state.tareas.filter(t => !t.completada);
   if (!pendientes.length) html += `<div class="empty">Sin tareas pendientes</div>`;
   pendientes.forEach(t => {
     const badgeClass = t.prioridad === 'rojo' ? 'badge-red' : t.prioridad === 'amber' ? 'badge-amber' : 'badge-green';
     const fecha = new Date(t.fecha);
-    html += `<div class="tarea-item"><div class="tarea-info"><div class="tarea-nombre">${t.nombre}</div><div class="tarea-meta">📅 ${fecha.getDate()}/${fecha.getMonth()+1} · <span class="badge ${badgeClass}">${t.prioridad}</span></div></div><div><button class="btn btn-success btn-sm" onclick="completarTarea('${t.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="eliminarTarea('${t.id}')">🗑</button></div></div>`;
+    const nombresAsignados = (t.asignados || [])
+      .map(id => state.trabajadores.find(w => w.id === id)?.nombre)
+      .filter(Boolean)
+      .join(', ');
+    html += `<div class="tarea-item">
+      <div class="tarea-info">
+        <div class="tarea-nombre">${t.nombre}</div>
+        <div class="tarea-meta">${fecha.getDate()}/${fecha.getMonth()+1} · <span class="badge ${badgeClass}">${t.prioridad}</span>${nombresAsignados ? ' · Asignada a: ' + nombresAsignados : ''}</div>
+      </div>
+      <div><button class="btn btn-success btn-sm" onclick="completarTarea('${t.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="eliminarTarea('${t.id}')">🗑</button></div>
+    </div>`;
   });
-  html += `<button class="btn btn-primary" style="margin-top:10px" onclick="modalNuevaTarea()">➕ Nueva tarea</button></div></div>`;
-  document.getElementById("content").innerHTML = html;
+  html += `<button class="btn btn-primary" style="margin-top:10px" onclick="modalNuevaTarea()">+ Nueva tarea</button></div></div>`;
+  content.innerHTML = html;
 }
 
 function modalNuevaTarea() {
+  tareaAsignadosSeleccionados = new Set();
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">➕ Nueva tarea</div>
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Nueva tarea</div>
     <label class="modal-label">Nombre</label><input class="modal-input" id="nt-nombre">
     <label class="modal-label">Fecha</label><input type="date" class="modal-input" id="nt-fecha" value="${new Date().toISOString().split('T')[0]}">
     <label class="modal-label">Prioridad</label><select class="modal-input" id="nt-prio">
-      <option value="rojo">🔴 Muy urgente</option><option value="amber">🟡 Urgente</option><option value="verde">🟢 Poco urgente</option>
+      <option value="rojo">Muy urgente</option><option value="amber">Urgente</option><option value="verde">Poco urgente</option>
     </select>
-    <div class="modal-btns"><button class="btn-modal-ok" onclick="crearTarea()">Añadir</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
+    <label class="modal-label">Asignar a alguien?</label>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-secondary" id="nt-asig-si" onclick="mostrarSelectorAsignados(true)">Sí</button>
+      <button type="button" class="btn btn-primary" id="nt-asig-no" onclick="mostrarSelectorAsignados(false)">No</button>
+    </div>
+    <div id="nt-asignados-wrap" style="display:none;margin-top:10px">
+      <input class="modal-input" id="nt-asig-buscar" placeholder="Buscar por nombre..." onkeyup="filtrarSelectorAsignados(this.value)">
+      <div id="nt-asig-lista" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:4px;"></div>
+    </div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn-modal-ok" onclick="crearTarea()">Añadir</button>
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+    </div>
   </div>`;
   document.body.appendChild(overlay);
+}
+
+function mostrarSelectorAsignados(mostrar) {
+  const wrap = document.getElementById('nt-asignados-wrap');
+  if (!wrap) return;
+  wrap.style.display = mostrar ? 'block' : 'none';
+  const si = document.getElementById('nt-asig-si');
+  const no = document.getElementById('nt-asig-no');
+  if (si) si.className = `btn ${mostrar ? 'btn-primary' : 'btn-secondary'}`;
+  if (no) no.className = `btn ${mostrar ? 'btn-secondary' : 'btn-primary'}`;
+  if (mostrar) {
+    tareaAsignadosSeleccionados = new Set();
+    filtrarSelectorAsignados('');
+  }
+}
+
+function filtrarSelectorAsignados(texto) {
+  const cont = document.getElementById('nt-asig-lista');
+  if (!cont) return;
+  const activos = state.trabajadores.filter(t => 
+    t.estado === 'activo' && 
+    t.nombre.toLowerCase().includes((texto || '').toLowerCase())
+  );
+  cont.innerHTML = activos.map(t => 
+    `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;">
+      <input type="checkbox" value="${t.id}" ${tareaAsignadosSeleccionados.has(t.id) ? 'checked' : ''} onchange="toggleAsignado('${t.id}', this.checked)">
+      ${t.nombre}
+    </label>`
+  ).join('') || '<div style="padding:10px;color:var(--text-muted);font-size:12px;">No hay trabajadores activos</div>';
+}
+
+function toggleAsignado(id, checked) {
+  if (checked) tareaAsignadosSeleccionados.add(id);
+  else tareaAsignadosSeleccionados.delete(id);
 }
 
 async function crearTarea() {
   const nombre = document.getElementById('nt-nombre')?.value?.trim();
   const fecha = document.getElementById('nt-fecha')?.value;
   const prioridad = document.getElementById('nt-prio')?.value || 'amber';
-  if (!nombre || !fecha) { mostrarToast('❌ Nombre y fecha requeridos', true); return; }
-  const { data, error } = await sb.from('tareas').insert({ centro_id: state.centroId, nombre, fecha, prioridad, completada: false, creado_por: currentUserAuth?.id }).select().single();
-  if (error) { mostrarToast('❌ Error', true); return; }
+  if (!nombre || !fecha) { mostrarToast('Nombre y fecha requeridos', true); return; }
+  
+  const { data, error } = await sb
+    .from('tareas')
+    .insert({ centro_id: state.centroId, nombre, fecha, prioridad, completada: false, creado_por: currentUserAuth?.id })
+    .select()
+    .single();
+  if (error) { mostrarToast('Error al crear la tarea', true); return; }
+  
+  if (tareaAsignadosSeleccionados.size > 0) {
+    const filas = [...tareaAsignadosSeleccionados].map(trabajador_id => ({ tarea_id: data.id, trabajador_id }));
+    await sb.from('tarea_asignados').insert(filas);
+    data.asignados = filas.map(f => f.trabajador_id);
+  }
   state.tareas.push(data);
-  guardarDatos(); cerrarModal(); renderTareas();
-  mostrarToast('✅ Tarea añadida');
+  cerrarModal(); renderTareas();
+  mostrarToast('Tarea añadida');
 }
 
 async function completarTarea(id) {
@@ -1480,38 +1790,259 @@ async function completarTarea(id) {
   if (!t) return;
   await sb.from('tareas').update({ completada: true }).eq('id', id);
   t.completada = true;
-  guardarDatos(); renderTareas();
-  mostrarToast('✔ Tarea completada');
+  renderTareas();
+  mostrarToast('Tarea completada');
 }
 
 async function eliminarTarea(id) {
   if (!confirm('¿Eliminar tarea?')) return;
   await sb.from('tareas').delete().eq('id', id);
   state.tareas = state.tareas.filter(t => t.id !== id);
-  guardarDatos(); renderTareas();
-  mostrarToast('🗑 Tarea eliminada');
+  renderTareas();
+  mostrarToast('Tarea eliminada');
 }
 
-// ==================== VISTA SEGURO ====================
-function renderSeguro() {
-  document.getElementById('content').innerHTML = `<div class="card"><div class="card-header">💾 Copia de seguridad</div><div class="card-body"><button class="btn btn-primary" onclick="exportarBackup()">⬇ Exportar backup</button><button class="btn btn-secondary" onclick="document.getElementById('file-import').click()">⬆ Importar backup</button><button class="btn btn-legal" onclick="generarPDF()">📄 Cuadrante PDF</button></div></div>
-    <div class="card"><div class="card-header">⚖️ Parámetros legales</div><div class="card-body"><div style="font-size:12px">Jornada máx ${state.parametros.jornadaMaxDiaria}h · Mín ${state.parametros.jornadaMinDiaria}h · Máx semanal ${state.parametros.jornadaMaxSemanal}h · Máx seguidos ${state.parametros.maxDiasSeguidos} · Preaviso ${state.parametros.preavisoDias} días</div><button class="btn btn-secondary" style="margin-top:10px" onclick="validarYMostrar()">🔍 Validar cuadrante</button></div></div>
-    <div class="card"><div class="card-header">📋 Historial</div><div class="card-body nop">${undoStack.length === 0 ? '<div class="empty">Sin cambios registrados</div>' : undoStack.slice(-5).reverse().map(h => `<div class="hist-item">${state.trabajadores.find(w=>w.id===h.trabajadorId)?.nombre?.split(' ')[0] || '?'} · día ${h.dia+1}: <span style="color:#dc2626">${h.anterior||'—'}</span> → <span style="color:#16a34a">${h.nuevo||'—'}</span></div>`).join('')}</div></div>`;
+// ============================================================
+// VISTA AJUSTES (antes Seguro)
+// ============================================================
+function renderAjustes() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  const esAdmin = tieneRol('administrador');
+  const p = state.parametros;
+  
+  let html = `
+    <div class="card">
+      <div class="card-header">Copia de seguridad</div>
+      <div class="card-body">
+        <button class="btn btn-primary" onclick="exportarBackup()">Exportar backup</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('file-import').click()">Importar backup</button>
+        <button class="btn btn-legal" onclick="generarPDF()">Cuadrante PDF</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Preferencias</div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+          <span>Tema oscuro</span>
+          <button class="theme-toggle" onclick="toggleTema()" style="font-size:20px;">${state.tema === 'claro' ? '🌙' : '☀️'}</button>
+        </div>
+      </div>
+    </div>`;
+  
+  // Parámetros legales (solo admin)
+  if (esAdmin) {
+    html += `
+    <div class="card">
+      <div class="card-header">Parámetros legales del centro</div>
+      <div class="card-body">
+        <label class="modal-label">Jornada máxima diaria (h)</label>
+        <input class="modal-input" type="number" id="param-jornadaMaxDiaria" value="${p.jornadaMaxDiaria}">
+        <label class="modal-label">Jornada mínima diaria (h)</label>
+        <input class="modal-input" type="number" id="param-jornadaMinDiaria" value="${p.jornadaMinDiaria}">
+        <label class="modal-label">Jornada máxima semanal (h)</label>
+        <input class="modal-input" type="number" id="param-jornadaMaxSemanal" value="${p.jornadaMaxSemanal}">
+        <label class="modal-label">Máx. días seguidos trabajados</label>
+        <input class="modal-input" type="number" id="param-maxDiasSeguidos" value="${p.maxDiasSeguidos}">
+        <label class="modal-label">Preaviso legal (días)</label>
+        <input class="modal-input" type="number" id="param-preavisoDias" value="${p.preavisoDias}">
+        <label class="modal-label">Jornada anual diurna (h)</label>
+        <input class="modal-input" type="number" id="param-jornadaAnualDiurna" value="${p.jornadaAnualDiurna}">
+        <label class="modal-label">Jornada anual nocturna (h)</label>
+        <input class="modal-input" type="number" id="param-jornadaAnualNocturna" value="${p.jornadaAnualNocturna}">
+        <label class="modal-label">Vacaciones anuales (días)</label>
+        <input class="modal-input" type="number" id="param-vacacionesAnuales" value="${p.vacacionesAnuales}">
+        <label class="modal-label">Texto del convenio aplicable</label>
+        <textarea class="modal-input" id="param-convenioTexto" rows="2">${p.convenioTexto || ''}</textarea>
+        <label class="modal-label" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <input type="checkbox" id="param-convenioVencido" ${p.convenioVencido ? 'checked' : ''}>
+          Convenio vencido (ultraactividad)
+        </label>
+        <button class="btn btn-primary" style="margin-top:14px" onclick="guardarParametros()">Guardar parámetros</button>
+      </div>
+    </div>`;
+  }
+  
+  // Compartir/Recibir
+  html += `
+    <div class="card">
+      <div class="card-header">Compartir cuadrante</div>
+      <div class="card-body">
+        ${esAdmin ? `
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Código de este cuadrante (8 dígitos):</p>
+          <div class="codigo-compartido">${state.centroActual?.centros?.codigo_compartido || 'No disponible'}</div>
+          <button class="btn btn-secondary btn-sm" onclick="copiarCodigoCompartido()">Copiar código</button>
+          <button class="btn btn-warning btn-sm" onclick="regenerarCodigo()">Regenerar código</button>
+          <hr style="margin:14px 0;border-color:var(--border);">
+        ` : `<p style="font-size:12px;color:var(--text-muted);">Solo un administrador puede generar el código de compartición.</p><hr style="margin:14px 0;border-color:var(--border);">`}
+        <p style="font-size:12px;color:var(--text-muted);">Recibir un cuadrante compartido:</p>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input class="modal-input" id="codigo-recibir" maxlength="8" placeholder="Código de 8 dígitos" style="flex:1;">
+          <button class="btn btn-primary btn-sm" onclick="recibirCuadrante()" style="width:auto;padding:10px 16px;">Unirse</button>
+        </div>
+      </div>
+    </div>`;
+  
+  // Historial
+  html += `
+    <div class="card">
+      <div class="card-header">Historial de cambios</div>
+      <div class="card-body">
+        ${undoStack.length === 0 ? '<div class="empty">Sin cambios registrados</div>' : 
+          undoStack.slice(-5).reverse().map(h => 
+            `<div class="hist-item">${state.trabajadores.find(w=>w.id===h.trabajadorId)?.nombre?.split(' ')[0] || '?'} · día ${h.dia+1}: <span style="color:var(--danger)">${h.anterior||'—'}</span> → <span style="color:var(--success)">${h.nuevo||'—'}</span></div>`
+          ).join('')}
+      </div>
+    </div>`;
+  
+  // Miembros (solo admin)
+  if (esAdmin) {
+    html += `
+    <div class="card">
+      <div class="card-header">Miembros del centro</div>
+      <div class="card-body" id="miembros-lista">
+        <div class="empty">Cargando miembros...</div>
+      </div>
+    </div>`;
+  }
+  
+  content.innerHTML = html;
+  actualizarNombreHeader();
+  
+  if (esAdmin) cargarMiembros();
 }
 
-function validarYMostrar() {
-  const incidencias = validarCuadranteCompleto();
-  if (!incidencias.length) { alert('✅ Sin incidencias'); return; }
-  alert('⚠️ INCIDENCIAS:\n\n' + incidencias.join('\n'));
+function tieneRol(rolMinimo) {
+  const orden = { lector: 0, coordinador: 1, administrador: 2 };
+  const rolActual = state.userProfile?.rol || 'lector';
+  return orden[rolActual] >= orden[rolMinimo];
 }
 
+function actualizarNombreHeader() {
+  const el = document.getElementById('header-user');
+  if (el) {
+    const nombre = state.userProfile?.nombre_completo || 'Usuario';
+    const rol = state.userProfile?.rol || '';
+    el.textContent = `(${nombre} · ${rol})`;
+  }
+}
+
+async function guardarParametros() {
+  const leer = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const nuevos = {
+    jornada_max_diaria: leer('param-jornadaMaxDiaria'),
+    jornada_min_diaria: leer('param-jornadaMinDiaria'),
+    jornada_max_semanal: leer('param-jornadaMaxSemanal'),
+    max_dias_seguidos: leer('param-maxDiasSeguidos'),
+    preaviso_dias: leer('param-preavisoDias'),
+    jornada_anual_diurna: leer('param-jornadaAnualDiurna'),
+    jornada_anual_nocturna: leer('param-jornadaAnualNocturna'),
+    vacaciones_anuales: leer('param-vacacionesAnuales'),
+    convenio_texto: document.getElementById('param-convenioTexto')?.value || '',
+    convenio_vencido: document.getElementById('param-convenioVencido')?.checked || false
+  };
+  
+  const { error } = await sb
+    .from('centros')
+    .update(nuevos)
+    .eq('id', state.centroId);
+  if (error) { mostrarToast('Error al guardar parámetros', true); return; }
+  await loadParametros();
+  renderAjustes();
+  mostrarToast('Parámetros actualizados');
+}
+
+async function cargarMiembros() {
+  const { data, error } = await sb
+    .from('miembros_centro')
+    .select('user_id, rol, auth.users(email)')
+    .eq('centro_id', state.centroId);
+  if (error) { console.error('Error loading miembros:', error); return; }
+  const cont = document.getElementById('miembros-lista');
+  if (!cont) return;
+  if (!data || data.length === 0) {
+    cont.innerHTML = '<div class="empty">No hay miembros en este centro.</div>';
+    return;
+  }
+  cont.innerHTML = data.map(m => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;">${m.auth?.users?.email || m.user_id}</span>
+      <span class="badge ${m.rol === 'administrador' ? 'badge-red' : m.rol === 'coordinador' ? 'badge-amber' : 'badge-green'}">${m.rol}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// COMPARTIR / RECIBIR CUADRANTE
+// ============================================================
+function copiarCodigoCompartido() {
+  const codigo = state.centroActual?.centros?.codigo_compartido;
+  if (!codigo) { mostrarToast('No hay código disponible', true); return; }
+  navigator.clipboard?.writeText(codigo).then(() => {
+    mostrarToast('Código copiado');
+  }).catch(() => {
+    // Fallback
+    const input = document.createElement('input');
+    input.value = codigo;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+    mostrarToast('Código copiado');
+  });
+}
+
+async function regenerarCodigo() {
+  if (!confirm('¿Regenerar el código de compartición? Esto invalidará el código anterior.')) return;
+  const { data, error } = await sb.rpc('generar_codigo_centro');
+  if (error) { mostrarToast('Error al regenerar código', true); return; }
+  await sb.from('centros').update({ codigo_compartido: data }).eq('id', state.centroId);
+  await cargarCentrosDisponibles();
+  renderAjustes();
+  mostrarToast('Código regenerado');
+}
+
+async function recibirCuadrante() {
+  const codigo = document.getElementById('codigo-recibir')?.value?.trim();
+  if (!codigo || codigo.length !== 8) { mostrarToast('Introduce un código de 8 dígitos', true); return; }
+  
+  const { data: centro, error } = await sb
+    .from('centros')
+    .select('id, nombre')
+    .eq('codigo_compartido', codigo)
+    .maybeSingle();
+  if (error || !centro) { mostrarToast('Código no válido', true); return; }
+  
+  // Verificar si ya es miembro
+  const { data: existe } = await sb
+    .from('miembros_centro')
+    .select('id')
+    .eq('centro_id', centro.id)
+    .eq('user_id', currentUserAuth.id)
+    .maybeSingle();
+  if (existe) { mostrarToast('Ya eres miembro de este centro', true); return; }
+  
+  const { error: insError } = await sb
+    .from('miembros_centro')
+    .insert({ centro_id: centro.id, user_id: currentUserAuth.id, rol: 'lector' });
+  if (insError) { mostrarToast('Error al unirse', true); return; }
+  
+  await cargarCentrosDisponibles();
+  actualizarSelectorCentro();
+  renderAjustes();
+  mostrarToast(`Te has unido a "${centro.nombre}" como lector`);
+}
+
+// ============================================================
+// BACKUP Y EXPORTACIÓN
+// ============================================================
 function exportarBackup() {
   const data = {
     version: APP_VERSION,
     anio: state.anio,
     trabajadores: state.trabajadores,
     zonas: state.zonas,
-    tareas: state.tareas,
+    tareas: state.tareas.map(t => ({ ...t, asignados: undefined })),
     parametros: state.parametros,
     turnos: state.turnos
   };
@@ -1520,15 +2051,12 @@ function exportarBackup() {
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.click();
   URL.revokeObjectURL(a.href);
-  mostrarToast('✅ Backup exportado');
+  mostrarToast('Backup exportado');
 }
 
-function guardarDatos() {
-  const ind = document.getElementById('save-indicator');
-  if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1800); }
-}
-
-// ==================== GENERAR PDF ====================
+// ============================================================
+// GENERAR PDF (mejorado)
+// ============================================================
 function generarPDF() {
   const mes = state.mesActual;
   const anio = state.anio;
@@ -1536,40 +2064,75 @@ function generarPDF() {
   const dias = diasEnMes(mes, anio);
   const key = clavesMes(mes, anio);
   const turnos = state.turnos[key] || {};
+  const activos = state.trabajadores.filter(t => t.estado !== 'baja');
+  const BLOQUE = 18;
+  const bloques = [];
+  for (let i = 0; i < activos.length; i += BLOQUE) {
+    bloques.push(activos.slice(i, i + BLOQUE));
+  }
   
-  let tablaHtml = `<table style="width:100%;border-collapse:collapse;font-size:7px;"><thead><tr><th style="border:0.5px solid #000;padding:4px;text-align:left;">Trabajador</th>`;
+  function tablaBloque(lista) {
+    let filas = '';
+    for (const t of lista) {
+      const total = getTotalHorasMes(t.id, mes, anio);
+      let celdas = '';
+      for (let d = 0; d < dias; d++) {
+        const val = turnos[t.id]?.[d] || '';
+        celdas += `<td class="celda ${val}">${val}</td>`;
+      }
+      filas += `<tr><td class="col-nombre">${t.nombre}</td>${celdas}<td class="col-total">${total}</td></tr>`;
+    }
+    return filas;
+  }
+  
+  let cabecera = '';
   for (let d = 1; d <= dias; d++) {
     const dow = new Date(anio, mes, d).getDay();
-    const dowName = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][dow];
-    tablaHtml += `<th style="border:0.5px solid #000;padding:4px;text-align:center;">${d}<br><span style="font-size:6px;font-weight:normal">${dowName}</span></th>`;
+    const dowName = ['D','L','M','X','J','V','S'][dow];
+    cabecera += `<th>${d}<br><span class="dow">${dowName}</span></th>`;
   }
-  tablaHtml += `<th style="border:0.5px solid #000;padding:4px;text-align:center;">H</th></tr></thead><tbody>`;
   
-  state.trabajadores.forEach(t => {
-    if (t.estado === 'baja') return;
-    const total = getTotalHorasMes(t.id, mes, anio);
-    tablaHtml += `<tr><td style="border:0.5px solid #000;padding:4px;text-align:left;">${t.nombre}</td>`;
-    for (let d = 0; d < dias; d++) {
-      const val = turnos[t.id]?.[d] || '';
-      let estilo = 'border:0.5px solid #000;padding:4px;text-align:center;';
-      if (val === 'L') estilo += 'color:#1d4ed8;font-weight:700;';
-      else if (val === 'D') estilo += 'color:#15803d;font-weight:700;';
-      else if (val === 'E') estilo += 'color:#9333ea;font-weight:700;background:#f3e8ff;';
-      else if (val === 'M' || val === 'T') estilo += 'color:#374151;font-weight:600;';
-      else if (val === 'N') estilo += 'color:#92400e;font-weight:700;';
-      else if (val === 'V' || val === 'VAC' || val === 'VA') estilo += 'color:#065f46;font-weight:700;background:#d1fae5;';
-      else if (val === 'PR') estilo += 'color:#7c3aed;font-weight:700;background:#ede9fe;';
-      else if (val === 'CF') estilo += 'color:#0891b2;font-weight:700;background:#cffafe;';
-      else if (val === 'IT') estilo += 'color:#991b1b;font-weight:700;background:#fee2e2;';
-      else if (val === 'LD' || val === 'LDA') estilo += 'color:#b45309;font-weight:700;background:#fffbeb;';
-      else if (val && val.startsWith('F')) estilo += 'color:#ea580c;font-weight:700;';
-      tablaHtml += `<td style="${estilo}">${val}</td>`;
-    }
-    tablaHtml += `<td style="border:0.5px solid #000;padding:4px;text-align:center;font-weight:700;background:#e8f4fd;">${total}</td></tr>`;
-  });
-  tablaHtml += `</tbody></table>`;
+  const paginas = bloques.map((b, i) => `
+    <div class="pagina">
+      ${i === 0 ? `<h2>Cuadrante de trabajo</h2><p class="info">${nombreMes} ${anio} · Generado: ${new Date().toLocaleString('es-ES')}</p>` : ''}
+      <table>
+        <thead><tr><th class="col-nombre">Trabajador</th>${cabecera}<th>H</th></tr></thead>
+        <tbody>${tablaBloque(b)}</tbody>
+      </table>
+    </div>
+  `).join('');
   
-  const contenidoHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cuadrante ${nombreMes} ${anio}</title><style>@page{size:A4 landscape;margin:8mm;}body{font-family:Arial;margin:0;padding:10px;}h2{color:#0f172a;}p{color:#64748b;font-size:8px;}table{width:100%;border-collapse:collapse;font-size:7px;}th,td{border:0.5px solid #999;padding:3px 2px;text-align:center;}th{background:#f1f5f9;}</style></head><body><h2>🧹 Cuadrante de trabajo</h2><p><strong>Centro:</strong> Hospital Calatayud Limpieza · <strong>Mes:</strong> ${nombreMes} ${anio} · <strong>Generado:</strong> ${new Date().toLocaleString('es-ES')}</p>${tablaHtml}<p style="margin-top:12px;font-size:6px;color:#999;">Documento generado automáticamente por Gestión Cuadrantes v${APP_VERSION}</p></body></html>`;
+  const contenidoHtml = `<!DOCTYPE html>
+  <html><head><meta charset="UTF-8"><title>Cuadrante ${nombreMes} ${anio}</title>
+  <style>
+    @page { size: A4 landscape; margin: 8mm; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; }
+    .pagina { page-break-after: always; }
+    h2 { color: #0f172a; font-size: 14px; margin: 0 0 4px 0; }
+    .info { color: #64748b; font-size: 8px; margin: 0 0 8px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 8px; table-layout: fixed; }
+    th, td { border: 0.5px solid #999; padding: 3px 4px; text-align: center; }
+    th { background: #f1f5f9; font-weight: 700; }
+    .col-nombre { text-align: left; width: 15%; font-weight: 600; }
+    .col-total { font-weight: 700; background: #e8f4fd; width: 5%; }
+    .dow { font-weight: 400; font-size: 6px; color: #94a3b8; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    .L { color: #1d4ed8; font-weight: 700; }
+    .D { color: #15803d; font-weight: 700; }
+    .M, .T { color: #374151; font-weight: 600; }
+    .N { color: #92400e; font-weight: 700; }
+    .V, .VAC, .VA { color: #065f46; font-weight: 700; background: #d1fae5; }
+    .IT { color: #991b1b; font-weight: 700; background: #fee2e2; }
+    .F1 { color: #ea580c; font-weight: 700; }
+    .PR { color: #7c3aed; font-weight: 700; background: #ede9fe; }
+    .CF { color: #0891b2; font-weight: 700; background: #cffafe; }
+    .LD, .LDA { color: #b45309; font-weight: 700; background: #fffbeb; }
+    .LIB { color: #0e7490; font-weight: 700; }
+    .HE { color: #6d28d9; font-weight: 700; }
+  </style>
+  </head><body>${paginas}</body></html>`;
+  
   const ventana = window.open();
   ventana.document.write(contenidoHtml);
   ventana.document.close();
@@ -1577,13 +2140,16 @@ function generarPDF() {
   setTimeout(() => ventana.print(), 500);
 }
 
-// ==================== UTILIDADES ====================
+// ============================================================
+// UTILIDADES
+// ============================================================
 function mostrarToast(msg, isError = false) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
-  t.style.background = isError ? '#dc2626' : '#0f172a';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  t.className = isError ? 'error show' : 'show';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 function cerrarModal() {
@@ -1602,13 +2168,12 @@ function showView(view) {
   if (view === 'home') renderHome();
   else if (view === 'cuadrante') renderCuadrante();
   else if (view === 'personal') renderPersonal();
-  else if (view === 'zonas') renderZonas();
   else if (view === 'tareas') renderTareas();
-  else if (view === 'seguro') renderSeguro();
+  else if (view === 'ajustes') renderAjustes();
 }
 
 function render() {
-  if (state.userProfile) {
+  if (state.userProfile && state.centroId) {
     document.getElementById('nav').style.display = '';
     showView(currentView);
   } else {
@@ -1616,21 +2181,25 @@ function render() {
   }
 }
 
-// ==================== INICIALIZACIÓN ====================
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('version-number').textContent = APP_VERSION;
+  cargarTemaGuardado();
+  
   const authed = await checkAuth();
   if (authed && state.userProfile) {
     document.getElementById('nav').style.display = '';
     render();
   } else if (currentUserAuth) {
-    // Hay una sesión válida de Supabase pero el perfil no se pudo cargar:
-    // no lo ocultamos, mostramos el motivo para poder depurarlo.
-    renderLogin(lastAuthError || 'Hay una sesión activa pero no se pudo cargar tu perfil. Contacta con el administrador.');
+    renderLogin(lastAuthError || 'Hay una sesión activa pero no se pudo cargar tu perfil.');
   } else {
     renderLogin();
   }
 });
 
+// Importar backup completo
 document.getElementById('file-import')?.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -1654,14 +2223,52 @@ document.getElementById('file-import')?.addEventListener('change', (event) => {
       }
       await loadData();
       render();
-      mostrarToast('✅ Backup importado');
+      mostrarToast('Backup importado');
     } catch (err) {
-      mostrarToast('❌ Archivo inválido', true);
+      mostrarToast('Archivo inválido', true);
     }
   };
   r.readAsText(file);
   event.target.value = '';
 });
+
+// Importar personal desde JSON
+document.getElementById('file-import-personal')?.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const lista = Array.isArray(data) ? data : (data.trabajadores || []);
+      if (!Array.isArray(lista) || !lista.length) throw new Error('Formato inválido');
+      let importados = 0;
+      for (const t of lista) {
+        if (!t.nombre) continue;
+        const { error } = await sb.from('trabajadores').insert({
+          centro_id: state.centroId,
+          nombre: t.nombre,
+          tipo: t.tipo || 'fijo',
+          grupo: t.grupo || 'manana',
+          turno_base: t.turno_base || 'M',
+          turno_habitual: t.turno_habitual || t.turno_base || 'M',
+          estado: t.estado || 'activo'
+        });
+        if (!error) importados++;
+      }
+      await loadTrabajadores();
+      renderPersonal();
+      mostrarToast(`${importados} trabajador(es) importado(s)`);
+    } catch (err) {
+      mostrarToast('Archivo inválido', true);
+    }
+  };
+  r.readAsText(file);
+  event.target.value = '';
+});
+
+// Función RPC para regenerar código (se ejecuta en Supabase)
+// Nota: esta función debe crearse en Supabase con el SQL del documento
 </script>
 </body>
 </html>
