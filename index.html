@@ -189,6 +189,12 @@
   .login-box .btn { margin-bottom: 8px; }
   .login-box .switch { text-align: center; font-size: 13px; color: #64748b; margin-top: 12px; }
   .login-box .switch a { color: #0f172a; font-weight: 700; cursor: pointer; }
+  .login-error { display: none; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; }
+  .login-error.show { display: block; }
+  .login-field { position: relative; margin-bottom: 12px; }
+  .login-field input { margin-bottom: 0; padding-right: 42px; }
+  .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: #64748b; padding: 4px; }
+  .login-box .btn[disabled] { opacity: .6; cursor: not-allowed; }
 
   #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #toast.show { opacity: 1; }
@@ -210,7 +216,9 @@
     </div>
   </div>
   <div id="banner-convenio" class="hidden">⚠️ Convenio vencido. Trabajando en ultraactividad. ⚠️</div>
-  <div id="content"></div>
+  <div id="content">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:#94a3b8;font-size:13px;">Comprobando sesión…</div>
+  </div>
   <nav id="nav">
     <button class="active" onclick="showView('home')" id="nav-home"><span class="ni">🏠</span><span class="nl">Inicio</span></button>
     <button onclick="showView('cuadrante')" id="nav-cuadrante"><span class="ni">📅</span><span class="nl">Cuadrante</span></button>
@@ -340,23 +348,28 @@ async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUserAuth = session.user;
-    await loadUserProfile();
-    return true;
+    return await loadUserProfile();
   }
   return false;
 }
 
+let lastAuthError = null;
+
 async function loadUserProfile() {
-  if (!currentUserAuth) return;
+  if (!currentUserAuth) return false;
+  lastAuthError = null;
   const { data, error } = await sb
     .from('perfiles')
     .select('*')
     .eq('id', currentUserAuth.id)
     .maybeSingle();
-  if (error) { console.error('Error loading profile:', error); return; }
+  if (error) {
+    console.error('Error loading profile:', error);
+    lastAuthError = 'No se pudo cargar tu perfil (' + (error.message || 'error de permisos') + '). Revisa las políticas RLS de la tabla "perfiles" en Supabase.';
+    return false;
+  }
   if (!data) {
-    await createFirstUserProfile();
-    return;
+    return await createFirstUserProfile();
   }
   state.userProfile = data;
   state.centroId = data.centro_id;
@@ -369,46 +382,67 @@ async function loadUserProfile() {
   }
   document.getElementById('banner-convenio').classList.remove('hidden');
   document.getElementById('user-btn').textContent = '👤';
+  return true;
 }
 
 async function createFirstUserProfile() {
-  const { data: centro } = await sb
+  const { data: centro, error: errCentroSel } = await sb
     .from('centros')
     .select('id')
     .limit(1)
     .maybeSingle();
-  
+  if (errCentroSel) {
+    lastAuthError = 'No se pudo leer la tabla "centros" (' + errCentroSel.message + ').';
+    return false;
+  }
+
   let centroId = centro?.id;
   if (!centroId) {
-    const { data: newCentro } = await sb
+    const { data: newCentro, error: errCentroIns } = await sb
       .from('centros')
       .insert({ nombre: 'Hospital Calatayud Limpieza' })
       .select('id')
       .single();
+    if (errCentroIns) {
+      lastAuthError = 'No se pudo crear el centro inicial (' + errCentroIns.message + '). Revisa los permisos de inserción en "centros".';
+      return false;
+    }
     centroId = newCentro?.id;
   }
-  
-  if (centroId) {
-    const { error } = await sb
-      .from('perfiles')
-      .insert({
-        id: currentUserAuth.id,
-        centro_id: centroId,
-        nombre_completo: currentUserAuth.email?.split('@')[0] || 'Coordinador',
-        rol: 'coordinador'
-      });
-    if (!error) {
-      await loadUserProfile();
-      mostrarToast('✅ Perfil de coordinador creado');
-    }
+
+  if (!centroId) {
+    lastAuthError = 'No hay ningún centro disponible para asignar al usuario.';
+    return false;
   }
+
+  const { error } = await sb
+    .from('perfiles')
+    .insert({
+      id: currentUserAuth.id,
+      centro_id: centroId,
+      nombre_completo: currentUserAuth.email?.split('@')[0] || 'Coordinador',
+      rol: 'coordinador'
+    });
+  if (error) {
+    lastAuthError = 'No se pudo crear tu perfil (' + error.message + '). Revisa los permisos de inserción en "perfiles".';
+    return false;
+  }
+  mostrarToast('✅ Perfil de coordinador creado');
+  return await loadUserProfile();
 }
 
 async function signIn(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) { mostrarToast('❌ ' + error.message, true); return false; }
+  if (error) { mostrarErrorLogin(error.message); return false; }
   currentUserAuth = data.user;
-  await loadUserProfile();
+  const ok = await loadUserProfile();
+  if (!ok) {
+    // La autenticación fue correcta pero el perfil no se pudo cargar
+    // (RLS, perfil inexistente sin permiso de creación, etc). No volvemos
+    // a un login "en blanco": mostramos el motivo real.
+    renderLogin(lastAuthError || 'Sesión iniciada, pero no se pudo cargar tu perfil de usuario.');
+    return false;
+  }
   render();
   mostrarToast('✅ Sesión iniciada');
   return true;
@@ -416,27 +450,50 @@ async function signIn(email, password) {
 
 async function signUp(email, password, nombre) {
   const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) { mostrarToast('❌ ' + error.message, true); return false; }
-  if (data.user) {
-    currentUserAuth = data.user;
-    await new Promise(r => setTimeout(r, 500));
-    await loadUserProfile();
-    if (!state.userProfile) {
-      const { data: centro } = await sb.from('centros').select('id').limit(1).maybeSingle();
-      const centroId = centro?.id || '11111111-1111-1111-1111-111111111111';
-      await sb.from('perfiles').insert({
-        id: data.user.id,
-        centro_id: centroId,
-        nombre_completo: nombre || data.user.email?.split('@')[0] || 'Usuario',
-        rol: 'coordinador'
-      });
-      await loadUserProfile();
-    }
-    render();
-    mostrarToast('✅ Usuario registrado');
+  if (error) { mostrarErrorLogin(error.message); return false; }
+  if (!data.user) { mostrarErrorLogin('No se pudo crear el usuario.'); return false; }
+
+  // Si Supabase tiene activada la confirmación de email, aquí NO hay sesión
+  // todavía (data.session === null) aunque el usuario se haya creado.
+  // Antes el código seguía como si hubiera entrado, y el usuario se
+  // quedaba "colgado" sin explicación.
+  if (!data.session) {
+    renderLogin('✅ Cuenta creada. Revisa tu correo (' + email + ') y confirma tu email antes de iniciar sesión.');
     return true;
   }
-  return false;
+
+  currentUserAuth = data.user;
+  let ok = await loadUserProfile();
+  if (!ok && !state.userProfile) {
+    const { data: centro, error: errCentro } = await sb.from('centros').select('id').limit(1).maybeSingle();
+    if (errCentro) {
+      renderLogin('No se pudo asignar un centro al usuario (' + errCentro.message + ').');
+      return false;
+    }
+    const centroId = centro?.id;
+    if (!centroId) {
+      renderLogin('No existe ningún centro en la base de datos al que asignar el usuario. Crea uno desde Supabase primero.');
+      return false;
+    }
+    const { error: errPerfil } = await sb.from('perfiles').insert({
+      id: data.user.id,
+      centro_id: centroId,
+      nombre_completo: nombre || data.user.email?.split('@')[0] || 'Usuario',
+      rol: 'coordinador'
+    });
+    if (errPerfil) {
+      renderLogin('No se pudo crear tu perfil (' + errPerfil.message + ').');
+      return false;
+    }
+    ok = await loadUserProfile();
+  }
+  if (!ok) {
+    renderLogin(lastAuthError || 'No se pudo completar el registro.');
+    return false;
+  }
+  render();
+  mostrarToast('✅ Usuario registrado');
+  return true;
 }
 
 async function signOut() {
@@ -820,17 +877,21 @@ function validarCuadranteCompleto() {
 }
 
 // ==================== VISTA LOGIN ====================
-function renderLogin() {
+function renderLogin(mensajeError) {
   document.getElementById('content').innerHTML = `
     <div class="login-container">
       <div class="login-box">
         <h2>🧹 Gestión Cuadrantes</h2>
         <p>Inicia sesión para gestionar el cuadrante</p>
+        <div id="login-error" class="login-error${mensajeError ? ' show' : ''}">${mensajeError || ''}</div>
         <div id="login-form">
-          <input type="email" id="login-email" placeholder="Email" value="admin@test.com">
-          <input type="password" id="login-password" placeholder="Contraseña" value="Admin123!">
-          <button class="btn btn-primary" onclick="handleLogin()">Iniciar sesión</button>
-          <button class="btn btn-secondary" onclick="handleRegister()">Registrarse</button>
+          <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
+          <div class="login-field">
+            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility()">👁️</button>
+          </div>
+          <button class="btn btn-primary" id="login-submit-btn" onclick="handleLogin()">Iniciar sesión</button>
+          <button class="btn btn-secondary" id="login-register-btn" onclick="handleRegister()">Registrarse</button>
           <div class="switch">¿Primera vez? <a onclick="toggleLoginMode()">Regístrate aquí</a></div>
         </div>
       </div>
@@ -838,6 +899,22 @@ function renderLogin() {
   `;
   document.getElementById('header-sub').textContent = '🔐 Inicia sesión';
   document.getElementById('nav').style.display = 'none';
+  document.getElementById('login-email')?.focus();
+}
+
+function togglePasswordVisibility() {
+  const pass = document.getElementById('login-password');
+  if (!pass) return;
+  pass.type = pass.type === 'password' ? 'text' : 'password';
+}
+
+function mostrarErrorLogin(msg) {
+  const box = document.getElementById('login-error');
+  if (box) {
+    box.textContent = msg;
+    box.classList.add('show');
+  }
+  mostrarToast('❌ ' + msg, true);
 }
 
 let loginMode = 'login';
@@ -875,19 +952,31 @@ function toggleLoginMode() {
 }
 
 async function handleLogin() {
-  const email = document.getElementById('login-email')?.value;
+  const email = document.getElementById('login-email')?.value.trim();
   const password = document.getElementById('login-password')?.value;
-  if (!email || !password) { mostrarToast('❌ Email y contraseña requeridos', true); return; }
-  await signIn(email, password);
+  if (!email || !password) { mostrarErrorLogin('Email y contraseña requeridos'); return; }
+  const btn = document.getElementById('login-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+  try {
+    await signIn(email, password);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
+  }
 }
 
 async function handleRegister() {
-  const email = document.getElementById('login-email')?.value;
+  const email = document.getElementById('login-email')?.value.trim();
   const password = document.getElementById('login-password')?.value;
   const nombre = document.getElementById('login-nombre')?.value;
-  if (!email || !password) { mostrarToast('❌ Email y contraseña requeridos', true); return; }
-  if (password.length < 6) { mostrarToast('❌ La contraseña debe tener al menos 6 caracteres', true); return; }
-  await signUp(email, password, nombre);
+  if (!email || !password) { mostrarErrorLogin('Email y contraseña requeridos'); return; }
+  if (password.length < 6) { mostrarErrorLogin('La contraseña debe tener al menos 6 caracteres'); return; }
+  const btn = document.getElementById('login-register-btn') || document.querySelector('#login-form .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
+  try {
+    await signUp(email, password, nombre);
+  } finally {
+    if (btn) { btn.disabled = false; }
+  }
 }
 
 // ==================== VISTA INICIO ====================
@@ -1533,6 +1622,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (authed && state.userProfile) {
     document.getElementById('nav').style.display = '';
     render();
+  } else if (currentUserAuth) {
+    // Hay una sesión válida de Supabase pero el perfil no se pudo cargar:
+    // no lo ocultamos, mostramos el motivo para poder depurarlo.
+    renderLogin(lastAuthError || 'Hay una sesión activa pero no se pudo cargar tu perfil. Contacta con el administrador.');
   } else {
     renderLogin();
   }
