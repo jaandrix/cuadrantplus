@@ -221,6 +221,7 @@
   </nav>
 </div>
 <div id="toast"></div>
+<input type="file" id="file-import" accept="application/json">
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script>
@@ -1528,8 +1529,6 @@ function render() {
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('version-number').textContent = APP_VERSION;
-  
   const authed = await checkAuth();
   if (authed && state.userProfile) {
     document.getElementById('nav').style.display = '';
@@ -1539,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-document.getElementById('file-import').addEventListener('change', (event) => {
+document.getElementById('file-import')?.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
   const r = new FileReader();
