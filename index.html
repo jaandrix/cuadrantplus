@@ -296,6 +296,17 @@
   .theme-toggle { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; border-radius: var(--radius); color: var(--text); transition: background .2s; }
   .theme-toggle:hover { background: var(--surface-alt); }
 
+
+  .metric-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .metric-card { background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius); padding:12px; }
+  .metric-value { font-size:22px; font-weight:800; }
+  .metric-label { font-size:10px; color:var(--text-muted); margin-top:3px; }
+  .alerta-legal { border-left:3px solid var(--danger); background:var(--danger-bg); padding:7px 10px; margin-bottom:6px; border-radius:6px; font-size:11px; }
+  .solicitud-item { border:1px solid var(--border); border-radius:var(--radius); padding:10px; margin-bottom:8px; background:var(--surface-alt); }
+  .solicitud-head { display:flex; justify-content:space-between; gap:8px; align-items:center; font-size:12px; font-weight:700; }
+  .estado-pendiente { color:var(--warning); } .estado-aprobada { color:var(--success); } .estado-rechazada { color:var(--danger); }
+  @media (max-width: 700px) { .metric-grid { grid-template-columns:1fr 1fr; } #nav button .nl { font-size:9px; } }
+
   /* ==================== RESPONSIVE ==================== */
   @media (max-width: 480px) {
     .logout-btn span { display: none; }
@@ -344,6 +355,10 @@
       <span class="ni"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
       <span class="nl">Tareas</span>
     </button>
+    <button onclick="showView('analitica')" id="nav-analitica">
+      <span class="ni"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M13 16V8"/><path d="M18 16V4"/></svg></span>
+      <span class="nl">Analítica</span>
+    </button>
     <button onclick="showView('ajustes')" id="nav-ajustes">
       <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
       <span class="nl">Ajustes</span>
@@ -368,7 +383,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============================================================
 // CONSTANTES
 // ============================================================
-const APP_VERSION = 29;
+const APP_VERSION = 30;
 const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ["D","L","M","X","J","V","S"];
 const CODIGOS_TURNO = [
@@ -403,11 +418,13 @@ let state = {
   trabajadores: [],
   zonas: [],
   tareas: [],
+  solicitudesAusencia: [],
   turnos: {},
   historial: [],
   userProfile: null,
   currentUser: null,
   parametros: {
+    presupuestoMensual: 0,
     jornadaMaxDiaria: 9,
     jornadaMinDiaria: 7,
     jornadaMaxSemanal: 35,
@@ -489,6 +506,8 @@ function horasCodigo(cod) {
   if (entry) return entry.horas;
   // Los códigos numéricos 2-9 representan horas; códigos como F6 o LD25 NO.
   if (/^[2-9]$/.test(valor)) return parseInt(valor, 10);
+  const extra = valor.match(/^HE(\d+(?:[.,]\d+)?)$/);
+  if (extra) return parseFloat(extra[1].replace(',', '.'));
   return 0;
 }
 
@@ -819,23 +838,27 @@ async function loadData() {
     loadZonas(),
     loadTareas(),
     loadTurnos(),
-    loadParametros()
+    loadParametros(),
+    loadSolicitudesAusencia()
   ]);
   render();
   setupRealtime();
 }
 
 async function loadTrabajadores() {
-  const { data, error } = await sb
-    .from('trabajadores')
-    .select('*')
-    .eq('centro_id', state.centroId)
-    .order('orden', { ascending: true });
+  let query = sb.from('trabajadores').select('*').eq('centro_id', state.centroId).order('orden', { ascending: true });
+  if (!tieneRol('coordinador')) {
+    const trabajadorId = state.userProfile?.trabajador_id;
+    if (!trabajadorId) { state.trabajadores = []; return; }
+    query = query.eq('id', trabajadorId);
+  }
+  const { data, error } = await query;
   if (error) { console.error('Error loading trabajadores:', error); return; }
   state.trabajadores = data || [];
 }
 
 async function loadZonas() {
+  if (!tieneRol('coordinador')) { state.zonas = []; return; }
   const { data, error } = await sb
     .from('zonas')
     .select('*')
@@ -846,15 +869,10 @@ async function loadZonas() {
 }
 
 async function loadTareas() {
-  const { data, error } = await sb
-    .from('tareas')
-    .select('*, tarea_asignados(trabajador_id)')
-    .eq('centro_id', state.centroId);
+  if (!tieneRol('coordinador')) { state.tareas = []; return; }
+  const { data, error } = await sb.from('tareas').select('*, tarea_asignados(trabajador_id)').eq('centro_id', state.centroId);
   if (error) { console.error('Error loading tareas:', error); return; }
-  state.tareas = (data || []).map(t => ({
-    ...t,
-    asignados: (t.tarea_asignados || []).map(a => a.trabajador_id)
-  }));
+  state.tareas = (data || []).map(t => ({ ...t, asignados: (t.tarea_asignados || []).map(a => a.trabajador_id) }));
 }
 
 async function loadTurnos(mesParam, anioParam) {
@@ -863,12 +881,13 @@ async function loadTurnos(mesParam, anioParam) {
   const fechaInicio = `${anio}-${String(mes+1).padStart(2,'0')}-01`;
   const fechaFin = `${anio}-${String(mes+1).padStart(2,'0')}-${String(diasEnMes(mes, anio)).padStart(2,'0')}`;
   
-  const { data, error } = await sb
-    .from('turnos')
-    .select('*')
-    .eq('centro_id', state.centroId)
-    .gte('fecha', fechaInicio)
-    .lte('fecha', fechaFin);
+  let query = sb.from('turnos').select('*').eq('centro_id', state.centroId).gte('fecha', fechaInicio).lte('fecha', fechaFin);
+  if (!tieneRol('coordinador')) {
+    const trabajadorId = state.userProfile?.trabajador_id;
+    if (!trabajadorId) { state.turnos[clavesMes(mes, anio)] = {}; return; }
+    query = query.eq('trabajador_id', trabajadorId);
+  }
+  const { data, error } = await query;
   if (error) { console.error('Error loading turnos:', error); return; }
   
   const key = clavesMes(mes, anio);
@@ -900,10 +919,24 @@ async function loadParametros() {
       jornadaAnualDiurna: data.jornada_anual_diurna || 1519,
       jornadaAnualNocturna: data.jornada_anual_nocturna || 1350,
       vacacionesAnuales: data.vacaciones_anuales || 22,
+      presupuestoMensual: Number(data.presupuesto_mensual || 0),
       convenioVencido: data.convenio_vencido || false,
       convenioTexto: data.convenio_texto || 'Convenio Limpieza Hospitalaria SALUD Aragón'
     };
   }
+}
+
+async function loadSolicitudesAusencia() {
+  if (!state.centroId) return;
+  let query = sb.from('solicitudes_ausencia').select('*').eq('centro_id', state.centroId).order('creado_en', { ascending: false });
+  if (!tieneRol('coordinador')) {
+    const trabajadorId = state.userProfile?.trabajador_id;
+    if (!trabajadorId) { state.solicitudesAusencia = []; return; }
+    query = query.eq('trabajador_id', trabajadorId);
+  }
+  const { data, error } = await query;
+  if (error) { console.warn('No se pudieron cargar solicitudes:', error); state.solicitudesAusencia = []; return; }
+  state.solicitudesAusencia = data || [];
 }
 
 // ============================================================
@@ -1144,26 +1177,46 @@ function coberturaDelDia(dia, mes, anio) {
   return result;
 }
 
+function obtenerIncidenciasLegalesTrabajador(t, mes, anio) {
+  const incidencias = [];
+  const dias = diasEnMes(mes, anio);
+  const key = clavesMes(mes, anio);
+  const turnos = state.turnos[key]?.[t.id] || {};
+  let seg = 0;
+  let semanaHoras = 0;
+  let semanaInicio = null;
+  for (let d = 0; d < dias; d++) {
+    const fecha = new Date(anio, mes, d + 1);
+    const lunes = new Date(fecha);
+    const dow = fecha.getDay() || 7;
+    lunes.setDate(fecha.getDate() - dow + 1);
+    const semanaKey = `${lunes.getFullYear()}-${lunes.getMonth()}-${lunes.getDate()}`;
+    if (semanaKey !== semanaInicio) {
+      if (semanaInicio !== null && semanaHoras > state.parametros.jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${state.parametros.jornadaMaxSemanal}h)`);
+      semanaInicio = semanaKey; semanaHoras = 0;
+    }
+    const valor = turnos[d] || '';
+    const horas = horasCodigo(valor);
+    if (horas > 0) {
+      if (horas > state.parametros.jornadaMaxDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (máx. diario ${state.parametros.jornadaMaxDiaria}h)`);
+      if (horas < state.parametros.jornadaMinDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (mín. diario ${state.parametros.jornadaMinDiaria}h)`);
+      seg++;
+      if (seg > state.parametros.maxDiasSeguidos) incidencias.push(`${t.nombre}: ${seg} días seguidos trabajados al llegar al día ${d + 1} (máx. ${state.parametros.maxDiasSeguidos})`);
+      semanaHoras += horas;
+    } else {
+      seg = 0;
+    }
+  }
+  if (semanaHoras > state.parametros.jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${state.parametros.jornadaMaxSemanal}h)`);
+  return incidencias;
+}
+
 function validarCuadranteCompleto() {
   const incidencias = [];
   const mes = state.mesActual;
   const anio = state.anio;
-  const key = clavesMes(mes, anio);
-  const turnos = state.turnos[key];
-  if (!turnos) return incidencias;
-  
-  state.trabajadores.forEach(t => {
-    if (t.estado !== 'activo') return;
-    const seg = getMaxDiasSeguidos(t.id, mes, anio);
-    if (seg > state.parametros.maxDiasSeguidos) {
-      incidencias.push(`Aviso: ${t.nombre}: ${seg} días seguidos trabajando (máx ${state.parametros.maxDiasSeguidos})`);
-    }
-    const bolsa = getTotalHorasAnio(t.id) - state.parametros.jornadaAnualDiurna;
-    if (bolsa < -40) {
-      incidencias.push(`Datos: ${t.nombre}: bolsa ${bolsa}h (déficit > 40h)`);
-    }
-  });
-  return incidencias;
+  state.trabajadores.filter(t => t.estado === 'activo').forEach(t => incidencias.push(...obtenerIncidenciasLegalesTrabajador(t, mes, anio)));
+  return [...new Set(incidencias)];
 }
 
 // ============================================================
@@ -1317,8 +1370,19 @@ function renderHome() {
     html += `</div></div>`;
   }
   
-  const enBaja = state.trabajadores.filter(t => t.estado === 'baja').length;
-  html += `<div class="card"><div class="card-header">Resumen</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px"><div style="text-align:center;padding:10px;background:var(--surface-alt);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800">${state.trabajadores.length}</div><div style="font-size:10px;color:var(--text-muted)">Trabajadores</div></div><div style="text-align:center;padding:10px;background:var(--danger-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--danger)">${enBaja}</div><div style="font-size:10px;color:var(--text-muted)">En baja</div></div><div style="text-align:center;padding:10px;background:var(--success-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--success)">${state.zonas.length}</div><div style="font-size:10px;color:var(--text-muted)">Zonas</div></div><div style="text-align:center;padding:10px;background:var(--warning-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--warning)">${state.trabajadores.filter(t => t.sustituye_a_id).length}</div><div style="font-size:10px;color:var(--text-muted)">Sustituciones</div></div></div></div>`;
+  if (!tieneRol('coordinador')) {
+    html += renderSolicitudesPropias();
+  } else {
+    const pendientes = state.solicitudesAusencia.filter(s => s.estado === 'pendiente');
+    if (pendientes.length) html += `<div class="card"><div class="card-header">Solicitudes pendientes (${pendientes.length})</div><div class="card-body">${pendientes.slice(0,5).map(s => solicitudHtml(s, true)).join('')}<button class="btn btn-secondary btn-sm" onclick="showView('ajustes')">Gestionar solicitudes</button></div></div>`;
+  }
+  if (tieneRol('coordinador')) {
+    const enBaja = state.trabajadores.filter(t => t.estado === 'baja').length;
+    html += `<div class="card"><div class="card-header">Resumen</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px"><div style="text-align:center;padding:10px;background:var(--surface-alt);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800">${state.trabajadores.length}</div><div style="font-size:10px;color:var(--text-muted)">Trabajadores</div></div><div style="text-align:center;padding:10px;background:var(--danger-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--danger)">${enBaja}</div><div style="font-size:10px;color:var(--text-muted)">En baja</div></div><div style="text-align:center;padding:10px;background:var(--success-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--success)">${state.zonas.length}</div><div style="font-size:10px;color:var(--text-muted)">Zonas</div></div><div style="text-align:center;padding:10px;background:var(--warning-bg);border-radius:var(--radius)"><div style="font-size:20px;font-weight:800;color:var(--warning)">${state.trabajadores.filter(t => t.sustituye_a_id).length}</div><div style="font-size:10px;color:var(--text-muted)">Sustituciones</div></div></div></div>`;
+  } else {
+    const propio=obtenerTrabajadorActual();
+    if (propio) html += `<div class="card"><div class="card-header">Mi resumen</div><div class="card-body"><div class="metric-grid"><div class="metric-card"><div class="metric-value">${getTotalHorasMes(propio.id,state.mesActual,state.anio)}h</div><div class="metric-label">Horas del mes</div></div><div class="metric-card"><div class="metric-value">${getVacacionesDisfrutadas(propio.id,state.anio)}</div><div class="metric-label">Vacaciones disfrutadas</div></div></div><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="showView('cuadrante')">Ver mi horario</button></div></div>`;
+  }
   content.innerHTML = html;
   actualizarNombreHeader();
 }
@@ -1355,6 +1419,115 @@ function mostrarEventosDia(anio, mes, dia) {
 }
 
 // ============================================================
+// NUEVAS FUNCIONES: COPIA, SOLICITUDES, COSTES Y ANALÍTICA
+// ============================================================
+async function copiarMesAnterior() {
+  if (!tieneRol('coordinador')) return;
+  const mesDestino = state.mesActual, anioDestino = state.anio;
+  const fechaAnterior = new Date(anioDestino, mesDestino, 0);
+  const mesOrigen = fechaAnterior.getMonth(), anioOrigen = fechaAnterior.getFullYear();
+  if (!confirm(`Copiar los turnos de ${MESES_NOMBRES[mesOrigen]} ${anioOrigen} a ${MESES_NOMBRES[mesDestino]} ${anioDestino}? Solo se copiarán las celdas con turno asignado y se sobrescribirán esas mismas celdas.`)) return;
+  const { data, error } = await sb.from('turnos').select('*').eq('centro_id', state.centroId)
+    .gte('fecha', `${anioOrigen}-${String(mesOrigen+1).padStart(2,'0')}-01`)
+    .lte('fecha', `${anioOrigen}-${String(mesOrigen+1).padStart(2,'0')}-${String(diasEnMes(mesOrigen,anioOrigen)).padStart(2,'0')}`);
+  if (error) { mostrarToast('No se pudo leer el mes anterior', true); return; }
+  const diasDestino = diasEnMes(mesDestino, anioDestino);
+  const filas = (data || []).map(r => {
+    const diaOrigen = parseInt(String(r.fecha).slice(8,10),10);
+    if (diaOrigen > diasDestino || !r.codigo) return null;
+    return { centro_id: state.centroId, trabajador_id: r.trabajador_id, fecha: `${anioDestino}-${String(mesDestino+1).padStart(2,'0')}-${String(diaOrigen).padStart(2,'0')}`, codigo: r.codigo, editado_por: currentUserAuth?.id };
+  }).filter(Boolean);
+  for (let i=0;i<filas.length;i+=100) { const {error:e}=await sb.from('turnos').upsert(filas.slice(i,i+100),{onConflict:'centro_id,trabajador_id,fecha'}); if(e){mostrarToast('Error copiando el cuadrante',true);return;} }
+  await loadTurnos(mesDestino,anioDestino); renderCuadrante(); mostrarToast(`${filas.length} turnos copiados del mes anterior`);
+}
+
+function obtenerTrabajadorActual() {
+  const id = state.userProfile?.trabajador_id;
+  return state.trabajadores.find(t => t.id === id) || state.trabajadores[0] || null;
+}
+
+function renderSolicitudesPropias() {
+  return `<div class="card"><div class="card-header">Mis solicitudes</div><div class="card-body"><button class="btn btn-primary btn-sm" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button><div style="margin-top:10px">${state.solicitudesAusencia.slice(0,5).map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No tienes solicitudes recientes.</div>'}</div><button class="btn btn-secondary btn-sm" onclick="showView('ajustes')">Ver todas</button></div></div>`;
+}
+
+function solicitudHtml(s, gestion=false) {
+  const nombre = state.trabajadores.find(t=>t.id===s.trabajador_id)?.nombre || 'Trabajador';
+  const tipo = s.tipo === 'vacaciones' ? 'Vacaciones' : s.tipo === 'permiso' ? 'Permiso retribuido' : 'Conciliación';
+  const estadoClass = s.estado === 'pendiente' ? 'estado-pendiente' : s.estado === 'aprobada' ? 'estado-aprobada' : 'estado-rechazada';
+  return `<div class="solicitud-item"><div class="solicitud-head"><span>${gestion ? nombre+' · ' : ''}${tipo}</span><span class="${estadoClass}">${s.estado}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:5px">${s.fecha_inicio} → ${s.fecha_fin}${s.motivo ? ` · ${s.motivo}` : ''}</div>${s.comentario_gestor ? `<div style="font-size:11px;margin-top:5px">Respuesta: ${s.comentario_gestor}</div>` : ''}${gestion && s.estado==='pendiente' ? `<div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="resolverSolicitud('${s.id}','aprobada')">Aprobar</button><button class="btn btn-danger btn-sm" onclick="resolverSolicitud('${s.id}','rechazada')">Rechazar</button></div>` : ''}</div>`;
+}
+
+function abrirSolicitudAusencia() {
+  const t = obtenerTrabajadorActual();
+  if (!t) { mostrarToast('Tu usuario no está vinculado a un trabajador', true); return; }
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><div class="modal-title">Nueva solicitud</div><label class="modal-label">Tipo</label><select class="modal-input" id="sol-tipo"><option value="vacaciones">Vacaciones</option><option value="permiso">Permiso retribuido</option><option value="conciliacion">Conciliación familiar</option></select><label class="modal-label">Desde</label><input class="modal-input" type="date" id="sol-inicio"><label class="modal-label">Hasta</label><input class="modal-input" type="date" id="sol-fin"><label class="modal-label">Motivo / observaciones</label><textarea class="modal-input" id="sol-motivo" rows="3"></textarea><div class="modal-btns"><button class="btn-modal-ok" onclick="enviarSolicitudAusencia()">Enviar solicitud</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div></div>`;
+  document.body.appendChild(overlay);
+}
+
+async function enviarSolicitudAusencia() {
+  const t=obtenerTrabajadorActual(); if(!t)return;
+  const tipo=document.getElementById('sol-tipo')?.value, inicio=document.getElementById('sol-inicio')?.value, fin=document.getElementById('sol-fin')?.value, motivo=document.getElementById('sol-motivo')?.value?.trim()||'';
+  if(!inicio||!fin||fin<inicio){mostrarToast('Indica un periodo válido',true);return;}
+  const {error}=await sb.from('solicitudes_ausencia').insert({centro_id:state.centroId,trabajador_id:t.id,solicitante_id:currentUserAuth.id,tipo,fecha_inicio:inicio,fecha_fin:fin,motivo,estado:'pendiente'});
+  if(error){mostrarToast('No se pudo enviar la solicitud',true);return;}
+  await loadSolicitudesAusencia(); cerrarModal(); render(); mostrarToast('Solicitud enviada al gestor');
+}
+
+async function resolverSolicitud(id, estado) {
+  if(!tieneRol('coordinador'))return;
+  const s=state.solicitudesAusencia.find(x=>x.id===id); if(!s)return;
+  const comentario=estado==='rechazada' ? (prompt('Motivo del rechazo (opcional):')||'') : '';
+  if(estado==='rechazada' && !confirm('¿Rechazar esta solicitud?')) return;
+  if(estado==='aprobada' && !confirm('¿Aprobar y reflejar automáticamente la ausencia en el cuadrante?')) return;
+  const {error}=await sb.from('solicitudes_ausencia').update({estado,aprobado_por:currentUserAuth.id,fecha_resolucion:new Date().toISOString(),comentario_gestor:comentario}).eq('id',id).eq('centro_id',state.centroId);
+  if(error){mostrarToast('No se pudo resolver la solicitud',true);return;}
+  if(estado==='aprobada'){
+    const t=state.trabajadores.find(x=>x.id===s.trabajador_id); if(!t){mostrarToast('Trabajador no encontrado',true);return;}
+    const d0=new Date(`${s.fecha_inicio}T12:00:00`), d1=new Date(`${s.fecha_fin}T12:00:00`);
+    const codigo=s.tipo==='vacaciones'?'V':s.tipo==='permiso'?'PR':'CF';
+    for(let d=new Date(d0);d<=d1;d.setDate(d.getDate()+1)){ await setCelda(t.id,d.getDate()-1,codigo,d.getMonth(),d.getFullYear()); }
+  }
+  await loadSolicitudesAusencia(); await loadTurnos(state.mesActual,state.anio); render(); mostrarToast(estado==='aprobada'?'Solicitud aprobada y cuadrante actualizado':'Solicitud rechazada');
+}
+
+function getHorasAsignadasMes(trabajadorId, mes, anio) {
+  const map=state.turnos[clavesMes(mes,anio)]?.[trabajadorId]||{};
+  let total=0; for(let d=0;d<diasEnMes(mes,anio);d++) total += horasCodigo(map[d]||''); return total;
+}
+
+function calcularCosteMes(mes,anio,trabajadores=state.trabajadores) {
+  return trabajadores.reduce((sum,t)=>sum + getTotalHorasMes(t.id,mes,anio)*Number(t.coste_hora||0),0);
+}
+
+async function cargarTurnosAnio(ano) {
+  const ini=`${ano}-01-01`, fin=`${ano}-12-31`;
+  const {data,error}=await sb.from('turnos').select('trabajador_id,fecha,codigo').eq('centro_id',state.centroId).gte('fecha',ini).lte('fecha',fin);
+  if(error) throw error;
+  const backup=state.turnos;
+  for(const m of Object.keys(backup)) { if(String(m).startsWith(String(ano)+'-')) delete backup[m]; }
+  (data||[]).forEach(r=>{const [y,mo,dd]=String(r.fecha).slice(0,10).split('-').map(Number), key=clavesMes(mo-1,y); if(!state.turnos[key])state.turnos[key]={}; if(!state.turnos[key][r.trabajador_id])state.turnos[key][r.trabajador_id]={}; state.turnos[key][r.trabajador_id][dd-1]=r.codigo;});
+}
+
+async function renderAnalitica() {
+  if(!tieneRol('coordinador')){showView('cuadrante');return;}
+  const content=document.getElementById('content'); if(!content)return;
+  content.innerHTML='<div class="card"><div class="card-body"><div class="empty">Calculando analítica…</div></div></div>';
+  try { await cargarTurnosAnio(state.anio); } catch(e){content.innerHTML='<div class="card"><div class="card-body"><div class="empty">No se pudo cargar la analítica.</div></div></div>';return;}
+  const meses=MESES_NOMBRES.map((nombre,m)=>{let horas=0,coste=0,it=0,he=0,heHoras=0;state.trabajadores.forEach(t=>{const map=state.turnos[clavesMes(m,state.anio)]?.[t.id]||{};for(let d=0;d<diasEnMes(m,state.anio);d++){const v=map[d]||'';if(v)horas+=horasCodigo(v);if(v==='IT')it++;if(v==='HE')he++; if(/^HE\d+(?:[.,]\d+)?$/.test(v)) heHoras+=parseFloat(v.slice(2).replace(',', '.'));} coste+=getTotalHorasMes(t.id,m,state.anio)*Number(t.coste_hora||0);});return{nombre,horas,coste,it,he,heHoras};});
+  const totalHoras=meses.reduce((a,m)=>a+m.horas,0), totalCoste=meses.reduce((a,m)=>a+m.coste,0), totalIT=meses.reduce((a,m)=>a+m.it,0), totalHE=meses.reduce((a,m)=>a+m.he,0), totalHEHoras=meses.reduce((a,m)=>a+m.heHoras,0);
+  const rotacionAltas=state.trabajadores.filter(t=>t.created_at&&new Date(t.created_at).getFullYear()===state.anio).length;
+  const rotacionBajas=state.trabajadores.filter(t=>t.fecha_baja&&new Date(t.fecha_baja).getFullYear()===state.anio).length;
+  const plantillaMedia=state.trabajadores.length || 1;
+  const rotacionPct=((rotacionAltas+rotacionBajas)/(2*plantillaMedia)*100);
+  const diasTrabajados=meses.reduce((sum,m)=>sum + state.trabajadores.reduce((st,t)=>{const map=state.turnos[clavesMes(m,state.anio)]?.[t.id]||{};return st+Object.values(map).filter(v=>{const h=horasCodigo(v);return h>0;}).length;},0),0);
+  const tasaAbsentismo=totalIT/(totalIT+diasTrabajados||1)*100;
+  const tabla=meses.map(m=>`<tr><td>${m.nombre}</td><td>${m.horas}h</td><td>${m.coste.toFixed(2)} €</td><td>${m.it}</td><td>${m.heHoras.toFixed(1)}</td></tr>`).join('');
+  const presupuesto=Number(state.parametros.presupuestoMensual||0);
+  content.innerHTML=`<div class="card"><div class="card-header">Analítica ${state.anio}</div><div class="card-body"><div class="metric-grid"><div class="metric-card"><div class="metric-value">${totalHoras}h</div><div class="metric-label">Horas planificadas</div></div><div class="metric-card"><div class="metric-value">${totalCoste.toFixed(2)} €</div><div class="metric-label">Coste laboral acumulado</div></div><div class="metric-card"><div class="metric-value">${totalIT}</div><div class="metric-label">Días IT · ${tasaAbsentismo.toFixed(1)}% tasa</div></div><div class="metric-card"><div class="metric-value">${totalHEHoras.toFixed(1)}h</div><div class="metric-label">Horas extra codificadas (HE2, HE3...)</div></div><div class="metric-card"><div class="metric-value">${rotacionAltas}/${rotacionBajas}</div><div class="metric-label">Altas / bajas · rotación ${rotacionPct.toFixed(1)}%</div></div></div></div></div><div class="card"><div class="card-header">Comparativa mensual</div><div class="card-body"><div style="overflow:auto"><table style="width:100%;font-size:11px"><thead><tr><th>Mes</th><th>Horas</th><th>Coste</th><th>IT</th><th>HE (h)</th></tr></thead><tbody>${tabla}</tbody></table></div></div></div><div class="card"><div class="card-header">Presupuesto</div><div class="card-body"><div style="font-size:12px">Presupuesto mensual configurado: <strong>${presupuesto.toFixed(2)} €</strong></div>${presupuesto?meses.map(m=>{const diff=m.coste-presupuesto;return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px"><span>${m.nombre}</span><strong style="color:${diff>0?'var(--danger)':'var(--success)'}">${diff>0?'+':''}${diff.toFixed(2)} €</strong></div>`}).join(''):'<div class="empty">Configura un presupuesto mensual en Ajustes para comparar.</div>'}</div></div>`;
+}
+
+// ============================================================
 // VISTA CUADRANTE
 // ============================================================
 function renderCuadrante() {
@@ -1372,16 +1545,18 @@ function renderCuadrante() {
   html += `<div class="cuad-toolbar">
     <input class="cuad-search" id="cuad-search" type="text" placeholder="Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)">
     <button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button>
-    <button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button>
+    ${tieneRol('coordinador') ? '<button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button><button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button>' : ''}
     <button class="btn btn-secondary btn-sm" onclick="abrirModalPDFPersonal()">📄 Mi cuadrante (PDF)</button>
-    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button>' : ''}
-    <button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button>
-    <button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>
+    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button><button class="btn btn-secondary btn-sm" onclick="copiarMesAnterior()">↶ Mes anterior</button>' : ''}
+    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button><button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>' : ''}
     ${tieneRol('coordinador') ? '<button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>' : ''}
     <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
   </div>`;
-  html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">${tieneRol('coordinador') ? `Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días` : 'Modo consulta · Solo el Gestor o el Encargado pueden modificar el cuadrante'}</div>`;
+  const incidenciasLegales = validarCuadranteCompleto();
+  if (incidenciasLegales.length) {
+    html += `<div class="card" style="margin-bottom:8px;border:1px solid var(--danger)"><div class="card-header" style="color:var(--danger)">⚠ Incidencias legales (${incidenciasLegales.length})</div><div class="card-body">${incidenciasLegales.slice(0,8).map(i => `<div class="alerta-legal">${i}</div>`).join('')}${incidenciasLegales.length>8?`<div class="aviso aviso-gris">... y ${incidenciasLegales.length-8} más</div>`:''}</div></div>`;
+  }
+  html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">${tieneRol('coordinador') ? `Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días` : 'Modo consulta · Solo puedes consultar tu propio horario y gestionar tus solicitudes'}</div>`;
   html += `<div class="wrap"><table><thead><tr><th style="border:0.5px solid var(--border);padding:6px 4px;text-align:left;position:sticky;left:0;background:var(--surface-alt);min-width:180px;">Trabajador</th>`;
   for (let d = 1; d <= dias; d++) {
     const fds = esFinDeSemana(d, mes, anio);
@@ -1614,7 +1789,7 @@ function abrirSelectorTurno(trabajadorId, dia) {
   
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Turno — ${t.nombre.split(' ')[0]} · día ${dia+1}${esFest ? ' FESTIVO' : ''}</div><div class="turno-grid">${CODIGOS_TURNO.map(c => `<div><button class="turno-btn tb-${c.cod === 'F1' ? 'F1' : c.cod || 'clear'}${valorActual === c.cod ? ' sel' : ''}" onclick="seleccionarTurno('${trabajadorId}',${dia},'${c.cod}')">${c.cod || '✕'}</button><div class="turno-label">${c.label}</div></div>`).join('')}</div><div style="display:flex;gap:8px;margin-top:8px"><input id="turno-manual" class="modal-input" placeholder="O escribe: 2-9, F2-F31, LD25, LD26..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="seleccionarTurnoManual('${trabajadorId}',${dia})">OK</button></div><button onclick="cerrarModal()" class="btn btn-secondary" style="margin-top:10px">Cancelar</button></div>`;
+  overlay.innerHTML = `<div class="modal-box"><div class="modal-title">Turno — ${t.nombre.split(' ')[0]} · día ${dia+1}${esFest ? ' FESTIVO' : ''}</div><div class="turno-grid">${CODIGOS_TURNO.map(c => `<div><button class="turno-btn tb-${c.cod === 'F1' ? 'F1' : c.cod || 'clear'}${valorActual === c.cod ? ' sel' : ''}" onclick="seleccionarTurno('${trabajadorId}',${dia},'${c.cod}')">${c.cod || '✕'}</button><div class="turno-label">${c.label}</div></div>`).join('')}</div><div style="display:flex;gap:8px;margin-top:8px"><input id="turno-manual" class="modal-input" placeholder="O escribe: 2-9, HE2, HE3, F2-F31, LD25, LD26..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="seleccionarTurnoManual('${trabajadorId}',${dia})">OK</button></div><button onclick="cerrarModal()" class="btn btn-secondary" style="margin-top:10px">Cancelar</button></div>`;
   document.body.appendChild(overlay);
 }
 
@@ -1635,6 +1810,7 @@ function seleccionarTurnoManual(trabajadorId, dia) {
 // VISTA PERSONAL
 // ============================================================
 function renderPersonal() {
+  if (!tieneRol('coordinador')) { showView('cuadrante'); return; }
   const content = document.getElementById('content');
   if (!content) return;
   const mes = state.mesActual, anio = state.anio;
@@ -1676,7 +1852,7 @@ function cardWorkerHtml(t, mes, anio) {
   const vacTot = t.vacaciones_totales || 22;
   const vacPct = Math.min(100, Math.round(vacDis / vacTot * 100));
   
-  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span></div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>${tieneRol('coordinador') ? `<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button></div>` : ''}</div>`;
+  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span>${tieneRol('coordinador') && Number(t.coste_hora)>0 ? `<span>${Number(t.coste_hora).toFixed(2)} €/h</span>` : ''}</div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>${tieneRol('coordinador') ? `<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button></div>` : ''}</div>`;
 }
 
 function setFiltroZona(val) { personalFiltroZona = val; renderPersonal(); }
@@ -1695,6 +1871,7 @@ function modalDetalleWorker(id) {
       <option value="baja" ${t.estado==='baja'?'selected':''}>Baja</option>
       <option value="inactivo" ${t.estado==='inactivo'?'selected':''}>Inactivo</option>
     </select>
+    <label class="modal-label">Coste laboral (€/h)</label><input class="modal-input" type="number" step="0.01" min="0" id="dw-coste" value="${Number(t.coste_hora || 0)}">
     <label class="modal-label">Grupo</label><select class="modal-input" id="dw-grupo">
       <option value="manana" ${t.grupo==='manana'?'selected':''}>Mañana</option>
       <option value="tarde" ${t.grupo==='tarde'?'selected':''}>Tarde</option>
@@ -1715,11 +1892,12 @@ async function guardarWorker(id) {
   const nombre = document.getElementById('dw-nombre')?.value?.trim() || t.nombre;
   const estado = document.getElementById('dw-estado')?.value || t.estado;
   const grupo = document.getElementById('dw-grupo')?.value || t.grupo;
+  const costeHora = Math.max(0, parseFloat(document.getElementById('dw-coste')?.value) || 0);
   
   const estadoAnterior = t.estado;
   const { error } = await sb
     .from('trabajadores')
-    .update({ nombre, estado, grupo })
+    .update({ nombre, estado, grupo, coste_hora: costeHora })
     .eq('id', id);
   if (error) { mostrarToast('Error al guardar', true); return; }
 
@@ -1746,7 +1924,7 @@ async function guardarWorker(id) {
     }
   }
 
-  t.nombre = nombre; t.estado = estado; t.grupo = grupo;
+  t.nombre = nombre; t.estado = estado; t.grupo = grupo; t.coste_hora = costeHora;
   cerrarModal(); renderPersonal();
   mostrarToast(`${nombre.split(' ')[0]} actualizado`);
 }
@@ -1791,6 +1969,7 @@ function modalNuevoTrabajador() {
     <label class="modal-label">Tipo</label><select class="modal-input" id="nt-tipo">
       <option value="fijo">Fijo</option><option value="peon">Peón</option><option value="sustituto">Sustituto</option>
     </select>
+    <label class="modal-label">Coste laboral (€/h)</label><input class="modal-input" type="number" step="0.01" min="0" id="nt-coste" value="0">
     <label class="modal-label">Grupo</label><select class="modal-input" id="nt-grupo">
       <option value="manana">Mañana</option><option value="tarde">Tarde</option><option value="noche">Noche</option>
       <option value="peon">Peón</option><option value="sustituto">Sustituto</option>
@@ -1812,6 +1991,7 @@ async function crearWorker() {
   const nombre = document.getElementById('nt-nombre')?.value?.trim();
   const tipo = document.getElementById('nt-tipo')?.value || 'fijo';
   const grupo = document.getElementById('nt-grupo')?.value || 'manana';
+  const costeHora = Math.max(0, parseFloat(document.getElementById('nt-coste')?.value) || 0);
   if (!nombre) { mostrarToast('Nombre requerido', true); return; }
   if (!state.centroId) { mostrarToast('No hay un centro seleccionado', true); return; }
   if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para crear trabajadores', true); return; }
@@ -1824,7 +2004,8 @@ async function crearWorker() {
     grupo,
     turno_base: turnoBase,
     turno_habitual: turnoBase,
-    estado: tipo === 'sustituto' ? 'inactivo' : 'activo'
+    estado: tipo === 'sustituto' ? 'inactivo' : 'activo',
+    coste_hora: costeHora
   };
 
   const { data, error } = await sb
@@ -2561,6 +2742,11 @@ function renderAjustes() {
   const esCoordinador = tieneRol('coordinador');
   const p = state.parametros;
 
+  if (!esCoordinador) {
+    let html = `<div class="card"><div class="card-header">Mi cuenta</div><div class="card-body"><div style="font-size:13px;font-weight:700">${state.userProfile?.nombre_completo || 'Trabajador/a'}</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Solo tienes acceso a tu propio horario y a tus solicitudes.</div><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button></div></div><div class="card"><div class="card-header">Mis solicitudes</div><div class="card-body">${state.solicitudesAusencia.map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No tienes solicitudes.</div>'}</div></div><div class="card"><div class="card-header">Preferencias</div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between"><span>Tema oscuro</span><button class="theme-toggle" onclick="toggleTema()">${state.tema === 'claro' ? '🌙' : '☀️'}</button></div></div></div>`;
+    content.innerHTML = html; actualizarNombreHeader(); return;
+  }
+
   let html = `
     <div class="card">
       <div class="card-header">Copia de seguridad</div>
@@ -2602,6 +2788,8 @@ function renderAjustes() {
         <input class="modal-input" type="number" id="param-jornadaAnualNocturna" value="${p.jornadaAnualNocturna}">
         <label class="modal-label">Vacaciones anuales (días)</label>
         <input class="modal-input" type="number" id="param-vacacionesAnuales" value="${p.vacacionesAnuales}">
+        <label class="modal-label">Presupuesto laboral mensual (€)</label>
+        <input class="modal-input" type="number" step="0.01" min="0" id="param-presupuestoMensual" value="${p.presupuestoMensual || 0}">
         <label class="modal-label">Texto del convenio aplicable</label>
         <textarea class="modal-input" id="param-convenioTexto" rows="2">${p.convenioTexto || ''}</textarea>
         <label class="modal-label" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
@@ -2635,6 +2823,11 @@ function renderAjustes() {
         </div>
       </div>
     </div>`;
+
+  html += `<div class="card">
+    <div class="card-header">${esCoordinador ? 'Solicitudes de vacaciones y permisos' : 'Mis solicitudes de ausencia'}</div>
+    <div class="card-body">${!esCoordinador ? `<button class="btn btn-primary btn-sm" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button><div style="margin-top:10px">${state.solicitudesAusencia.map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No has realizado solicitudes.</div>'}</div>` : `<div>${state.solicitudesAusencia.map(s => solicitudHtml(s, true)).join('') || '<div class="empty">No hay solicitudes.</div>'}</div>`}</div>
+  </div>`;
 
   if (esCoordinador) {
     html += `
@@ -2688,6 +2881,7 @@ async function guardarParametros() {
     jornada_anual_diurna: leer('param-jornadaAnualDiurna'),
     jornada_anual_nocturna: leer('param-jornadaAnualNocturna'),
     vacaciones_anuales: leer('param-vacacionesAnuales'),
+    presupuesto_mensual: leer('param-presupuestoMensual'),
     convenio_texto: document.getElementById('param-convenioTexto')?.value || '',
     convenio_vencido: document.getElementById('param-convenioVencido')?.checked || false
   };
@@ -2719,24 +2913,37 @@ async function cargarMiembros() {
   const ids = data.map(m => m.user_id);
   const { data: perfiles, error: perfilesError } = await sb
     .from('perfiles')
-    .select('id, nombre_completo')
+    .select('id, nombre_completo, trabajador_id')
     .in('id', ids);
   if (perfilesError) console.warn('No se pudieron cargar los nombres de los miembros:', perfilesError);
-  const nombrePorId = Object.fromEntries((perfiles || []).map(p => [p.id, p.nombre_completo]));
+  const perfilPorId = Object.fromEntries((perfiles || []).map(p => [p.id, p]));
+  const trabajadorOptions = state.trabajadores.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
 
   cont.innerHTML = data.map(m => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);gap:8px">
-      <span style="font-size:13px;">
-        ${nombrePorId[m.user_id] || 'Usuario'}
-        ${m.rol_solicitado === 'coordinador' && m.rol !== 'coordinador' ? ' <span class="badge badge-amber">Pide ser Encargado</span>' : ''}
-      </span>
-      <select class="modal-input" style="width:auto;padding:4px 8px" onchange="cambiarRolMiembro('${m.id}', this.value)">
-        <option value="lector" ${m.rol === 'lector' ? 'selected' : ''}>Trabajador/a</option>
-        <option value="coordinador" ${m.rol === 'coordinador' ? 'selected' : ''}>Encargado</option>
-        <option value="administrador" ${m.rol === 'administrador' ? 'selected' : ''}>Gestor</option>
-      </select>
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="font-size:13px;">
+          ${perfilPorId[m.user_id]?.nombre_completo || 'Usuario'}
+          ${m.rol_solicitado === 'coordinador' && m.rol !== 'coordinador' ? ' <span class="badge badge-amber">Pide ser Encargado</span>' : ''}
+        </span>
+        <select class="modal-input" style="width:auto;padding:4px 8px" onchange="cambiarRolMiembro('${m.id}', this.value)">
+          <option value="lector" ${m.rol === 'lector' ? 'selected' : ''}>Trabajador/a</option>
+          <option value="coordinador" ${m.rol === 'coordinador' ? 'selected' : ''}>Encargado</option>
+          <option value="administrador" ${m.rol === 'administrador' ? 'selected' : ''}>Gestor</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:7px"><span style="font-size:10px;color:var(--text-muted);min-width:72px">Vincular a:</span><select class="modal-input" style="flex:1;padding:5px 8px" onchange="vincularTrabajadorMiembro('${m.user_id}', this.value)"><option value="">Sin trabajador</option>${state.trabajadores.map(t => `<option value="${t.id}" ${perfilPorId[m.user_id]?.trabajador_id === t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}</select></div>
     </div>
   `).join('');
+}
+
+async function vincularTrabajadorMiembro(userId, trabajadorId) {
+  if (!tieneRol('administrador')) { mostrarToast('Solo el Gestor puede vincular trabajadores', true); return; }
+  const { error } = await sb.rpc('vincular_trabajador_usuario', { p_user_id: userId, p_trabajador_id: trabajadorId || null, p_centro_id: state.centroId });
+  if (error) { mostrarToast('No se pudo vincular el trabajador', true); return; }
+  mostrarToast(trabajadorId ? 'Trabajador vinculado' : 'Vinculación eliminada');
+  if (userId === currentUserAuth?.id) { state.userProfile.trabajador_id = trabajadorId || null; await loadData(); }
+  else cargarMiembros();
 }
 
 async function cambiarRolMiembro(membresiaId, nuevoRol) {
@@ -2996,6 +3203,7 @@ function toggleUserMenu() {
 
 function showView(view) {
   if (!state.userProfile) return;
+  if (!tieneRol('coordinador') && ['personal','tareas','analitica'].includes(view)) view = 'cuadrante';
   currentView = view;
   document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(`nav-${view}`)?.classList.add('active');
@@ -3004,11 +3212,15 @@ function showView(view) {
   else if (view === 'personal') renderPersonal();
   else if (view === 'tareas') renderTareas();
   else if (view === 'ajustes') renderAjustes();
+  else if (view === 'analitica') renderAnalitica();
 }
 
 function render() {
   if (state.userProfile && state.centroId) {
     document.getElementById('nav').style.display = '';
+    document.getElementById('nav-personal')?.classList.toggle('hidden', !tieneRol('coordinador'));
+    document.getElementById('nav-tareas')?.classList.toggle('hidden', !tieneRol('coordinador'));
+    document.getElementById('nav-analitica')?.classList.toggle('hidden', !tieneRol('coordinador'));
     showView(currentView);
   } else {
     renderLogin();
