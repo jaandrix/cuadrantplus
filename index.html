@@ -1709,26 +1709,45 @@ function modalNuevoTrabajador() {
   document.body.appendChild(overlay);
 }
 
+function describirErrorSupabase(error) {
+  if (!error) return 'Error desconocido';
+  const partes = [error.message, error.details, error.hint, error.code]
+    .filter(Boolean)
+    .map(String);
+  return partes.join(' · ');
+}
+
 async function crearWorker() {
   const nombre = document.getElementById('nt-nombre')?.value?.trim();
   const tipo = document.getElementById('nt-tipo')?.value || 'fijo';
   const grupo = document.getElementById('nt-grupo')?.value || 'manana';
   if (!nombre) { mostrarToast('Nombre requerido', true); return; }
+  if (!state.centroId) { mostrarToast('No hay un centro seleccionado', true); return; }
+  if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para crear trabajadores', true); return; }
+
   const turnoBase = grupo === 'manana' ? 'M' : grupo === 'tarde' ? 'T' : grupo === 'noche' ? 'N' : 'M';
+  const payload = {
+    centro_id: state.centroId,
+    nombre,
+    tipo,
+    grupo,
+    turno_base: turnoBase,
+    turno_habitual: turnoBase,
+    estado: tipo === 'sustituto' ? 'inactivo' : 'activo'
+  };
+
   const { data, error } = await sb
     .from('trabajadores')
-    .insert({
-      centro_id: state.centroId,
-      nombre,
-      tipo,
-      grupo,
-      turno_base: turnoBase,
-      turno_habitual: turnoBase,
-      estado: tipo === 'sustituto' ? 'inactivo' : 'activo'
-    })
+    .insert(payload)
     .select()
     .single();
-  if (error) { mostrarToast('Error al crear', true); return; }
+
+  if (error || !data) {
+    console.error('Error real de Supabase al crear trabajador:', error, payload);
+    mostrarToast(`Error al crear: ${describirErrorSupabase(error)}`, true);
+    return;
+  }
+
   state.trabajadores.push(data);
   cerrarModal(); renderPersonal();
   mostrarToast(`${nombre.split(' ')[0]} añadido`);
@@ -2034,12 +2053,22 @@ async function procesarImportacionExcel() {
 
     let actualizados = 0;
     let coincidencias = 0;
+    let creados = 0;
+    let erroresCreacion = 0;
     let erroresGuardado = 0;
     const noEncontrados = [];
     const codigosDesconocidos = new Set();
 
     cerrarModal();
-    mostrarToast('Importando…');
+    mostrarToast('Importando cuadrante…');
+
+    // IMPORTANTE: la primera importación puede hacerse sobre un centro sin personal.
+    // Si el trabajador no existe, se crea automáticamente y después se cargan sus turnos.
+    // El mapa se mantiene durante toda la importación para evitar duplicados si el Excel
+    // contiene accidentalmente dos filas con el mismo nombre.
+    const trabajadoresPorNombre = new Map(
+      state.trabajadores.map(t => [normalizarNombre(t.nombre), t])
+    );
 
     for (let f = 1; f < filas.length; f++) {
       const fila = filas[f] || [];
@@ -2047,11 +2076,36 @@ async function procesarImportacionExcel() {
       if (!nombreExcel) continue;
 
       const nombreNormalizado = normalizarNombre(nombreExcel);
-      const trabajador = state.trabajadores.find(t => normalizarNombre(t.nombre) === nombreNormalizado);
+      let trabajador = trabajadoresPorNombre.get(nombreNormalizado);
+
       if (!trabajador) {
-        noEncontrados.push(nombreExcel);
-        continue;
+        const { data: nuevoTrabajador, error: errorCreacion } = await sb
+          .from('trabajadores')
+          .insert({
+            centro_id: state.centroId,
+            nombre: nombreExcel,
+            tipo: 'fijo',
+            grupo: 'manana',
+            turno_base: 'M',
+            turno_habitual: 'M',
+            estado: 'activo'
+          })
+          .select()
+          .single();
+
+        if (errorCreacion || !nuevoTrabajador) {
+          console.error('Error creando trabajador durante importación:', errorCreacion);
+          erroresCreacion++;
+          noEncontrados.push(`${nombreExcel} [${describirErrorSupabase(errorCreacion)}]`);
+          continue;
+        }
+
+        trabajador = nuevoTrabajador;
+        trabajadoresPorNombre.set(nombreNormalizado, trabajador);
+        state.trabajadores.push(trabajador);
+        creados++;
       }
+
       coincidencias++;
 
       for (const col of diasValidos) {
@@ -2060,7 +2114,10 @@ async function procesarImportacionExcel() {
         if (valor === actual) continue;
 
         // No bloqueamos códigos propios del cuadrante (p. ej. F6, LD25); solo avisamos de los no catalogados.
-        const conocido = CODIGOS_TURNO.some(c => c.cod === valor) || /^[2-9]$/.test(valor) || /^F(?:[1-9]|[12]\d|3[01])$/.test(valor) || /^LD(?:25|26)?$/.test(valor);
+        const conocido = CODIGOS_TURNO.some(c => c.cod === valor)
+          || /^[2-9]$/.test(valor)
+          || /^F(?:[1-9]|[12]\d|3[01])$/.test(valor)
+          || /^LD(?:25|26)?$/.test(valor);
         if (valor && !conocido) codigosDesconocidos.add(valor);
 
         const ok = await setCelda(trabajador.id, col.dia - 1, valor, mes, anio);
@@ -2069,16 +2126,22 @@ async function procesarImportacionExcel() {
       }
     }
 
+    // Refrescamos la lista desde Supabase para dejar también sincronizados los perfiles
+    // recién creados y cualquier otro cambio realizado durante la importación.
+    await loadTrabajadores();
+
     if (mes === state.mesActual && anio === state.anio) {
       await loadTurnos();
       if (currentView === 'cuadrante') renderCuadrante();
     }
 
-    let mensaje = `Cuadrante actualizado: ${actualizados} celdas · ${coincidencias} trabajadores encontrados`;
+    let mensaje = `Cuadrante actualizado: ${actualizados} celdas · ${coincidencias} trabajadores procesados`;
+    if (creados) mensaje += ` · ${creados} perfiles creados`;
+    if (erroresCreacion) mensaje += ` · ${erroresCreacion} errores al crear perfiles`;
     if (erroresGuardado) mensaje += ` · ${erroresGuardado} errores al guardar`;
-    if (noEncontrados.length) mensaje += ` · sin coincidencia: ${[...new Set(noEncontrados)].join(', ')}`;
+    if (noEncontrados.length) mensaje += ` · sin procesar: ${[...new Set(noEncontrados)].join(', ')}`;
     if (codigosDesconocidos.size) mensaje += ` · códigos no catalogados: ${[...codigosDesconocidos].join(', ')}`;
-    mostrarToast(mensaje, erroresGuardado > 0);
+    mostrarToast(mensaje, erroresCreacion > 0 || erroresGuardado > 0);
   } catch (err) {
     console.error('Error importando Excel:', err);
     mostrarToast('No se pudo leer el Excel. Comprueba que sea un archivo .xlsx/.xls válido.', true);
