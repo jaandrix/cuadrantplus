@@ -355,6 +355,7 @@
 <input type="file" id="file-import-personal" accept="application/json">
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // ============================================================
 // SUPABASE CONFIG
@@ -901,6 +902,10 @@ function getTurno(trabajadorId, dia, mes, anio) {
 }
 
 async function setCelda(trabajadorId, dia, valor, mes, anio) {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('Solo el Encargado o el Gestor pueden modificar el cuadrante', true);
+    return false;
+  }
   mes = mes ?? state.mesActual;
   anio = anio ?? state.anio;
   const fecha = `${anio}-${String(mes+1).padStart(2,'0')}-${String(dia+1).padStart(2,'0')}`;
@@ -943,12 +948,25 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   
   undoStack.push({ trabajadorId, dia, mes, anio, anterior, nuevo: valor });
   if (undoStack.length > 20) undoStack.shift();
-  
+
+  if (anterior !== valor && currentUserAuth?.id && state.centroId) {
+    sb.from('historial_cambios').insert({
+      centro_id: state.centroId,
+      trabajador_id: trabajadorId,
+      usuario_id: currentUserAuth.id,
+      usuario_nombre: state.userProfile?.nombre_completo || 'Usuario',
+      fecha_turno: fecha,
+      valor_anterior: anterior || null,
+      valor_nuevo: valor || null
+    }).then(() => {}).catch(() => {});
+  }
+
   if (currentView === 'cuadrante') {
     const idx = state.trabajadores.findIndex(t => t.id === trabajadorId);
     if (idx >= 0) actualizarCeldaEnTabla(idx, dia, valor);
   }
   mostrarToast('Turno actualizado');
+  return true;
 }
 
 function actualizarCeldaEnTabla(fila, columna, valor) {
@@ -1121,27 +1139,35 @@ function toggleLoginMode() {
   loginMode = loginMode === 'login' ? 'register' : 'login';
   const form = document.getElementById('login-form');
   const email = document.getElementById('login-email');
-  const password = document.getElementById('login-password');
   const btn = form.querySelector('.btn-primary');
   const btn2 = form.querySelector('.btn-secondary');
   const switchLink = form.querySelector('.switch a');
-  
+
   if (loginMode === 'register') {
-    const ni = document.createElement('input');
-    ni.id = 'login-nombre';
-    ni.type = 'text';
-    ni.placeholder = 'Nombre completo';
-    ni.className = 'modal-input';
-    ni.style.marginBottom = '12px';
-    form.insertBefore(ni, email);
+    const niNombre = document.createElement('input');
+    niNombre.id = 'login-nombre';
+    niNombre.type = 'text';
+    niNombre.placeholder = 'Nombre';
+    niNombre.className = 'modal-input';
+    niNombre.style.marginBottom = '8px';
+
+    const niApellido = document.createElement('input');
+    niApellido.id = 'login-apellido';
+    niApellido.type = 'text';
+    niApellido.placeholder = 'Apellido';
+    niApellido.className = 'modal-input';
+    niApellido.style.marginBottom = '12px';
+
+    form.insertBefore(niApellido, email);
+    form.insertBefore(niNombre, niApellido);
     btn.textContent = 'Registrarse';
     btn.onclick = handleRegister;
     btn2.style.display = 'none';
     switchLink.textContent = 'Ya tengo cuenta';
     switchLink.onclick = toggleLoginMode;
   } else {
-    const ni = document.getElementById('login-nombre');
-    if (ni) ni.remove();
+    document.getElementById('login-nombre')?.remove();
+    document.getElementById('login-apellido')?.remove();
     btn.textContent = 'Iniciar sesión';
     btn.onclick = handleLogin;
     btn2.style.display = '';
@@ -1163,12 +1189,16 @@ async function handleLogin() {
 async function handleRegister() {
   const email = document.getElementById('login-email')?.value.trim();
   const pass = document.getElementById('login-password')?.value;
-  const nombre = document.getElementById('login-nombre')?.value;
-  if (!email || !pass) { mostrarToast('Email y contraseña requeridos', true); return; }
+  const nombre = document.getElementById('login-nombre')?.value?.trim();
+  const apellido = document.getElementById('login-apellido')?.value?.trim();
+  if (!email || !pass || !nombre || !apellido) {
+    mostrarToast('Rellena nombre, apellido, email y contraseña', true);
+    return;
+  }
   if (pass.length < 6) { mostrarToast('La contraseña debe tener al menos 6 caracteres', true); return; }
   const btn = document.getElementById('login-register-btn') || document.querySelector('#login-form .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
-  try { await signUp(email, pass, nombre); }
+  try { await signUp(email, pass, `${nombre} ${apellido}`); }
   finally { if (btn) { btn.disabled = false; } }
 }
 
@@ -1273,9 +1303,11 @@ function renderCuadrante() {
     <input class="cuad-search" id="cuad-search" type="text" placeholder="Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)">
     <button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button>
     <button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button>
+    <button class="btn btn-secondary btn-sm" onclick="abrirModalPDFPersonal()">📄 Mi cuadrante (PDF)</button>
+    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button>' : ''}
     <button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button>
     <button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>
-    <button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>
+    ${tieneRol('coordinador') ? '<button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>' : ''}
     <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
   </div>`;
   html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días</div>`;
@@ -1319,9 +1351,20 @@ function renderCuadrante() {
   }
   html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;background:var(--success-bg);"></td></tr>`;
   html += `</tbody></table></div>`;
-  
+
+  html += `<div class="card" style="margin-top:12px">
+    <div class="card-header">Comentarios del cuadrante — ${MESES_NOMBRES[mes]} ${anio}</div>
+    <div class="card-body" id="comentarios-lista"><div class="empty">Cargando…</div></div>
+    ${tieneRol('coordinador') ? `
+      <div class="card-body" style="padding-top:0">
+        <textarea class="modal-input" id="nuevo-comentario" rows="2" placeholder="Añadir un comentario para el equipo..."></textarea>
+        <button class="btn btn-primary btn-sm" onclick="guardarComentario()">Publicar comentario</button>
+      </div>` : ''}
+  </div>`;
+
   content.innerHTML = html;
   actualizarNombreHeader();
+  cargarComentarios();
 }
 
 function cambiarMes(mes) {
@@ -1347,6 +1390,7 @@ function mostrarAlertasCuadrante() {
 }
 
 function vaciarCuadranteActual() {
+  if (!tieneRol('coordinador')) { mostrarToast('Solo el Encargado o el Gestor pueden vaciar el cuadrante', true); return; }
   if (!confirm(`¿Estás seguro de que quieres VACIAR completamente el cuadrante de ${MESES_NOMBRES[state.mesActual]} ${state.anio}?`)) return;
   const mes = state.mesActual;
   const anio = state.anio;
@@ -1476,6 +1520,10 @@ async function eliminarZona(id) {
 // SELECTOR DE TURNO
 // ============================================================
 function abrirSelectorTurno(trabajadorId, dia) {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('Solo el Encargado o el Gestor pueden modificar el cuadrante', true);
+    return;
+  }
   const t = state.trabajadores.find(w => w.id === trabajadorId);
   if (!t) return;
   const valorActual = getTurno(trabajadorId, dia);
@@ -1545,7 +1593,7 @@ function cardWorkerHtml(t, mes, anio) {
   const vacTot = t.vacaciones_totales || 22;
   const vacPct = Math.min(100, Math.round(vacDis / vacTot * 100));
   
-  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span></div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div></div>`;
+  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span></div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>${tieneRol('coordinador') ? `<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button></div>` : ''}</div>`;
 }
 
 function setFiltroZona(val) { personalFiltroZona = val; renderPersonal(); }
@@ -1585,11 +1633,36 @@ async function guardarWorker(id) {
   const estado = document.getElementById('dw-estado')?.value || t.estado;
   const grupo = document.getElementById('dw-grupo')?.value || t.grupo;
   
+  const estadoAnterior = t.estado;
   const { error } = await sb
     .from('trabajadores')
     .update({ nombre, estado, grupo })
     .eq('id', id);
   if (error) { mostrarToast('Error al guardar', true); return; }
+
+  if (estadoAnterior !== 'baja' && estado === 'baja') {
+    const fechaInicioBaja = new Date().toISOString().slice(0,10);
+    const { error: bajaError } = await sb.from('periodos_baja').insert({
+      trabajador_id: id,
+      centro_id: state.centroId,
+      fecha_inicio: fechaInicioBaja
+    });
+    if (bajaError) console.warn('No se pudo guardar el periodo histórico de baja:', bajaError);
+  } else if (estadoAnterior === 'baja' && estado !== 'baja') {
+    const { data: abiertas } = await sb.from('periodos_baja')
+      .select('id')
+      .eq('trabajador_id', id)
+      .eq('centro_id', state.centroId)
+      .is('fecha_fin', null)
+      .order('fecha_inicio', { ascending: false })
+      .limit(1);
+    if (abiertas?.[0]) {
+      await sb.from('periodos_baja').update({
+        fecha_fin: new Date().toISOString().slice(0,10)
+      }).eq('id', abiertas[0].id);
+    }
+  }
+
   t.nombre = nombre; t.estado = estado; t.grupo = grupo;
   cerrarModal(); renderPersonal();
   mostrarToast(`${nombre.split(' ')[0]} actualizado`);
@@ -1657,7 +1730,14 @@ async function iniciarBajaWorker(id) {
   const dia = parseInt(diaInicio) - 1;
   if (isNaN(dia) || dia < 0) { mostrarToast('Día inválido', true); return; }
   
-  await sb.from('trabajadores').update({ estado: 'baja', fecha_baja: `${state.anio}-${String(state.mesActual+1).padStart(2,'0')}-${String(dia+1).padStart(2,'0')}` }).eq('id', id);
+  const fechaInicioBaja = `${state.anio}-${String(state.mesActual+1).padStart(2,'0')}-${String(dia+1).padStart(2,'0')}`;
+  await sb.from('trabajadores').update({ estado: 'baja', fecha_baja: fechaInicioBaja }).eq('id', id);
+  const { error: bajaError } = await sb.from('periodos_baja').insert({
+    trabajador_id: id,
+    centro_id: state.centroId,
+    fecha_inicio: fechaInicioBaja
+  });
+  if (bajaError) console.warn('No se pudo guardar el periodo histórico de baja:', bajaError);
   t.estado = 'baja';
   const dias = diasEnMes(state.mesActual, state.anio);
   for (let d = dia; d < dias; d++) {
@@ -1800,12 +1880,359 @@ async function eliminarTarea(id) {
 // ============================================================
 // VISTA AJUSTES (antes Seguro)
 // ============================================================
+
+// ============================================================
+// HISTORIAL, COMENTARIOS E IMPORTACIÓN EXCEL
+// ============================================================
+async function cargarHistorial() {
+  if (!tieneRol('coordinador')) return;
+  const { data, error } = await sb.from('historial_cambios')
+    .select('*')
+    .eq('centro_id', state.centroId)
+    .order('creado_en', { ascending: false })
+    .limit(30);
+  const cont = document.getElementById('historial-lista');
+  if (!cont) return;
+  if (error || !data?.length) {
+    cont.innerHTML = '<div class="empty">Sin cambios registrados</div>';
+    return;
+  }
+  cont.innerHTML = data.map(h => {
+    const t = state.trabajadores.find(w => w.id === h.trabajador_id);
+    return `<div class="hist-item">
+      <strong>${h.usuario_nombre || 'Usuario'}</strong> modificó a ${t?.nombre || '—'} (${h.fecha_turno}):
+      <span style="color:var(--danger)">${h.valor_anterior || '—'}</span> →
+      <span style="color:var(--success)">${h.valor_nuevo || '—'}</span>
+      <div style="font-size:10px;color:var(--text-muted)">${h.creado_en ? new Date(h.creado_en).toLocaleString('es-ES') : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function cargarComentarios() {
+  const { data, error } = await sb.from('comentarios_cuadrante')
+    .select('*')
+    .eq('centro_id', state.centroId)
+    .eq('mes', state.mesActual)
+    .eq('anio', state.anio)
+    .order('creado_en', { ascending: false });
+  const cont = document.getElementById('comentarios-lista');
+  if (!cont) return;
+  if (error || !data?.length) {
+    cont.innerHTML = '<div class="empty">Sin comentarios este mes</div>';
+    return;
+  }
+  cont.innerHTML = data.map(c => `
+    <div class="aviso aviso-azul">
+      <strong>${c.autor_nombre || 'Usuario'}</strong> · ${c.creado_en ? new Date(c.creado_en).toLocaleString('es-ES') : ''}<br>${c.texto}
+    </div>`).join('');
+}
+
+async function guardarComentario() {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('Solo el Encargado o el Gestor pueden publicar comentarios', true);
+    return;
+  }
+  const texto = document.getElementById('nuevo-comentario')?.value?.trim();
+  if (!texto) return;
+  const { error } = await sb.from('comentarios_cuadrante').insert({
+    centro_id: state.centroId,
+    anio: state.anio,
+    mes: state.mesActual,
+    autor_id: currentUserAuth.id,
+    autor_nombre: state.userProfile?.nombre_completo || 'Usuario',
+    texto
+  });
+  if (error) { mostrarToast('Error al publicar', true); return; }
+  mostrarToast('Comentario publicado');
+  const input = document.getElementById('nuevo-comentario');
+  if (input) input.value = '';
+  cargarComentarios();
+}
+
+function abrirModalImportarExcel() {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('No tienes permiso para importar', true);
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box">
+    <div class="modal-title">Importar cuadrante desde Excel</div>
+    <label class="modal-label">Mes del cuadrante que subes</label>
+    <select class="modal-input" id="import-mes">
+      ${MESES_NOMBRES.map((n,i)=>`<option value="${i}" ${i===state.mesActual?'selected':''}>${n}</option>`).join('')}
+    </select>
+    <label class="modal-label">Año</label>
+    <input class="modal-input" type="number" id="import-anio" value="${state.anio}">
+    <label class="modal-label">Archivo (.xlsx)</label>
+    <input class="modal-input" type="file" id="import-excel-file" accept=".xlsx,.xls" style="display:block;margin-top:4px;">
+    <p style="font-size:11px;color:var(--text-muted);margin-top:6px">
+      Formato esperado: primera columna "Trabajador" y una columna por cada día del mes
+      (1, 2, 3…) con el código de turno (M, T, N, L, D, V…).
+    </p>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="procesarImportacionExcel()">Importar</button>
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function procesarImportacionExcel() {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('No tienes permiso para importar', true);
+    return;
+  }
+  const mes = parseInt(document.getElementById('import-mes')?.value);
+  const anio = parseInt(document.getElementById('import-anio')?.value);
+  const file = document.getElementById('import-excel-file')?.files[0];
+  if (isNaN(mes) || isNaN(anio)) { mostrarToast('Mes o año inválido', true); return; }
+  if (!file) { mostrarToast('Selecciona un archivo', true); return; }
+  if (typeof XLSX === 'undefined') { mostrarToast('No se pudo cargar el lector de Excel', true); return; }
+
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const hoja = wb.Sheets[wb.SheetNames[0]];
+  const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: '' });
+  if (!filas.length) { mostrarToast('El Excel está vacío', true); return; }
+
+  const cabecera = filas[0];
+  const colDias = cabecera.slice(1).map(c => parseInt(c)).filter(n => !isNaN(n));
+  const diasMes = diasEnMes(mes, anio);
+  let actualizados = 0;
+  const noEncontrados = [];
+
+  cerrarModal();
+  mostrarToast('Importando…');
+
+  for (let f = 1; f < filas.length; f++) {
+    const fila = filas[f];
+    const nombreExcel = String(fila[0] || '').trim();
+    if (!nombreExcel) continue;
+    const trabajador = state.trabajadores.find(t =>
+      t.nombre.trim().toLowerCase() === nombreExcel.toLowerCase()
+    );
+    if (!trabajador) {
+      noEncontrados.push(nombreExcel);
+      continue;
+    }
+
+    for (let i = 0; i < colDias.length; i++) {
+      const dia = colDias[i];
+      if (dia < 1 || dia > diasMes) continue;
+      const valor = String(fila[i + 1] || '').trim().toUpperCase();
+      const actual = getTurno(trabajador.id, dia - 1, mes, anio);
+      if (valor !== actual) {
+        await setCelda(trabajador.id, dia - 1, valor, mes, anio);
+        actualizados++;
+      }
+    }
+  }
+
+  if (mes === state.mesActual && anio === state.anio) {
+    await loadTurnos();
+    if (currentView === 'cuadrante') renderCuadrante();
+  }
+  mostrarToast(`Cuadrante actualizado: ${actualizados} celdas` +
+    (noEncontrados.length ? ` · sin coincidencia: ${[...new Set(noEncontrados)].join(', ')}` : ''));
+}
+
+// ============================================================
+// PDF PERSONAL
+// ============================================================
+function abrirModalPDFPersonal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const esGestorOEncargado = tieneRol('coordinador');
+  const normalizarNombre = valor => (valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const nombrePerfil = normalizarNombre(state.userProfile?.nombre_completo);
+  const coincidencia = state.trabajadores.find(t => normalizarNombre(t.nombre) === nombrePerfil);
+  const opciones = esGestorOEncargado ? state.trabajadores : (coincidencia ? [coincidencia] : []);
+
+  overlay.innerHTML = `<div class="modal-box">
+    <div class="modal-title">Exportar cuadrante personal</div>
+    <label class="modal-label">${esGestorOEncargado ? 'Selecciona el trabajador' : 'Selecciona tu nombre'}</label>
+    <select class="modal-input" id="pdf-trabajador-select" ${!opciones.length ? 'disabled' : ''}>
+      ${opciones.length ? opciones.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('') : '<option>No encontrado</option>'}
+    </select>
+    ${!coincidencia && !esGestorOEncargado ? '<p style="font-size:11px;color:var(--text-muted);margin-top:6px">No se ha encontrado un trabajador con el mismo nombre de tu perfil. Si es necesario, pide al Gestor que lo revise.</p>' : ''}
+    <div class="modal-btns">
+      <button class="btn-modal-ok" ${!opciones.length ? 'disabled' : ''} onclick="generarPDFPersonal(document.getElementById('pdf-trabajador-select').value)">Generar PDF</button>
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function generarPDFPersonal(trabajadorId) {
+  const t = state.trabajadores.find(w => w.id === trabajadorId);
+  if (!t) return;
+  if (!tieneRol('coordinador')) {
+    const normalizarNombre = valor => (valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (normalizarNombre(t.nombre) !== normalizarNombre(state.userProfile?.nombre_completo)) {
+      mostrarToast('Solo puedes exportar tu propio cuadrante', true);
+      return;
+    }
+  }
+  const mes = state.mesActual, anio = state.anio;
+  const dias = diasEnMes(mes, anio);
+  const key = clavesMes(mes, anio);
+  const turnos = state.turnos[key]?.[trabajadorId] || {};
+  const total = getTotalHorasMes(trabajadorId, mes, anio);
+
+  let filas = '';
+  for (let d = 0; d < dias; d++) {
+    const val = turnos[d] || '';
+    const dow = ['D','L','M','X','J','V','S'][new Date(anio, mes, d + 1).getDay()];
+    const fest = esFestivo(anio, mes, d + 1);
+    const label = CODIGOS_TURNO.find(c => c.cod === val)?.label || (val || 'Sin asignar');
+    filas += `<tr class="${fest ? 'festivo' : ''}">
+      <td>${d + 1}</td><td>${dow}</td><td class="cod ${val}">${val || '—'}</td><td>${label}</td>
+    </tr>`;
+  }
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cuadrante ${t.nombre}</title>
+  <style>
+    @page { size: A4 portrait; margin: 16mm; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; color: #16181d; }
+    h1 { font-size: 20px; margin-bottom: 2px; }
+    .sub { color: #6b7280; font-size: 12px; margin-bottom: 18px; }
+    .resumen { display: flex; gap: 14px; margin-bottom: 18px; }
+    .resumen div { flex: 1; background: #f1f3f6; border-radius: 8px; padding: 10px; text-align: center; }
+    .resumen .num { font-size: 20px; font-weight: 800; }
+    .resumen .lbl { font-size: 10px; color: #6b7280; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { border: 1px solid #e2e5ea; padding: 5px 8px; text-align: left; }
+    th { background: #f1f3f6; }
+    tr.festivo { background: #fdf3e2; }
+    .M,.T { font-weight: 600; } .N { color: #92400e; font-weight:700; }
+    .L { color:#1d4ed8; font-weight:700; } .D { color:#15803d; font-weight:700; }
+    .V,.VAC,.VA { color:#065f46; font-weight:700; background:#d1fae5; }
+    .IT { color:#991b1b; font-weight:700; background:#fee2e2; }
+    footer { margin-top: 22px; font-size: 9px; color: #9aa0aa; text-align: center; }
+  </style></head><body>
+    <h1>Cuadrante personal</h1>
+    <div class="sub">${t.nombre} · ${MESES_NOMBRES[mes]} ${anio} · Generado el ${new Date().toLocaleString('es-ES')}</div>
+    <div class="resumen">
+      <div><div class="num">${total}</div><div class="lbl">Horas del mes</div></div>
+      <div><div class="num">${Object.values(turnos).filter(v => v === 'V' || v === 'VAC' || v === 'VA').length}</div><div class="lbl">Días de vacaciones</div></div>
+      <div><div class="num">${Object.values(turnos).filter(v => v === 'D' || v === 'L').length}</div><div class="lbl">Descansos/Libres</div></div>
+    </div>
+    <table><thead><tr><th>Día</th><th>Semana</th><th>Turno</th><th>Descripción</th></tr></thead>
+    <tbody>${filas}</tbody></table>
+    <footer>Documento generado automáticamente por Gestión Cuadrantes</footer>
+  </body></html>`;
+
+  const ventana = window.open();
+  if (!ventana) { mostrarToast('El navegador bloqueó la ventana del PDF', true); return; }
+  ventana.document.write(html);
+  ventana.document.close();
+  ventana.focus();
+  cerrarModal();
+  setTimeout(() => ventana.print(), 400);
+}
+
+// ============================================================
+// RESUMEN DEL TRABAJADOR
+// ============================================================
+async function mostrarResumenTrabajador(trabajadorId) {
+  if (!tieneRol('coordinador')) {
+    mostrarToast('Solo el Encargado o el Gestor pueden consultar este resumen', true);
+    return;
+  }
+  const t = state.trabajadores.find(w => w.id === trabajadorId);
+  if (!t) return;
+
+  const horasMes = getTotalHorasMes(trabajadorId, state.mesActual, state.anio);
+
+  const hoy = new Date();
+  const inicioSemana = new Date(hoy);
+  const diaSemana = inicioSemana.getDay() || 7;
+  inicioSemana.setDate(inicioSemana.getDate() - diaSemana + 1);
+  inicioSemana.setHours(0, 0, 0, 0);
+
+  let horasSemana = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(inicioSemana);
+    d.setDate(inicioSemana.getDate() + i);
+    const key = clavesMes(d.getMonth(), d.getFullYear());
+    if (!state.turnos[key]) {
+      const fechaInicio = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+      const fechaFin = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(diasEnMes(d.getMonth(), d.getFullYear())).padStart(2,'0')}`;
+      const { data } = await sb.from('turnos').select('fecha, codigo')
+        .eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId)
+        .gte('fecha', fechaInicio).lte('fecha', fechaFin);
+      state.turnos[key] = { [trabajadorId]: {} };
+      (data || []).forEach(r => {
+        state.turnos[key][trabajadorId][parseInt(r.fecha.split('-')[2], 10) - 1] = r.codigo;
+      });
+    }
+    horasSemana += horasCodigo(state.turnos[key]?.[trabajadorId]?.[d.getDate()-1] || '');
+  }
+
+  let horasAnio = 0;
+  const conteoTurnos = {};
+  for (let m = 0; m < 12; m++) {
+    const keyM = clavesMes(m, state.anio);
+    if (!state.turnos[keyM]) {
+      const fechaInicio = `${state.anio}-${String(m+1).padStart(2,'0')}-01`;
+      const fechaFin = `${state.anio}-${String(m+1).padStart(2,'0')}-${String(diasEnMes(m, state.anio)).padStart(2,'0')}`;
+      const { data } = await sb.from('turnos').select('fecha, codigo')
+        .eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId)
+        .gte('fecha', fechaInicio).lte('fecha', fechaFin);
+      state.turnos[keyM] = { [trabajadorId]: {} };
+      (data || []).forEach(r => {
+        state.turnos[keyM][trabajadorId][parseInt(r.fecha.split('-')[2], 10) - 1] = r.codigo;
+      });
+    }
+    for (let d = 0; d < diasEnMes(m, state.anio); d++) {
+      const val = state.turnos[keyM]?.[trabajadorId]?.[d] || '';
+      if (val) {
+        horasAnio += horasCodigo(val);
+        conteoTurnos[val] = (conteoTurnos[val] || 0) + 1;
+      }
+    }
+  }
+
+  const { data: bajas, error: bajasError } = await sb.from('periodos_baja').select('*')
+    .eq('centro_id', state.centroId)
+    .eq('trabajador_id', trabajadorId)
+    .order('fecha_inicio', { ascending: false });
+  const bajasMostrar = bajasError ? [] : (bajas || []);
+
+  const zona = state.zonas.find(z => z.id === t.zona_principal_id);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box centered">
+    <div class="modal-title">Resumen — ${t.nombre}</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1;background:var(--surface-alt);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:800">${horasSemana}</div><div style="font-size:10px;color:var(--text-muted)">Horas esta semana</div></div>
+      <div style="flex:1;background:var(--surface-alt);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:800">${horasMes}</div><div style="font-size:10px;color:var(--text-muted)">Horas este mes</div></div>
+      <div style="flex:1;background:var(--surface-alt);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:800">${horasAnio}</div><div style="font-size:10px;color:var(--text-muted)">Horas este año</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:4px">Turnos realizados en el año</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      ${Object.entries(conteoTurnos).map(([cod,n]) => `<span class="badge badge-blue">${cod}: ${n}</span>`).join('') || '<span class="empty">Sin datos</span>'}
+    </div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:4px">Periodos de baja</div>
+    <div>${bajasMostrar.length ? bajasMostrar.map(b => `<div class="hist-item">${b.fecha_inicio} → ${b.fecha_fin || 'actualidad'} ${b.motivo ? '· ' + b.motivo : ''}</div>`).join('') : '<div class="empty">Sin bajas registradas</div>'}</div>
+    <div style="font-size:12px;font-weight:700;margin:10px 0 4px">Zona principal</div>
+    <div>${zona?.nombre || 'Sin asignar'}</div>
+    <div class="modal-btns"><button class="btn-modal-ok" onclick="cerrarModal()">Cerrar</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
 function renderAjustes() {
   const content = document.getElementById('content');
   if (!content) return;
   const esAdmin = tieneRol('administrador');
+  const esCoordinador = tieneRol('coordinador');
   const p = state.parametros;
-  
+
   let html = `
     <div class="card">
       <div class="card-header">Copia de seguridad</div>
@@ -1824,7 +2251,7 @@ function renderAjustes() {
         </div>
       </div>
     </div>`;
-  
+
   if (esAdmin) {
     html += `
     <div class="card">
@@ -1856,7 +2283,7 @@ function renderAjustes() {
       </div>
     </div>`;
   }
-  
+
   html += `
     <div class="card">
       <div class="card-header">Compartir cuadrante</div>
@@ -1869,24 +2296,27 @@ function renderAjustes() {
           <hr style="margin:14px 0;border-color:var(--border);">
         ` : `<p style="font-size:12px;color:var(--text-muted);">Solo un administrador puede generar el código de compartición.</p><hr style="margin:14px 0;border-color:var(--border);">`}
         <p style="font-size:12px;color:var(--text-muted);">Recibir un cuadrante compartido:</p>
+        <select class="modal-input" id="rol-solicitado" style="margin-top:8px">
+          <option value="lector">Me uno como Trabajador/a (solo consulta)</option>
+          <option value="coordinador">Me uno como Encargado (puede pedir permiso de edición)</option>
+        </select>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <input class="modal-input" id="codigo-recibir" maxlength="8" placeholder="Código de 8 dígitos" style="flex:1;">
           <button class="btn btn-primary btn-sm" onclick="recibirCuadrante()" style="width:auto;padding:10px 16px;">Unirse</button>
         </div>
       </div>
     </div>`;
-  
-  html += `
+
+  if (esCoordinador) {
+    html += `
     <div class="card">
       <div class="card-header">Historial de cambios</div>
-      <div class="card-body">
-        ${undoStack.length === 0 ? '<div class="empty">Sin cambios registrados</div>' : 
-          undoStack.slice(-5).reverse().map(h => 
-            `<div class="hist-item">${state.trabajadores.find(w=>w.id===h.trabajadorId)?.nombre?.split(' ')[0] || '?'} · día ${h.dia+1}: <span style="color:var(--danger)">${h.anterior||'—'}</span> → <span style="color:var(--success)">${h.nuevo||'—'}</span></div>`
-          ).join('')}
+      <div class="card-body" id="historial-lista">
+        <div class="empty">Cargando...</div>
       </div>
     </div>`;
-  
+  }
+
   if (esAdmin) {
     html += `
     <div class="card">
@@ -1896,10 +2326,11 @@ function renderAjustes() {
       </div>
     </div>`;
   }
-  
+
   content.innerHTML = html;
   actualizarNombreHeader();
   if (esAdmin) cargarMiembros();
+  if (esCoordinador) cargarHistorial();
 }
 
 function tieneRol(rolMinimo) {
@@ -1943,23 +2374,61 @@ async function guardarParametros() {
 }
 
 async function cargarMiembros() {
-  const { data, error } = await sb
-    .from('miembros_centro')
-    .select('user_id, rol, auth.users(email)')
+  if (!tieneRol('administrador')) return;
+  const { data, error } = await sb.from('miembros_centro')
+    .select('id, user_id, rol, rol_solicitado')
     .eq('centro_id', state.centroId);
   if (error) { console.error('Error loading miembros:', error); return; }
+
   const cont = document.getElementById('miembros-lista');
   if (!cont) return;
-  if (!data || data.length === 0) {
+  if (!data?.length) {
     cont.innerHTML = '<div class="empty">No hay miembros en este centro.</div>';
     return;
   }
+
+  const ids = data.map(m => m.user_id);
+  const { data: perfiles, error: perfilesError } = await sb
+    .from('perfiles')
+    .select('id, nombre_completo')
+    .in('id', ids);
+  if (perfilesError) console.warn('No se pudieron cargar los nombres de los miembros:', perfilesError);
+  const nombrePorId = Object.fromEntries((perfiles || []).map(p => [p.id, p.nombre_completo]));
+
   cont.innerHTML = data.map(m => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:13px;">${m.auth?.users?.email || m.user_id}</span>
-      <span class="badge ${m.rol === 'administrador' ? 'badge-red' : m.rol === 'coordinador' ? 'badge-amber' : 'badge-green'}">${m.rol}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);gap:8px">
+      <span style="font-size:13px;">
+        ${nombrePorId[m.user_id] || 'Usuario'}
+        ${m.rol_solicitado === 'coordinador' && m.rol !== 'coordinador' ? ' <span class="badge badge-amber">Pide ser Encargado</span>' : ''}
+      </span>
+      <select class="modal-input" style="width:auto;padding:4px 8px" onchange="cambiarRolMiembro('${m.id}', this.value)">
+        <option value="lector" ${m.rol === 'lector' ? 'selected' : ''}>Trabajador/a</option>
+        <option value="coordinador" ${m.rol === 'coordinador' ? 'selected' : ''}>Encargado</option>
+        <option value="administrador" ${m.rol === 'administrador' ? 'selected' : ''}>Gestor</option>
+      </select>
     </div>
   `).join('');
+}
+
+async function cambiarRolMiembro(membresiaId, nuevoRol) {
+  if (!tieneRol('administrador')) {
+    mostrarToast('Solo el Gestor puede cambiar roles', true);
+    return;
+  }
+  if (!['lector','coordinador','administrador'].includes(nuevoRol)) return;
+  const { error } = await sb.from('miembros_centro')
+    .update({ rol: nuevoRol })
+    .eq('id', membresiaId)
+    .eq('centro_id', state.centroId);
+  if (error) { mostrarToast('Error al cambiar rol', true); return; }
+  mostrarToast('Rol actualizado');
+  await cargarCentrosDisponibles();
+  const membresia = state.centrosDisponibles.find(m => m.centros.id === state.centroId);
+  if (membresia) {
+    state.centroActual = membresia;
+    state.userProfile.rol = membresia.rol;
+  }
+  cargarMiembros();
 }
 
 // ============================================================
@@ -1997,32 +2466,31 @@ async function regenerarCodigo() {
 
 async function recibirCuadrante() {
   const codigo = document.getElementById('codigo-recibir')?.value?.trim();
+  const rolSolicitado = document.getElementById('rol-solicitado')?.value || 'lector';
   if (!codigo || codigo.length !== 8) { mostrarToast('Introduce un código de 8 dígitos', true); return; }
-  
-  const { data: centro, error } = await sb
-    .from('centros')
-    .select('id, nombre')
-    .eq('codigo_compartido', codigo)
-    .maybeSingle();
+
+  const { data: centro, error } = await sb.from('centros').select('id, nombre')
+    .eq('codigo_compartido', codigo).maybeSingle();
   if (error || !centro) { mostrarToast('Código no válido', true); return; }
-  
-  const { data: existe } = await sb
-    .from('miembros_centro')
-    .select('id')
-    .eq('centro_id', centro.id)
-    .eq('user_id', currentUserAuth.id)
-    .maybeSingle();
+
+  const { data: existe } = await sb.from('miembros_centro').select('id')
+    .eq('centro_id', centro.id).eq('user_id', currentUserAuth.id).maybeSingle();
   if (existe) { mostrarToast('Ya eres miembro de este centro', true); return; }
-  
-  const { error: insError } = await sb
-    .from('miembros_centro')
-    .insert({ centro_id: centro.id, user_id: currentUserAuth.id, rol: 'lector' });
+
+  const { error: insError } = await sb.from('miembros_centro').insert({
+    centro_id: centro.id,
+    user_id: currentUserAuth.id,
+    rol: 'lector',
+    rol_solicitado: rolSolicitado
+  });
   if (insError) { mostrarToast('Error al unirse', true); return; }
-  
+
   await cargarCentrosDisponibles();
   actualizarSelectorCentro();
   renderAjustes();
-  mostrarToast(`Te has unido a "${centro.nombre}" como lector`);
+  mostrarToast(rolSolicitado === 'coordinador'
+    ? `Te has unido a "${centro.nombre}". Pendiente de que el Gestor te dé permiso de Encargado.`
+    : `Te has unido a "${centro.nombre}" como Trabajador/a`);
 }
 
 // ============================================================
