@@ -857,9 +857,9 @@ async function loadTareas() {
   }));
 }
 
-async function loadTurnos() {
-  const mes = state.mesActual;
-  const anio = state.anio;
+async function loadTurnos(mesParam, anioParam) {
+  const mes = mesParam ?? state.mesActual;
+  const anio = anioParam ?? state.anio;
   const fechaInicio = `${anio}-${String(mes+1).padStart(2,'0')}-01`;
   const fechaFin = `${anio}-${String(mes+1).padStart(2,'0')}-${String(diasEnMes(mes, anio)).padStart(2,'0')}`;
   
@@ -2083,6 +2083,13 @@ function abrirModalImportarExcel() {
   document.body.appendChild(overlay);
 }
 
+// Divide un array en trozos de tamaño n (para no mandar peticiones gigantes a Supabase).
+function chunkArray(arr, n) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+
 async function procesarImportacionExcel() {
   if (!tieneRol('coordinador')) {
     mostrarToast('No tienes permiso para importar', true);
@@ -2125,61 +2132,104 @@ async function procesarImportacionExcel() {
       return;
     }
 
-    let actualizados = 0;
-    let coincidencias = 0;
-    let creados = 0;
-    let erroresCreacion = 0;
-    let erroresGuardado = 0;
-    const noEncontrados = [];
-    const codigosDesconocidos = new Set();
-
     cerrarModal();
     mostrarToast('Importando cuadrante…');
 
-    // IMPORTANTE: la primera importación puede hacerse sobre un centro sin personal.
-    // Si el trabajador no existe, se crea automáticamente y después se cargan sus turnos.
-    // El mapa se mantiene durante toda la importación para evitar duplicados si el Excel
-    // contiene accidentalmente dos filas con el mismo nombre.
-    const trabajadoresPorNombre = new Map(
-      state.trabajadores.map(t => [normalizarNombre(t.nombre), t])
-    );
-
+    // ------------------------------------------------------------
+    // PASO 1: recorremos el Excel una vez para identificar, por nombre
+    // normalizado, la última fila con datos de cada trabajador (si hay
+    // filas duplicadas, gana la última, igual que en la versión anterior).
+    // ------------------------------------------------------------
+    const filasPorNombre = new Map(); // nombreNormalizado -> { nombreExcel, fila }
+    const ordenNombres = [];
     for (let f = 1; f < filas.length; f++) {
       const fila = filas[f] || [];
       const nombreExcel = String(fila[0] ?? '').trim();
       if (!nombreExcel) continue;
-
       const nombreNormalizado = normalizarNombre(nombreExcel);
-      let trabajador = trabajadoresPorNombre.get(nombreNormalizado);
+      if (!filasPorNombre.has(nombreNormalizado)) ordenNombres.push(nombreNormalizado);
+      filasPorNombre.set(nombreNormalizado, { nombreExcel, fila });
+    }
 
-      if (!trabajador) {
-        const { data: nuevoTrabajador, error: errorCreacion } = await sb
-          .from('trabajadores')
-          .insert({
-            centro_id: state.centroId,
-            nombre: nombreExcel,
-            tipo: 'fijo',
-            grupo: 'manana',
-            turno_base: 'M',
-            turno_habitual: 'M',
-            estado: 'activo'
-          })
-          .select()
-          .single();
+    // ------------------------------------------------------------
+    // PASO 2: creamos en un único INSERT todos los trabajadores nuevos
+    // (los que aparecen en el Excel pero no existen aún en el centro).
+    // ------------------------------------------------------------
+    const trabajadoresPorNombre = new Map(
+      state.trabajadores.map(t => [normalizarNombre(t.nombre), t])
+    );
+    const nombresNuevos = ordenNombres.filter(n => !trabajadoresPorNombre.has(n));
+    let creados = 0;
+    let erroresCreacion = 0;
+    const noEncontrados = [];
 
-        if (errorCreacion || !nuevoTrabajador) {
-          console.error('Error creando trabajador durante importación:', errorCreacion);
-          erroresCreacion++;
-          noEncontrados.push(`${nombreExcel} [${describirErrorSupabase(errorCreacion)}]`);
-          continue;
+    if (nombresNuevos.length) {
+      const payloadNuevos = nombresNuevos.map(n => ({
+        centro_id: state.centroId,
+        nombre: filasPorNombre.get(n).nombreExcel,
+        tipo: 'fijo',
+        grupo: 'manana',
+        turno_base: 'M',
+        turno_habitual: 'M',
+        estado: 'activo'
+      }));
+
+      const { data: nuevosTrabajadores, error: errorCreacion } = await sb
+        .from('trabajadores')
+        .insert(payloadNuevos)
+        .select();
+
+      if (errorCreacion) {
+        // Si el lote falla entero (p. ej. por RLS), probamos uno a uno para
+        // poder señalar exactamente qué nombre falla y por qué, sin perder
+        // los que sí se pueden crear.
+        console.error('Error creando trabajadores en lote, reintentando uno a uno:', errorCreacion);
+        for (const n of nombresNuevos) {
+          const { data: nt, error: e } = await sb
+            .from('trabajadores')
+            .insert({
+              centro_id: state.centroId,
+              nombre: filasPorNombre.get(n).nombreExcel,
+              tipo: 'fijo',
+              grupo: 'manana',
+              turno_base: 'M',
+              turno_habitual: 'M',
+              estado: 'activo'
+            })
+            .select()
+            .single();
+          if (e || !nt) {
+            erroresCreacion++;
+            noEncontrados.push(`${filasPorNombre.get(n).nombreExcel} [${describirErrorSupabase(e)}]`);
+            continue;
+          }
+          trabajadoresPorNombre.set(n, nt);
+          state.trabajadores.push(nt);
+          creados++;
         }
-
-        trabajador = nuevoTrabajador;
-        trabajadoresPorNombre.set(nombreNormalizado, trabajador);
-        state.trabajadores.push(trabajador);
-        creados++;
+      } else {
+        for (const t of nuevosTrabajadores) {
+          trabajadoresPorNombre.set(normalizarNombre(t.nombre), t);
+          state.trabajadores.push(t);
+        }
+        creados = nuevosTrabajadores.length;
       }
+    }
 
+    // ------------------------------------------------------------
+    // PASO 3: calculamos qué celdas cambian de verdad (comparando con lo
+    // que ya hay en state.turnos) y las acumulamos para mandarlas en
+    // lotes, en vez de una petición de red por celda.
+    // ------------------------------------------------------------
+    const codigosDesconocidos = new Set();
+    const upserts = []; // filas para turnos.upsert
+    const borradosPorTrabajador = new Map(); // trabajador_id -> [fechas]
+    let coincidencias = 0;
+
+    for (const nombreNorm of ordenNombres) {
+      const trabajador = trabajadoresPorNombre.get(nombreNorm);
+      if (!trabajador) continue; // no se pudo crear, ya está en noEncontrados
+      const { fila } = filasPorNombre.get(nombreNorm);
       coincidencias++;
 
       for (const col of diasValidos) {
@@ -2187,31 +2237,106 @@ async function procesarImportacionExcel() {
         const actual = getTurno(trabajador.id, col.dia - 1, mes, anio);
         if (valor === actual) continue;
 
-        // No bloqueamos códigos propios del cuadrante (p. ej. F6, LD25); solo avisamos de los no catalogados.
         const conocido = CODIGOS_TURNO.some(c => c.cod === valor)
           || /^[2-9]$/.test(valor)
           || /^F(?:[1-9]|[12]\d|3[01])$/.test(valor)
           || /^LD(?:25|26)?$/.test(valor);
         if (valor && !conocido) codigosDesconocidos.add(valor);
 
-        const ok = await setCelda(trabajador.id, col.dia - 1, valor, mes, anio);
-        if (ok) actualizados++;
-        else erroresGuardado++;
+        const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(col.dia).padStart(2, '0')}`;
+        if (valor === '') {
+          if (!borradosPorTrabajador.has(trabajador.id)) borradosPorTrabajador.set(trabajador.id, []);
+          borradosPorTrabajador.get(trabajador.id).push(fecha);
+        } else {
+          upserts.push({
+            centro_id: state.centroId,
+            trabajador_id: trabajador.id,
+            fecha,
+            codigo: valor,
+            editado_por: currentUserAuth?.id
+          });
+        }
       }
     }
 
-    // Refrescamos la lista desde Supabase para dejar también sincronizados los perfiles
-    // recién creados y cualquier otro cambio realizado durante la importación.
-    await loadTrabajadores();
+    // ------------------------------------------------------------
+    // PASO 4: mandamos los cambios en lotes (upsert masivo + borrados
+    // agrupados por trabajador). Esto sustituye a los cientos/miles de
+    // peticiones individuales que hacía la versión anterior.
+    // ------------------------------------------------------------
+    let actualizados = 0;
+    let erroresGuardado = 0;
+    const TAM_LOTE = 300;
 
-    if (mes === state.mesActual && anio === state.anio) {
-      await loadTurnos();
-      if (currentView === 'cuadrante') renderCuadrante();
+    for (const lote of chunkArray(upserts, TAM_LOTE)) {
+      const { error } = await sb
+        .from('turnos')
+        .upsert(lote, { onConflict: 'centro_id,trabajador_id,fecha' });
+      if (error) {
+        console.error('Error en upsert de turnos:', error);
+        erroresGuardado += lote.length;
+      } else {
+        actualizados += lote.length;
+      }
+    }
+
+    for (const [trabajadorId, fechas] of borradosPorTrabajador.entries()) {
+      for (const loteFechas of chunkArray(fechas, TAM_LOTE)) {
+        const { error } = await sb
+          .from('turnos')
+          .delete()
+          .eq('centro_id', state.centroId)
+          .eq('trabajador_id', trabajadorId)
+          .in('fecha', loteFechas);
+        if (error) {
+          console.error('Error borrando turnos:', error);
+          erroresGuardado += loteFechas.length;
+        } else {
+          actualizados += loteFechas.length;
+        }
+      }
+    }
+
+    // Historial de cambios: se registra en lote (una o pocas peticiones),
+    // no bloquea el resultado de la importación si falla.
+    const entradasHistorial = [
+      ...upserts.map(u => ({
+        centro_id: state.centroId,
+        trabajador_id: u.trabajador_id,
+        usuario_id: currentUserAuth?.id,
+        usuario_nombre: state.userProfile?.nombre_completo || 'Usuario',
+        fecha_turno: u.fecha,
+        valor_anterior: null,
+        valor_nuevo: u.codigo
+      })),
+      ...[...borradosPorTrabajador.entries()].flatMap(([trabajadorId, fechas]) =>
+        fechas.map(fecha => ({
+          centro_id: state.centroId,
+          trabajador_id: trabajadorId,
+          usuario_id: currentUserAuth?.id,
+          usuario_nombre: state.userProfile?.nombre_completo || 'Usuario',
+          fecha_turno: fecha,
+          valor_anterior: null,
+          valor_nuevo: null
+        }))
+      )
+    ];
+    if (entradasHistorial.length && currentUserAuth?.id && state.centroId) {
+      for (const lote of chunkArray(entradasHistorial, TAM_LOTE)) {
+        sb.from('historial_cambios').insert(lote).then(() => {}).catch(() => {});
+      }
+    }
+
+    // Refrescamos desde Supabase para dejar sincronizados perfiles nuevos y turnos.
+    await loadTrabajadores();
+    await loadTurnos(mes, anio);
+    if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
+      renderCuadrante();
     }
 
     let mensaje = `Cuadrante actualizado: ${actualizados} celdas · ${coincidencias} trabajadores procesados`;
-    if (creados) mensaje += ` · ${creados} perfiles creados`;
-    if (erroresCreacion) mensaje += ` · ${erroresCreacion} errores al crear perfiles`;
+    if (creados) mensaje += ` · ${creados} trabajadores creados`;
+    if (erroresCreacion) mensaje += ` · ${erroresCreacion} errores al crear trabajadores`;
     if (erroresGuardado) mensaje += ` · ${erroresGuardado} errores al guardar`;
     if (noEncontrados.length) mensaje += ` · sin procesar: ${[...new Set(noEncontrados)].join(', ')}`;
     if (codigosDesconocidos.size) mensaje += ` · códigos no catalogados: ${[...codigosDesconocidos].join(', ')}`;
