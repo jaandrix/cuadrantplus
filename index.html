@@ -5,49 +5,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gestión Cuadrantes">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#F6F5FC">
 <title>Gestión Cuadrantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* ==================== VARIABLES CSS ==================== */
   :root {
-    --bg: #f7f8fa;
-    --surface: #ffffff;
-    --surface-alt: #f1f3f6;
-    --border: #e2e5ea;
-    --text: #16181d;
-    --text-muted: #6b7280;
-    --accent: #16181d;
-    --accent-contrast: #ffffff;
-    --danger: #b3261e;
-    --danger-bg: #fdecea;
-    --warning: #92400e;
-    --warning-bg: #fdf3e2;
-    --success: #14532d;
-    --success-bg: #eaf5ee;
-    --info: #1e3a8a;
-    --info-bg: #eaf0fb;
-    --radius: 10px;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
-    --font-base: 14px;
+    --bg: #F6F5FC;
+    --surface: #FFFFFF;
+    --surface-alt: #F0EEFA;
+    --border: #E7E4F5;
+    --text: #262340;
+    --text-muted: #8B87A6;
+    --text-soft: #B4B1C9;
+    --accent: #6C63E0;
+    --accent-hover: #5A51D6;
+    --accent-soft: #EDEBFC;
+    --accent-contrast: #FFFFFF;
+    --danger: #C4453A;
+    --danger-bg: #FBEAE8;
+    --warning: #B8862E;
+    --warning-bg: #FBF2E2;
+    --success: #3E9163;
+    --success-bg: #E9F5EE;
+    --info: #4C6FD6;
+    --info-bg: #ECF0FC;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 3px rgba(76, 68, 130, 0.06);
+    --shadow-md: 0 8px 24px rgba(76, 68, 130, 0.10);
+    --radius: var(--radius-md);
+    --shadow: var(--shadow-sm);
+    --font-base: 15px;
   }
 
   [data-theme="oscuro"] {
-    --bg: #101214;
-    --surface: #1a1d21;
-    --surface-alt: #202329;
-    --border: #2c3038;
-    --text: #e8e9eb;
-    --text-muted: #9aa0aa;
-    --accent: #e8e9eb;
-    --accent-contrast: #101214;
-    --danger: #f2b8b5;
-    --danger-bg: #3a1f1e;
-    --warning: #f5cf8e;
-    --warning-bg: #3a2c14;
-    --success: #a8dab5;
-    --success-bg: #16281c;
-    --info: #a9c4f5;
-    --info-bg: #17233d;
+    --bg: #17151F;
+    --surface: #1F1C2B;
+    --surface-alt: #262336;
+    --border: #322E45;
+    --text: #ECEAF6;
+    --text-muted: #9C98B8;
+    --text-soft: #6C6886;
+    --accent: #8A82F0;
+    --accent-hover: #9B94F5;
+    --accent-soft: #2A2542;
+    --accent-contrast: #17151F;
+    --danger: #E39089;
+    --danger-bg: #3A2320;
+    --warning: #E8C27E;
+    --warning-bg: #3A2E17;
+    --success: #8FD3AA;
+    --success-bg: #1B3226;
+    --info: #A9BBF2;
+    --info-bg: #212C4D;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+    --radius: var(--radius-md);
+    --shadow: var(--shadow-sm);
   }
 
   /* ==================== ESTILOS GLOBALES ==================== */
@@ -314,6 +333,7 @@
     .login-box { padding: 24px 16px; }
     .codigo-compartido { font-size: 20px; letter-spacing: 2px; }
   }
+\n  /* ============================================================\n     REDISEÑO VISUAL — aplicado sin modificar estructura ni lógica\n     ============================================================ */\n  body {\n    font-family: 'Manrope', system-ui, -apple-system, sans-serif;\n    color: var(--text);\n    background: var(--bg);\n    font-size: var(--font-base);\n  }\n  button, input, select, textarea { font-family: inherit; }\n  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }\n  h2, h3 { color: var(--text); }\n\n  #header {\n    background: var(--surface);\n    color: var(--text);\n    border-bottom: 1px solid var(--border);\n    padding: 16px 20px;\n    border-radius: 0 0 var(--radius-lg) var(--radius-lg);\n    box-shadow: var(--shadow-sm);\n    z-index: 10;\n  }\n  #header-left h1 { font-size: 18px; font-weight: 800; color: var(--text); }\n  #header-left h1 small { color: var(--text-muted); font-weight: 600; }\n  #save-indicator { color: var(--success); }\n  .logout-btn {\n    color: var(--text-muted);\n    border-radius: var(--radius-pill);\n    opacity: 1;\n  }\n  .logout-btn:hover { background: var(--surface-alt); color: var(--text); }\n  .theme-toggle { border-radius: var(--radius-pill); color: var(--text-muted); }\n  .theme-toggle:hover { background: var(--surface-alt); color: var(--text); }\n\n  #banner-convenio {\n    background: var(--warning-bg);\n    color: var(--warning);\n    border: 0;\n    padding: 8px 14px;\n    font-size: 12px;\n  }\n  #content { padding-top: 18px; }\n\n  .card {\n    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius: var(--radius-lg);\n    box-shadow: var(--shadow-sm);\n    padding: 18px;\n    overflow: hidden;\n  }\n  .card-header {\n    padding: 0 0 12px;\n    margin-bottom: 12px;\n    border-bottom: 0;\n    background: transparent;\n    font-size: 14px;\n    font-weight: 700;\n    color: var(--text);\n  }\n  .card-body { padding: 0; }\n  .metric-card {\n    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius: var(--radius-lg);\n    padding: 16px;\n    box-shadow: var(--shadow-sm);\n  }\n  .metric-value { font-size: 22px; font-weight: 800; color: var(--text); }\n  .metric-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }\n\n  .btn {\n    border-radius: var(--radius-pill);\n    padding: 10px 18px;\n    font-weight: 700;\n    font-size: 13px;\n    border: none;\n    box-shadow: none;\n    transition: transform .15s ease, background .15s ease, color .15s ease;\n  }\n  .btn:active { transform: scale(.97); }\n  .btn-primary { background: var(--accent); color: var(--accent-contrast); }\n  .btn-primary:hover { background: var(--accent-hover); }\n  .btn-secondary { background: var(--surface-alt); color: var(--text); border: none; }\n  .btn-secondary:hover { background: var(--border); }\n  .btn-danger { background: var(--danger-bg); color: var(--danger); border: none; }\n  .btn-success { background: var(--success-bg); color: var(--success); border: none; }\n  .btn-warning { background: var(--warning-bg); color: var(--warning); border: none; }\n  .btn-legal { background: var(--info-bg); color: var(--info); border: none; }\n  .btn-sm { padding: 7px 14px; font-size: 12px; }\n  .btn-xs { padding: 5px 10px; font-size: 11px; }\n\n  .badge {\n    display: inline-flex;\n    align-items: center;\n    padding: 4px 10px;\n    border-radius: var(--radius-pill);\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: .2px;\n    border: 0;\n  }\n  .badge-green { background: var(--success-bg); color: var(--success); }\n  .badge-red { background: var(--danger-bg); color: var(--danger); }\n  .badge-amber { background: var(--warning-bg); color: var(--warning); }\n  .badge-blue { background: var(--info-bg); color: var(--info); }\n  .badge-baja, .badge-sustituto { background: var(--danger-bg); color: var(--danger); }\n  .estado-aprobada, .estado-pendiente, .estado-rechazada {\n    display: inline-flex; align-items: center; padding: 4px 10px;\n    border-radius: var(--radius-pill); font-weight: 700; font-size: 11px;\n  }\n  .estado-aprobada { background: var(--success-bg); color: var(--success); }\n  .estado-pendiente { background: var(--warning-bg); color: var(--warning); }\n  .estado-rechazada { background: var(--danger-bg); color: var(--danger); }\n\n  .filtro-tabs {\n    display: inline-flex;\n    background: var(--surface-alt);\n    border-radius: var(--radius-pill);\n    padding: 4px;\n    gap: 2px;\n    margin-bottom: 12px;\n    border: 0;\n  }\n  .filtro-tab {\n    border: none;\n    background: transparent;\n    padding: 7px 16px;\n    border-radius: var(--radius-pill);\n    font-size: 12px;\n    font-weight: 700;\n    color: var(--text-muted);\n  }\n  .filtro-tab.active {\n    background: var(--surface);\n    color: var(--accent);\n    border: none;\n    box-shadow: var(--shadow-sm);\n  }\n  .filtro-tab:hover { background: var(--surface); color: var(--text); }\n\n  .cal-grid { gap: 6px; }\n  .cal-wd { font-size: 10px; font-weight: 700; color: var(--text-muted); }\n  .cal-day {\n    min-height: 44px;\n    width: 100%;\n    border-radius: var(--radius-pill);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    flex-direction: column;\n    padding: 4px;\n    background: transparent;\n    border: 0;\n    color: var(--text);\n  }\n  .cal-day:hover { background: var(--accent-soft); }\n  .cal-day.hoy { background: var(--accent); color: var(--accent-contrast); border: 0; font-weight: 800; }\n  .cal-day.festivo-cell { background: var(--danger-bg); color: var(--danger); }\n  .cal-day-num { font-size: 13px; font-weight: 600; }\n  .cal-dot { width: 4px; height: 4px; border-radius: 50%; margin: 3px auto 0; background: var(--accent); }\n  .cal-nav-btn, .mes-btn {\n    border: none; background: var(--surface-alt); color: var(--text);\n    border-radius: var(--radius-pill); box-shadow: none;\n  }\n  .mes-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }\n\n  .modal-overlay { backdrop-filter: blur(4px); background: rgba(38,35,64,.28); }\n  .modal-box {\n    background: var(--surface);\n    border-radius: var(--radius-lg);\n    box-shadow: var(--shadow-md);\n    border: none;\n    padding: 22px;\n  }\n  .modal-title { font-size: 16px; font-weight: 800; color: var(--text); }\n  .modal-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }\n  .modal-input {\n    border: 1px solid var(--border);\n    background: var(--surface-alt);\n    border-radius: var(--radius-md);\n    padding: 10px 14px;\n    font-size: 14px;\n    color: var(--text);\n  }\n  .modal-input::placeholder { color: var(--text-soft); }\n  .modal-input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }\n  .modal-btns button { border-radius: var(--radius-pill); }\n  .btn-modal-ok { background: var(--accent); }\n  .btn-modal-cancel { background: var(--surface-alt); }\n\n  .worker-item, .tarea-item, .hist-item {\n    border-radius: var(--radius-md);\n    padding: 12px 14px;\n    border: none;\n    transition: background .15s ease;\n  }\n  .worker-item:hover, .tarea-item:hover { background: var(--surface-alt); border-color: transparent; }\n  .worker-name { font-size: 14px; font-weight: 700; }\n  .worker-stats { font-size: 12px; color: var(--text-muted); }\n  .tarea-item { margin-bottom: 4px; }\n  .tarea-nombre { font-size: 14px; font-weight: 700; }\n  .tarea-meta { font-size: 12px; color: var(--text-muted); }\n  .hist-item { background: transparent; }\n  .hist-item:hover { background: var(--surface-alt); }\n\n  .zona-card {\n    background: var(--surface); border: 1px solid var(--border);\n    border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm);\n  }\n  .zona-turno-box { background: var(--surface-alt); border: 0; border-radius: var(--radius-md); }\n  .zona-turno-label { font-size: 11px; }\n  .zona-turno-num { font-size: 20px; }\n\n  .solicitud-item {\n    border: 0; border-radius: var(--radius-md); padding: 12px 14px;\n    margin-bottom: 8px; background: var(--surface-alt);\n  }\n  .solicitud-head { font-size: 12px; }\n  .alerta-legal {\n    border-left: 0; background: var(--danger-bg); color: var(--danger);\n    padding: 10px 12px; margin-bottom: 8px; border-radius: var(--radius-md); font-size: 12px;\n  }\n  .aviso { border-left: 0; border-radius: var(--radius-md); }\n\n  .codigo-compartido {\n    background: var(--accent-soft); color: var(--accent);\n    border-radius: var(--radius-lg); padding: 16px;\n  }\n  .centro-selector { background: var(--surface-alt); border-radius: var(--radius-pill); }\n  .centro-selector select { border: none; border-radius: var(--radius-pill); background: var(--surface); }\n\n  .cuad-toolbar { gap: 8px; }\n  .cuad-search {\n    border: 1px solid var(--border); background: var(--surface);\n    border-radius: var(--radius-pill); padding: 9px 14px;\n  }\n  .cuad-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }\n  .wrap { border-radius: var(--radius-lg); }\n  table { font-size: 11px; }\n  th, td { border-color: var(--border); }\n  th { background: var(--surface-alt); }\n  td.nombre-col { background: var(--surface); }\n  th.total-col, td.total-col { background: var(--accent-soft); color: var(--accent); }\n  tr:nth-child(even) td { background: var(--surface); }\n  tr:nth-child(even) td.nombre-col { background: var(--surface); }\n  .wkend { background: var(--surface-alt) !important; }\n  .festivo-cell { background: var(--warning-bg) !important; }\n\n  .turno-btn { border-radius: var(--radius-md); border: 2px solid transparent; }\n  .turno-btn.sel { box-shadow: 0 0 0 3px var(--accent-soft); }\n  .tb-M, .tb-T, .tb-clear { background: var(--surface-alt); color: var(--text); }\n  .tb-L { background: var(--info-bg); color: var(--info); }\n  .tb-D { background: var(--success-bg); color: var(--success); }\n  .tb-N { background: var(--warning-bg); color: var(--warning); }\n  .tb-IT { background: var(--danger-bg); color: var(--danger); }\n\n  .login-box {\n    background: var(--surface); border-radius: var(--radius-lg);\n    padding: 32px 24px; box-shadow: var(--shadow-md); border: 1px solid var(--border);\n  }\n  .login-box h2 { font-size: 24px; font-weight: 800; }\n  .login-box input { border: 1px solid var(--border); background: var(--surface-alt); border-radius: var(--radius-md); }\n  .login-box input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }\n  .login-error { border: 0; border-radius: var(--radius-md); }\n\n  .empty { color: var(--text-muted); padding: 24px 12px; }\n  .evento-item { border-bottom: 0; border-radius: var(--radius-md); padding: 10px 12px; }\n  .evento-item:hover { background: var(--surface-alt); }\n  .evento-emoji { font-size: 18px; min-width: 34px; }\n  .evento-badge { border-radius: var(--radius-pill); }\n\n  @media (max-width: 700px) {\n    #content { padding: 14px 12px; }\n    #header { padding-left: 14px; padding-right: 14px; }\n    .card { padding: 15px; border-radius: var(--radius-lg); }\n    .filtro-tabs { max-width: 100%; overflow-x: auto; }\n  }\n  @media (max-width: 480px) {\n    .modal-box { padding: 18px; border-radius: var(--radius-lg); }\n    .login-box { padding: 26px 18px; }\n    .codigo-compartido { font-size: 20px; letter-spacing: 2px; }\n    .btn { padding: 9px 15px; }\n  }\n
 </style>
 </head>
 <body>
