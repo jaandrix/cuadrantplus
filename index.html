@@ -368,7 +368,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============================================================
 // CONSTANTES
 // ============================================================
-const APP_VERSION = 27;
+const APP_VERSION = 28;
 const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ["D","L","M","X","J","V","S"];
 const CODIGOS_TURNO = [
@@ -551,7 +551,18 @@ async function loadUserProfile() {
     .maybeSingle();
   if (errPerfil) {
     console.error('Error loading profile:', errPerfil);
-    lastAuthError = 'No se pudo cargar tu perfil.';
+    // La RPC de contexto no depende de las políticas SELECT de perfiles.
+    const { data: centrosCtx, error: ctxError } = await sb.rpc('obtener_mis_centros');
+    if (!ctxError && centrosCtx?.length) {
+      const c = centrosCtx[0];
+      state.centroId = c.centro_id;
+      state.centroActual = { centro_id: c.centro_id, rol: c.rol, centros: { id: c.centro_id, nombre: c.centro_nombre, codigo_compartido: c.codigo_compartido } };
+      state.centrosDisponibles = centrosCtx.map(m => ({ centro_id: m.centro_id, rol: m.rol, centros: { id: m.centro_id, nombre: m.centro_nombre, codigo_compartido: m.codigo_compartido } }));
+      state.userProfile = { id: currentUserAuth.id, centro_id: c.centro_id, nombre_completo: currentUserAuth.email?.split('@')[0] || 'Usuario', rol: c.rol };
+      await loadData();
+      return true;
+    }
+    lastAuthError = 'No se pudo cargar tu perfil: ' + (errPerfil.message || 'error de permisos');
     return false;
   }
   
@@ -563,10 +574,10 @@ async function loadUserProfile() {
   await cargarCentrosDisponibles();
   
   if (state.centrosDisponibles.length > 0) {
-    const primeraMembresia = state.centrosDisponibles[0];
+    const primeraMembresia = state.centrosDisponibles.find(m => m.centro_id === perfil.centro_id) || state.centrosDisponibles[0];
     state.centroId = primeraMembresia.centro_id;
     state.centroActual = primeraMembresia;
-    state.userProfile.rol = primeraMembresia.rol;
+    state.userProfile.rol = primeraMembresia.rol || perfil.rol || 'lector';
   } else if (perfil.centro_id) {
     // Compatibilidad con perfiles antiguos: si la membresía no aparece,
     // conservamos el centro del perfil y recuperamos sus datos por RPC.
@@ -582,7 +593,12 @@ async function loadUserProfile() {
       state.userProfile.rol = perfil.rol || 'lector';
     } else {
       state.centroId = perfil.centro_id;
-      state.userProfile.rol = perfil.rol || 'lector';
+      state.centroActual = {
+        centro_id: perfil.centro_id,
+        rol: ['administrador','coordinador','lector'].includes(perfil.rol) ? perfil.rol : 'lector',
+        centros: { id: perfil.centro_id, nombre: 'Centro', codigo_compartido: '' }
+      };
+      state.userProfile.rol = ['administrador','coordinador','lector'].includes(perfil.rol) ? perfil.rol : 'lector';
     }
   }
   
@@ -598,9 +614,8 @@ async function loadUserProfile() {
 }
 
 async function cargarCentrosDisponibles() {
-  // Se obtiene la membresía mediante una función SECURITY DEFINER.
-  // Así no dependemos de una combinación RLS + relación embebida que
-  // pueda ocultar el centro aunque el usuario tenga membresía válida.
+  // La RPC es SECURITY DEFINER y además repara cuentas antiguas que
+  // conservan perfiles.centro_id pero no tienen membresía.
   const { data, error } = await sb.rpc('obtener_mis_centros');
   if (error) {
     console.error('Error loading centros:', error);
@@ -609,11 +624,11 @@ async function cargarCentrosDisponibles() {
   }
   state.centrosDisponibles = (data || []).map(m => ({
     centro_id: m.centro_id,
-    rol: m.rol,
+    rol: ['administrador','coordinador','lector'].includes(m.rol) ? m.rol : 'lector',
     centros: {
       id: m.centro_id,
-      nombre: m.centro_nombre,
-      codigo_compartido: m.codigo_compartido
+      nombre: m.centro_nombre || 'Centro',
+      codigo_compartido: m.codigo_compartido || ''
     }
   }));
 }
@@ -2636,21 +2651,15 @@ async function recibirCuadrante() {
   const rolSolicitado = document.getElementById('rol-solicitado')?.value || 'lector';
   if (!codigo || codigo.length !== 8) { mostrarToast('Introduce un código de 8 dígitos', true); return; }
 
-  const { data: centros, error } = await sb.rpc('buscar_centro_por_codigo', { p_codigo: codigo });
-  const centro = Array.isArray(centros) ? centros[0] : centros;
-  if (error || !centro) { mostrarToast('Código no válido', true); return; }
-
-  const { data: existe } = await sb.from('miembros_centro').select('id')
-    .eq('centro_id', centro.id).eq('user_id', currentUserAuth.id).maybeSingle();
-  if (existe) { mostrarToast('Ya eres miembro de este centro', true); return; }
-
-  const { error: insError } = await sb.from('miembros_centro').insert({
-    centro_id: centro.id,
-    user_id: currentUserAuth.id,
-    rol: 'lector',
-    rol_solicitado: rolSolicitado
+  const { data: resultado, error } = await sb.rpc('unirse_a_centro_por_codigo', {
+    p_codigo: codigo,
+    p_rol_solicitado: rolSolicitado
   });
-  if (insError) { mostrarToast('Error al unirse', true); return; }
+  const centro = Array.isArray(resultado) ? resultado[0] : resultado;
+  if (error || !centro) {
+    mostrarToast(error?.message || 'No se pudo unir al centro', true);
+    return;
+  }
 
   await cargarCentrosDisponibles();
   actualizarSelectorCentro();
