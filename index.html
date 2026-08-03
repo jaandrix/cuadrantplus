@@ -471,12 +471,24 @@ function diasEnMes(mes, anio) { return new Date(anio, mes + 1, 0).getDate(); }
 function esFinDeSemana(dia, mes, anio) { return new Date(anio, mes, dia).getDay() === 0 || new Date(anio, mes, dia).getDay() === 6; }
 function clavesMes(mes, anio) { return `${anio}-${mes}`; }
 
+function normalizarNombre(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[.,;:]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function horasCodigo(cod) {
   if (!cod) return 0;
-  const num = parseInt(cod);
-  if (!isNaN(num) && num >= 2 && num <= 9) return num;
-  const entry = CODIGOS_TURNO.find(c => c.cod === cod);
-  return entry ? entry.horas : 0;
+  const valor = String(cod).trim().toUpperCase();
+  const entry = CODIGOS_TURNO.find(c => c.cod === valor);
+  if (entry) return entry.horas;
+  // Los códigos numéricos 2-9 representan horas; códigos como F6 o LD25 NO.
+  if (/^[2-9]$/.test(valor)) return parseInt(valor, 10);
+  return 0;
 }
 
 // ============================================================
@@ -886,8 +898,7 @@ function handleTurnoChange(payload) {
     state.turnos[key][t.trabajador_id][dia - 1] = t.codigo;
     
     if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
-      const idx = state.trabajadores.findIndex(w => w.id === t.trabajador_id);
-      if (idx >= 0) actualizarCeldaEnTabla(idx, dia - 1, t.codigo);
+      actualizarCeldaEnTabla(t.trabajador_id, dia - 1, t.codigo);
       mostrarToast('Cuadrante actualizado por otro usuario');
     }
   }
@@ -897,7 +908,7 @@ function handleTurnoChange(payload) {
 // FUNCIONES CUADRANTE
 // ============================================================
 function getTurno(trabajadorId, dia, mes, anio) {
-  const key = clavesMes(mes || state.mesActual, anio || state.anio);
+  const key = clavesMes(mes ?? state.mesActual, anio ?? state.anio);
   return state.turnos[key]?.[trabajadorId]?.[dia] || '';
 }
 
@@ -962,23 +973,22 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   }
 
   if (currentView === 'cuadrante') {
-    const idx = state.trabajadores.findIndex(t => t.id === trabajadorId);
-    if (idx >= 0) actualizarCeldaEnTabla(idx, dia, valor);
+    actualizarCeldaEnTabla(trabajadorId, dia, valor);
   }
   mostrarToast('Turno actualizado');
   return true;
 }
 
-function actualizarCeldaEnTabla(fila, columna, valor) {
-  const celda = document.getElementById(`celda-${fila}-${columna}`);
+function actualizarCeldaEnTabla(trabajadorId, columna, valor) {
+  const celda = document.getElementById(`celda-${trabajadorId}-${columna}`);
   if (celda) {
-    celda.textContent = valor;
-    celda.className = claseCelda(valor, false, false);
-    const totalCelda = document.getElementById(`total-${fila}`);
-    if (totalCelda) {
-      const t = state.trabajadores[fila];
-      if (t) totalCelda.textContent = getTotalHorasMes(t.id, state.mesActual, state.anio);
-    }
+    const t = state.trabajadores.find(w => w.id === trabajadorId);
+    const esFest = t ? esFestivo(state.anio, state.mesActual, columna + 1) : false;
+    const esFinde = t ? esFinDeSemana(columna + 1, state.mesActual, state.anio) : false;
+    celda.textContent = valor + (esFest && valor && !['L','D','V','VAC','VA'].includes(valor) ? '🌟' : '');
+    celda.className = claseCelda(valor, esFinde, esFest);
+    const totalCelda = document.getElementById(`total-${trabajadorId}`);
+    if (totalCelda && t) totalCelda.textContent = getTotalHorasMes(t.id, state.mesActual, state.anio);
   }
 }
 
@@ -1303,6 +1313,7 @@ function renderCuadrante() {
     <input class="cuad-search" id="cuad-search" type="text" placeholder="Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)">
     <button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button>
     <button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button>
     <button class="btn btn-secondary btn-sm" onclick="abrirModalPDFPersonal()">📄 Mi cuadrante (PDF)</button>
     ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button>' : ''}
     <button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button>
@@ -1333,9 +1344,9 @@ function renderCuadrante() {
       const val = turnos[t.id]?.[d] || '';
       const fds = esFinDeSemana(d + 1, mes, anio);
       const fest = esFestivo(anio, mes, d + 1);
-      html += `<td class="${claseCelda(val, fds, fest)}" id="celda-${idx}-${d}" onclick="abrirSelectorTurno('${t.id}',${d})">${val}${fest && val && val !== 'L' && val !== 'D' && val !== 'V' && val !== 'VAC' && val !== 'VA' ? '🌟' : ''}</td>`;
+      html += `<td class="${claseCelda(val, fds, fest)}" id="celda-${t.id}-${d}" onclick="abrirSelectorTurno('${t.id}',${d})">${val}${fest && val && val !== 'L' && val !== 'D' && val !== 'V' && val !== 'VAC' && val !== 'VA' ? '🌟' : ''}</td>`;
     }
-    html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;font-weight:700;background:var(--info-bg);position:sticky;right:0;" id="total-${idx}">${total}</td></tr>`;
+    html += `<td style="border:0.5px solid var(--border);padding:4px 2px;text-align:center;font-weight:700;background:var(--info-bg);position:sticky;right:0;" id="total-${t.id}">${total}</td></tr>`;
   }
   
   html += `<tr style="background:var(--success-bg);font-weight:700;"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--success-bg);">Cobertura M/T/N</td>`;
@@ -1538,9 +1549,10 @@ function abrirSelectorTurno(trabajadorId, dia) {
   document.body.appendChild(overlay);
 }
 
-function seleccionarTurno(trabajadorId, dia, valor) {
+async function seleccionarTurno(trabajadorId, dia, valor) {
   const t = state.trabajadores.find(w => w.id === trabajadorId);
-  setCelda(trabajadorId, dia, valor);
+  const ok = await setCelda(trabajadorId, dia, valor);
+  if (!ok) return;
   cerrarModal();
   mostrarToast(`${t?.nombre.split(' ')[0] || ''}: día ${dia+1} → ${valor || 'vacío'}`);
 }
@@ -1983,58 +1995,94 @@ async function procesarImportacionExcel() {
     mostrarToast('No tienes permiso para importar', true);
     return;
   }
-  const mes = parseInt(document.getElementById('import-mes')?.value);
-  const anio = parseInt(document.getElementById('import-anio')?.value);
+  const mes = parseInt(document.getElementById('import-mes')?.value, 10);
+  const anio = parseInt(document.getElementById('import-anio')?.value, 10);
   const file = document.getElementById('import-excel-file')?.files[0];
-  if (isNaN(mes) || isNaN(anio)) { mostrarToast('Mes o año inválido', true); return; }
-  if (!file) { mostrarToast('Selecciona un archivo', true); return; }
-  if (typeof XLSX === 'undefined') { mostrarToast('No se pudo cargar el lector de Excel', true); return; }
+  if (isNaN(mes) || mes < 0 || mes > 11 || isNaN(anio) || anio < 2000 || anio > 2100) {
+    mostrarToast('Mes o año inválido', true);
+    return;
+  }
+  if (!file) {
+    mostrarToast('Selecciona un archivo', true);
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    mostrarToast('No se pudo cargar el lector de Excel', true);
+    return;
+  }
 
-  const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: 'array' });
-  const hoja = wb.Sheets[wb.SheetNames[0]];
-  const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: '' });
-  if (!filas.length) { mostrarToast('El Excel está vacío', true); return; }
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    if (!wb.SheetNames.length) throw new Error('El libro no contiene hojas');
+    const hoja = wb.Sheets[wb.SheetNames[0]];
+    const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: '' });
+    if (!filas.length) throw new Error('El Excel está vacío');
 
-  const cabecera = filas[0];
-  const colDias = cabecera.slice(1).map(c => parseInt(c)).filter(n => !isNaN(n));
-  const diasMes = diasEnMes(mes, anio);
-  let actualizados = 0;
-  const noEncontrados = [];
-
-  cerrarModal();
-  mostrarToast('Importando…');
-
-  for (let f = 1; f < filas.length; f++) {
-    const fila = filas[f];
-    const nombreExcel = String(fila[0] || '').trim();
-    if (!nombreExcel) continue;
-    const trabajador = state.trabajadores.find(t =>
-      t.nombre.trim().toLowerCase() === nombreExcel.toLowerCase()
-    );
-    if (!trabajador) {
-      noEncontrados.push(nombreExcel);
-      continue;
+    const cabecera = filas[0] || [];
+    // Guardamos la posición real de cada día. Esto evita desajustes si hay columnas vacías/no numéricas.
+    const colDias = cabecera.map((c, indice) => ({
+      dia: parseInt(String(c).trim(), 10),
+      indice
+    })).filter(x => !isNaN(x.dia));
+    const diasMes = diasEnMes(mes, anio);
+    const diasValidos = colDias.filter(x => x.dia >= 1 && x.dia <= diasMes);
+    if (!diasValidos.length) {
+      mostrarToast('No se encontraron columnas de días válidas (1, 2, 3...)', true);
+      return;
     }
 
-    for (let i = 0; i < colDias.length; i++) {
-      const dia = colDias[i];
-      if (dia < 1 || dia > diasMes) continue;
-      const valor = String(fila[i + 1] || '').trim().toUpperCase();
-      const actual = getTurno(trabajador.id, dia - 1, mes, anio);
-      if (valor !== actual) {
-        await setCelda(trabajador.id, dia - 1, valor, mes, anio);
-        actualizados++;
+    let actualizados = 0;
+    let coincidencias = 0;
+    let erroresGuardado = 0;
+    const noEncontrados = [];
+    const codigosDesconocidos = new Set();
+
+    cerrarModal();
+    mostrarToast('Importando…');
+
+    for (let f = 1; f < filas.length; f++) {
+      const fila = filas[f] || [];
+      const nombreExcel = String(fila[0] ?? '').trim();
+      if (!nombreExcel) continue;
+
+      const nombreNormalizado = normalizarNombre(nombreExcel);
+      const trabajador = state.trabajadores.find(t => normalizarNombre(t.nombre) === nombreNormalizado);
+      if (!trabajador) {
+        noEncontrados.push(nombreExcel);
+        continue;
+      }
+      coincidencias++;
+
+      for (const col of diasValidos) {
+        const valor = String(fila[col.indice] ?? '').trim().toUpperCase().replace(/\s+/g, '');
+        const actual = getTurno(trabajador.id, col.dia - 1, mes, anio);
+        if (valor === actual) continue;
+
+        // No bloqueamos códigos propios del cuadrante (p. ej. F6, LD25); solo avisamos de los no catalogados.
+        const conocido = CODIGOS_TURNO.some(c => c.cod === valor) || /^[2-9]$/.test(valor) || /^F(?:[1-9]|[12]\d|3[01])$/.test(valor) || /^LD(?:25|26)?$/.test(valor);
+        if (valor && !conocido) codigosDesconocidos.add(valor);
+
+        const ok = await setCelda(trabajador.id, col.dia - 1, valor, mes, anio);
+        if (ok) actualizados++;
+        else erroresGuardado++;
       }
     }
-  }
 
-  if (mes === state.mesActual && anio === state.anio) {
-    await loadTurnos();
-    if (currentView === 'cuadrante') renderCuadrante();
+    if (mes === state.mesActual && anio === state.anio) {
+      await loadTurnos();
+      if (currentView === 'cuadrante') renderCuadrante();
+    }
+
+    let mensaje = `Cuadrante actualizado: ${actualizados} celdas · ${coincidencias} trabajadores encontrados`;
+    if (erroresGuardado) mensaje += ` · ${erroresGuardado} errores al guardar`;
+    if (noEncontrados.length) mensaje += ` · sin coincidencia: ${[...new Set(noEncontrados)].join(', ')}`;
+    if (codigosDesconocidos.size) mensaje += ` · códigos no catalogados: ${[...codigosDesconocidos].join(', ')}`;
+    mostrarToast(mensaje, erroresGuardado > 0);
+  } catch (err) {
+    console.error('Error importando Excel:', err);
+    mostrarToast('No se pudo leer el Excel. Comprueba que sea un archivo .xlsx/.xls válido.', true);
   }
-  mostrarToast(`Cuadrante actualizado: ${actualizados} celdas` +
-    (noEncontrados.length ? ` · sin coincidencia: ${[...new Set(noEncontrados)].join(', ')}` : ''));
 }
 
 // ============================================================
@@ -2044,7 +2092,6 @@ function abrirModalPDFPersonal() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   const esGestorOEncargado = tieneRol('coordinador');
-  const normalizarNombre = valor => (valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const nombrePerfil = normalizarNombre(state.userProfile?.nombre_completo);
   const coincidencia = state.trabajadores.find(t => normalizarNombre(t.nombre) === nombrePerfil);
   const opciones = esGestorOEncargado ? state.trabajadores : (coincidencia ? [coincidencia] : []);
@@ -2068,7 +2115,6 @@ function generarPDFPersonal(trabajadorId) {
   const t = state.trabajadores.find(w => w.id === trabajadorId);
   if (!t) return;
   if (!tieneRol('coordinador')) {
-    const normalizarNombre = valor => (valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     if (normalizarNombre(t.nombre) !== normalizarNombre(state.userProfile?.nombre_completo)) {
       mostrarToast('Solo puedes exportar tu propio cuadrante', true);
       return;
@@ -2240,6 +2286,7 @@ function renderAjustes() {
         <button class="btn btn-primary" onclick="exportarBackup()">Exportar backup</button>
         <button class="btn btn-secondary" onclick="document.getElementById('file-import').click()">Importar backup</button>
         <button class="btn btn-legal" onclick="generarPDF()">Cuadrante PDF</button>
+        <button class="btn btn-secondary" onclick="exportarCuadranteExcel()">Cuadrante Excel</button>
       </div>
     </div>
     <div class="card">
@@ -2512,6 +2559,56 @@ function exportarBackup() {
   a.click();
   URL.revokeObjectURL(a.href);
   mostrarToast('Backup exportado');
+}
+
+// ============================================================
+// EXPORTAR CUADRANTE A EXCEL
+// ============================================================
+function exportarCuadranteExcel() {
+  if (typeof XLSX === 'undefined') {
+    mostrarToast('No se pudo cargar el generador de Excel', true);
+    return;
+  }
+  const mes = state.mesActual;
+  const anio = state.anio;
+  const dias = diasEnMes(mes, anio);
+  const key = clavesMes(mes, anio);
+  const turnos = state.turnos[key] || {};
+
+  const cabecera = ['Trabajador'];
+  for (let d = 1; d <= dias; d++) cabecera.push(d);
+  cabecera.push('H');
+
+  const filas = [cabecera];
+  state.trabajadores.forEach(t => {
+    const fila = [t.nombre];
+    for (let d = 0; d < dias; d++) fila.push(turnos[t.id]?.[d] || '');
+    fila.push(getTotalHorasMes(t.id, mes, anio));
+    filas.push(fila);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols'] = [{ wch: 34 }, ...Array(dias).fill({ wch: 5 }), { wch: 8 }];
+  ws['!freeze'] = { xSplit: 1, ySplit: 1 };
+  ws['!autofilter'] = { ref: `A1:${XLSX.utils.encode_col(dias + 1)}${filas.length}` };
+
+  // Hoja de referencia para que el archivo exportado sea útil también fuera de la aplicación.
+  const leyenda = [
+    ['Código', 'Descripción', 'Horas'],
+    ...CODIGOS_TURNO.map(c => [c.cod, c.label, c.horas]),
+    ['2-9', 'Código numérico de horas', 'Según código'],
+    ['F2-F31', 'Código F personalizado', 0],
+    ['LD25 / LD26', 'Código de libre disposición personalizado', 0]
+  ];
+  const wsLeyenda = XLSX.utils.aoa_to_sheet(leyenda);
+  wsLeyenda['!cols'] = [{ wch: 16 }, { wch: 38 }, { wch: 14 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cuadrante');
+  XLSX.utils.book_append_sheet(wb, wsLeyenda, 'Leyenda');
+  const nombreArchivo = `cuadrante_${MESES_NOMBRES[mes].toLowerCase()}_${anio}.xlsx`;
+  XLSX.writeFile(wb, nombreArchivo);
+  mostrarToast('Cuadrante Excel descargado');
 }
 
 // ============================================================
