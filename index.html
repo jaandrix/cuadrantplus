@@ -476,6 +476,7 @@ function normalizarNombre(valor) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/mª/gi, 'm')
     .replace(/[.,;:]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -626,16 +627,14 @@ async function cambiarCentroActivo(centroId) {
 async function createFirstUserProfile() {
   if (!currentUserAuth) return false;
   
-  const { data: centro, error: errCentro } = await sb
-    .from('centros')
-    .select('id, codigo_compartido')
-    .limit(1)
-    .maybeSingle();
+  const { data: centrosIniciales, error: errCentro } = await sb.rpc('obtener_centro_inicial');
   if (errCentro) {
-    lastAuthError = 'No se pudo leer la tabla "centros".';
+    console.error('Error obteniendo centro inicial:', errCentro);
+    lastAuthError = 'No se pudo localizar el centro inicial.';
     return false;
   }
 
+  const centro = Array.isArray(centrosIniciales) ? centrosIniciales[0] : centrosIniciales;
   let centroId = centro?.id;
   if (!centroId) {
     const { data: newCentro, error: errNew } = await sb
@@ -710,24 +709,43 @@ async function signUp(email, password, nombre) {
   currentUserAuth = data.user;
   let ok = await loadUserProfile();
   if (!ok && !state.userProfile) {
-    const { data: centro } = await sb.from('centros').select('id').limit(1).maybeSingle();
+    const { data: centrosIniciales, error: centroError } = await sb.rpc('obtener_centro_inicial');
+    const centro = Array.isArray(centrosIniciales) ? centrosIniciales[0] : centrosIniciales;
     const cid = centro?.id;
-    if (!cid) {
-      renderLogin('No existe ningún centro en la base de datos.');
+    if (centroError || !cid) {
+      renderLogin('Cuenta creada. No existe todavía un centro al que unirte.');
       return false;
     }
-    await sb.from('perfiles').insert({
-      id: data.user.id,
-      centro_id: cid,
-      nombre_completo: nombre || data.user.email?.split('@')[0] || 'Usuario',
-      rol: 'administrador'
-    });
-    await sb.from('miembros_centro').insert({
-      centro_id: cid,
-      user_id: data.user.id,
-      rol: 'administrador'
-    });
-    ok = await loadUserProfile();
+    const { data: centroVacio, error: vacioError } = await sb.rpc('centro_sin_miembros', { p_centro_id: cid });
+    if (vacioError) {
+      renderLogin('Cuenta creada, pero no se pudo comprobar el estado del centro.');
+      return false;
+    }
+    if (centroVacio === true) {
+      const { error: perfilError } = await sb.from('perfiles').insert({
+        id: data.user.id,
+        centro_id: cid,
+        nombre_completo: nombre || data.user.email?.split('@')[0] || 'Usuario',
+        rol: 'administrador'
+      });
+      if (perfilError) {
+        renderLogin('Cuenta creada, pero no se pudo crear tu perfil.');
+        return false;
+      }
+      const { error: membresiaError } = await sb.from('miembros_centro').insert({
+        centro_id: cid,
+        user_id: data.user.id,
+        rol: 'administrador'
+      });
+      if (membresiaError) {
+        renderLogin('Cuenta creada, pero no se pudo crear tu membresía.');
+        return false;
+      }
+      ok = await loadUserProfile();
+    } else {
+      renderLogin('Cuenta creada. Inicia sesión y únete a tu centro con el código compartido.');
+      return true;
+    }
   }
   if (!ok) {
     renderLogin(lastAuthError || 'No se pudo completar el registro.');
@@ -820,7 +838,7 @@ async function loadTurnos() {
     if (!state.turnos[key][t.trabajador_id]) {
       state.turnos[key][t.trabajador_id] = {};
     }
-    const dia = new Date(t.fecha).getDate();
+    const dia = parseInt(String(t.fecha).slice(8, 10), 10);
     state.turnos[key][t.trabajador_id][dia - 1] = t.codigo;
   });
 }
@@ -885,22 +903,25 @@ function setupRealtime() {
 }
 
 function handleTurnoChange(payload) {
-  if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-    const t = payload.new;
-    if (!t) return;
-    const fecha = new Date(t.fecha);
-    const mes = fecha.getMonth();
-    const anio = fecha.getFullYear();
-    const dia = fecha.getDate();
-    const key = clavesMes(mes, anio);
-    if (!state.turnos[key]) state.turnos[key] = {};
-    if (!state.turnos[key][t.trabajador_id]) state.turnos[key][t.trabajador_id] = {};
-    state.turnos[key][t.trabajador_id][dia - 1] = t.codigo;
-    
-    if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
-      actualizarCeldaEnTabla(t.trabajador_id, dia - 1, t.codigo);
-      mostrarToast('Cuadrante actualizado por otro usuario');
-    }
+  const registro = payload.eventType === 'DELETE' ? payload.old : payload.new;
+  if (!registro) return;
+  const partesFecha = String(registro.fecha).slice(0, 10).split('-').map(Number);
+  const anio = partesFecha[0];
+  const mes = partesFecha[1] - 1;
+  const dia = partesFecha[2];
+  const key = clavesMes(mes, anio);
+  if (!state.turnos[key]) state.turnos[key] = {};
+  if (!state.turnos[key][registro.trabajador_id]) state.turnos[key][registro.trabajador_id] = {};
+
+  if (payload.eventType === 'DELETE') {
+    delete state.turnos[key][registro.trabajador_id][dia - 1];
+  } else {
+    state.turnos[key][registro.trabajador_id][dia - 1] = registro.codigo;
+  }
+
+  if (mes === state.mesActual && anio === state.anio && currentView === 'cuadrante') {
+    actualizarCeldaEnTabla(registro.trabajador_id, dia - 1, payload.eventType === 'DELETE' ? '' : registro.codigo);
+    mostrarToast('Cuadrante actualizado por otro usuario');
   }
 }
 
@@ -946,7 +967,7 @@ async function setCelda(trabajadorId, dia, valor, mes, anio) {
   if (error) {
     console.error('Error guardando turno:', error);
     mostrarToast('Error al guardar', true);
-    return;
+    return false;
   }
   
   if (!state.turnos[key]) state.turnos[key] = {};
@@ -1400,20 +1421,23 @@ function mostrarAlertasCuadrante() {
   alert('Incidencias detectadas:\n\n' + incidencias.join('\n'));
 }
 
-function vaciarCuadranteActual() {
+async function vaciarCuadranteActual() {
   if (!tieneRol('coordinador')) { mostrarToast('Solo el Encargado o el Gestor pueden vaciar el cuadrante', true); return; }
   if (!confirm(`¿Estás seguro de que quieres VACIAR completamente el cuadrante de ${MESES_NOMBRES[state.mesActual]} ${state.anio}?`)) return;
   const mes = state.mesActual;
   const anio = state.anio;
   const key = clavesMes(mes, anio);
   const turnos = state.turnos[key] || {};
-  
+  const operaciones = [];
   for (const trabajadorId in turnos) {
     for (const dia in turnos[trabajadorId]) {
-      setCelda(trabajadorId, parseInt(dia), '', mes, anio);
+      operaciones.push(setCelda(trabajadorId, parseInt(dia, 10), '', mes, anio));
     }
   }
-  mostrarToast(`Cuadrante de ${MESES_NOMBRES[mes]} vaciado`);
+  const resultados = await Promise.all(operaciones);
+  const errores = resultados.filter(ok => ok !== true).length;
+  if (errores) mostrarToast(`El cuadrante se vació con ${errores} errores`, true);
+  else mostrarToast(`Cuadrante de ${MESES_NOMBRES[mes]} vaciado`);
 }
 
 function mostrarParametros() {
@@ -1424,10 +1448,14 @@ function mostrarParametros() {
   document.body.appendChild(overlay);
 }
 
-function undoUltimoCambio() {
+async function undoUltimoCambio() {
   if (!undoStack.length) { mostrarToast('No hay cambios que deshacer'); return; }
-  const { trabajadorId, dia, mes, anio, anterior } = undoStack.pop();
-  setCelda(trabajadorId, dia, anterior, mes, anio);
+  const cambio = undoStack.pop();
+  const ok = await setCelda(cambio.trabajadorId, cambio.dia, cambio.anterior, cambio.mes, cambio.anio);
+  if (!ok) {
+    undoStack.push(cambio);
+    return;
+  }
   mostrarToast('Cambio deshecho');
 }
 
@@ -1491,6 +1519,7 @@ function modalEditarZona(id) {
 }
 
 async function guardarZona(id) {
+  if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para modificar zonas', true); return; }
   const nombre = document.getElementById('z-nombre')?.value?.trim();
   if (!nombre) { mostrarToast('Nombre requerido', true); return; }
   const cobertura_min_m = parseInt(document.getElementById('z-cob-M')?.value) || 0;
@@ -1518,6 +1547,7 @@ async function guardarZona(id) {
 }
 
 async function eliminarZona(id) {
+  if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para eliminar zonas', true); return; }
   if (!confirm('¿Eliminar esta zona?')) return;
   await sb.from('zonas').delete().eq('id', id);
   state.zonas = state.zonas.filter(z => z.id !== id);
@@ -1869,6 +1899,7 @@ function toggleAsignado(id, checked) {
 }
 
 async function crearTarea() {
+  if (!tieneRol('coordinador')) { mostrarToast('Solo el Encargado o el Gestor pueden crear tareas', true); return; }
   const nombre = document.getElementById('nt-nombre')?.value?.trim();
   const fecha = document.getElementById('nt-fecha')?.value;
   const prioridad = document.getElementById('nt-prio')?.value || 'amber';
@@ -1892,6 +1923,7 @@ async function crearTarea() {
 }
 
 async function completarTarea(id) {
+  if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para modificar tareas', true); return; }
   const t = state.tareas.find(t => t.id === id);
   if (!t) return;
   await sb.from('tareas').update({ completada: true }).eq('id', id);
@@ -1901,6 +1933,7 @@ async function completarTarea(id) {
 }
 
 async function eliminarTarea(id) {
+  if (!tieneRol('coordinador')) { mostrarToast('No tienes permiso para eliminar tareas', true); return; }
   if (!confirm('¿Eliminar tarea?')) return;
   await sb.from('tareas').delete().eq('id', id);
   state.tareas = state.tareas.filter(t => t.id !== id);
@@ -2579,8 +2612,8 @@ async function recibirCuadrante() {
   const rolSolicitado = document.getElementById('rol-solicitado')?.value || 'lector';
   if (!codigo || codigo.length !== 8) { mostrarToast('Introduce un código de 8 dígitos', true); return; }
 
-  const { data: centro, error } = await sb.from('centros').select('id, nombre')
-    .eq('codigo_compartido', codigo).maybeSingle();
+  const { data: centros, error } = await sb.rpc('buscar_centro_por_codigo', { p_codigo: codigo });
+  const centro = Array.isArray(centros) ? centros[0] : centros;
   if (error || !centro) { mostrarToast('Código no válido', true); return; }
 
   const { data: existe } = await sb.from('miembros_centro').select('id')
@@ -2628,6 +2661,7 @@ function exportarBackup() {
 // EXPORTAR CUADRANTE A EXCEL
 // ============================================================
 function exportarCuadranteExcel() {
+  if (!tieneRol('coordinador')) { mostrarToast('Solo el Encargado o el Gestor pueden exportar el cuadrante completo', true); return; }
   if (typeof XLSX === 'undefined') {
     mostrarToast('No se pudo cargar el generador de Excel', true);
     return;
@@ -2826,17 +2860,32 @@ document.getElementById('file-import')?.addEventListener('change', (event) => {
   r.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
+      if (!tieneRol('coordinador')) throw new Error('No tienes permisos para importar un backup');
+      const mapaIds = new Map();
       for (const t of data.trabajadores || []) {
-        await sb.from('trabajadores').upsert({ ...t, centro_id: state.centroId });
+        if (!t?.nombre) continue;
+        const payload = {
+          ...(t.id ? { id: t.id } : {}),
+          centro_id: state.centroId,
+          nombre: t.nombre,
+          tipo: t.tipo || 'fijo',
+          grupo: t.grupo || 'manana',
+          turno_base: t.turno_base || 'M',
+          turno_habitual: t.turno_habitual || t.turno_base || 'M',
+          estado: t.estado || 'activo'
+        };
+        const { data: trabajador, error: trabajadorError } = await sb.from('trabajadores').upsert(payload).select().single();
+        if (trabajadorError || !trabajador) throw trabajadorError || new Error(`No se pudo importar ${t.nombre}`);
+        if (t.id) mapaIds.set(t.id, trabajador.id);
       }
       for (const key in data.turnos || {}) {
         const [anio, mes] = key.split('-').map(Number);
-        for (const trabajadorId in data.turnos[key]) {
-          for (const dia in data.turnos[key][trabajadorId]) {
-            const val = data.turnos[key][trabajadorId][dia];
-            if (val) {
-              await setCelda(trabajadorId, parseInt(dia), val, mes, anio);
-            }
+        for (const trabajadorIdOriginal in data.turnos[key]) {
+          const trabajadorId = mapaIds.get(trabajadorIdOriginal) || trabajadorIdOriginal;
+          for (const dia in data.turnos[key][trabajadorIdOriginal]) {
+            const val = data.turnos[key][trabajadorIdOriginal][dia];
+            const ok = await setCelda(trabajadorId, parseInt(dia, 10), val || '', mes, anio);
+            if (!ok) throw new Error(`No se pudo guardar el turno de ${trabajadorId}`);
           }
         }
       }
@@ -2859,11 +2908,15 @@ document.getElementById('file-import-personal')?.addEventListener('change', (eve
   r.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
+      if (!tieneRol('coordinador')) throw new Error('No tienes permisos para importar personal');
       const lista = Array.isArray(data) ? data : (data.trabajadores || []);
       if (!Array.isArray(lista) || !lista.length) throw new Error('Formato inválido');
       let importados = 0;
+      const existentes = new Set(state.trabajadores.map(t => normalizarNombre(t.nombre)));
       for (const t of lista) {
-        if (!t.nombre) continue;
+        if (!t?.nombre) continue;
+        const nombreNormalizado = normalizarNombre(t.nombre);
+        if (existentes.has(nombreNormalizado)) continue;
         const { error } = await sb.from('trabajadores').insert({
           centro_id: state.centroId,
           nombre: t.nombre,
@@ -2873,7 +2926,7 @@ document.getElementById('file-import-personal')?.addEventListener('change', (eve
           turno_habitual: t.turno_habitual || t.turno_base || 'M',
           estado: t.estado || 'activo'
         });
-        if (!error) importados++;
+        if (!error) { importados++; existentes.add(nombreNormalizado); }
       }
       await loadTrabajadores();
       renderPersonal();
