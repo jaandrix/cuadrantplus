@@ -368,7 +368,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============================================================
 // CONSTANTES
 // ============================================================
-const APP_VERSION = 28;
+const APP_VERSION = 29;
 const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ["D","L","M","X","J","V","S"];
 const CODIGOS_TURNO = [
@@ -1381,7 +1381,7 @@ function renderCuadrante() {
     ${tieneRol('coordinador') ? '<button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>' : ''}
     <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
   </div>`;
-  html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días</div>`;
+  html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">${tieneRol('coordinador') ? `Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días` : 'Modo consulta · Solo el Gestor o el Encargado pueden modificar el cuadrante'}</div>`;
   html += `<div class="wrap"><table><thead><tr><th style="border:0.5px solid var(--border);padding:6px 4px;text-align:left;position:sticky;left:0;background:var(--surface-alt);min-width:180px;">Trabajador</th>`;
   for (let d = 1; d <= dias; d++) {
     const fds = esFinDeSemana(d, mes, anio);
@@ -1659,10 +1659,12 @@ function renderPersonal() {
   html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${filtrados.length} trabajadores</div>`;
   filtrados.forEach(t => html += cardWorkerHtml(t, mes, anio));
   
-  html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-    <button class="btn btn-primary" onclick="modalNuevoTrabajador()">+ Añadir trabajador</button>
-    <button class="btn btn-secondary" onclick="document.getElementById('file-import-personal').click()">+ Importar personal (JSON)</button>
-  </div>`;
+  if (tieneRol('coordinador')) {
+    html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn btn-primary" onclick="modalNuevoTrabajador()">+ Añadir trabajador</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('file-import-personal').click()">+ Importar personal (JSON)</button>
+    </div>`;
+  }
   content.innerHTML = html;
 }
 
