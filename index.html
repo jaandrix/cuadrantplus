@@ -1399,7 +1399,7 @@ function renderCuadrante() {
     let rowStyle = '';
     if (t.estado === 'baja') rowStyle = 'opacity:0.55; background:var(--danger-bg);';
     if (t.tipo === 'sustituto') rowStyle = 'color:var(--danger);';
-    html += `<tr style="${rowStyle}"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--surface);font-weight:600;">${t.nombre}${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠' : ''}${bolsa < -40 ? ' 📉' : ''}</td>`;
+    html += `<tr style="${rowStyle}"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--surface);font-weight:600;"><span onclick="modalDetalleWorker('${t.id}')" style="cursor:pointer">${t.nombre}</span>${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠' : ''}${bolsa < -40 ? ' 📉' : ''}${tieneRol('coordinador') ? ` <button class="btn-icon" title="Eliminar trabajador" onclick="event.stopPropagation(); eliminarTrabajador('${t.id}')" style="border:none;background:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 2px;">🗑</button>` : ''}</td>`;
     for (let d = 0; d < dias; d++) {
       const val = turnos[t.id]?.[d] || '';
       const fds = esFinDeSemana(d + 1, mes, anio);
@@ -1752,15 +1752,35 @@ async function guardarWorker(id) {
 }
 
 async function eliminarTrabajador(id) {
-  if (!confirm('¿Eliminar este trabajador?')) return;
+  if (!tieneRol('coordinador')) {
+    mostrarToast('No tienes permiso para eliminar trabajadores', true);
+    return;
+  }
+  const t = state.trabajadores.find(w => w.id === id);
+  const nombre = t?.nombre || 'este trabajador';
+  if (!confirm(`¿Eliminar a ${nombre}? Se borrará también todo su historial de turnos y no se puede deshacer.`)) return;
+
   const { error } = await sb
     .from('trabajadores')
     .delete()
     .eq('id', id);
-  if (error) { mostrarToast('Error al eliminar', true); return; }
+  if (error) {
+    console.error('Error eliminando trabajador:', error);
+    mostrarToast(`Error al eliminar: ${describirErrorSupabase(error)}`, true);
+    return;
+  }
+
   state.trabajadores = state.trabajadores.filter(w => w.id !== id);
-  renderPersonal();
-  mostrarToast('Trabajador eliminado');
+  // Limpiamos también las celdas cacheadas de este trabajador en todos los meses
+  // que tengamos en memoria, para que no queden turnos "fantasma" en pantalla.
+  Object.values(state.turnos).forEach(porTrabajador => {
+    delete porTrabajador[id];
+  });
+
+  cerrarModal();
+  if (currentView === 'cuadrante') renderCuadrante();
+  else renderPersonal();
+  mostrarToast(`${nombre.split(' ')[0]} eliminado`);
 }
 
 function modalNuevoTrabajador() {
