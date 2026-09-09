@@ -76,6 +76,11 @@
   /* ==================== ESTILOS GLOBALES ==================== */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); font-family: 'Poppins', -apple-system, system-ui, sans-serif; color: var(--text); overflow: hidden; height: 100dvh; font-size: var(--font-base); line-height: 1.5; transition: background 0.25s ease, color 0.25s ease; }
+  /* Los controles de formulario no heredan la tipografía del body por
+     defecto (usan la fuente nativa del sistema salvo que se indique lo
+     contrario) — de ahí que muchos botones se vieran con una letra distinta
+     al resto de la app. */
+  button, input, select, textarea { font-family: inherit; }
   #app { display: flex; height: 100dvh; width: 100%; background: var(--bg); }
 
   /* ==================== SIDEBAR (escritorio) ==================== */
@@ -190,16 +195,17 @@
   .card-body { padding: 16px; }
 
   /* ==================== BOTONES ==================== */
-  .btn { border: none; border-radius: var(--radius-pill); padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: 13px; transition: transform .15s ease, background .15s ease, opacity .15s ease; width: 100%; margin-bottom: 8px; text-align: center; }
+  .btn { border: none; border-radius: var(--radius-pill); padding: 12px 18px; font-weight: 700; cursor: pointer; font-size: 13px; transition: transform .15s ease, background .15s ease, opacity .15s ease; width: 100%; margin-bottom: 8px; text-align: center; }
   .btn:active { transform: scale(.97); }
+  .btn:hover { opacity: .92; }
   .btn-primary { background: var(--accent); color: var(--accent-contrast); }
-  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:hover { background: var(--accent-hover); opacity: 1; }
   .btn-secondary { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text); }
   .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
   .btn-legal { background: var(--info-bg); color: var(--info); border: 1px solid var(--info); }
   .btn-success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
-  .btn-sm { padding: 6px 12px; border-radius: var(--radius-pill); font-size: 11px; margin-bottom: 0; width: auto; display: inline-block; }
-  .btn-xs { padding: 4px 8px; border-radius: var(--radius-sm); font-size: 10px; margin-bottom: 0; width: auto; display: inline-block; }
+  .btn-sm { padding: 8px 14px; border-radius: var(--radius-pill); font-size: 12px; margin-bottom: 0; width: auto; display: inline-block; }
+  .btn-xs { padding: 6px 10px; border-radius: var(--radius-pill); font-size: 10.5px; margin-bottom: 0; width: auto; display: inline-block; }
   .btn-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
   .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 
@@ -251,8 +257,10 @@
   .cal-dot.verde { background: var(--success); }
   .festivo-icon { font-size: 10px; margin-left: 2px; }
 
-  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .cal-nav-btn { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text); transition: all .15s ease; }
+  .cal-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 14px; }
+  .cal-nav-title { text-align: center; font-weight: 800; font-size: 15px; letter-spacing: -.2px; }
+  .cal-nav-btn { width: 34px; height: 34px; flex-shrink: 0; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: var(--text); transition: all .15s ease; }
+  .cal-nav-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
   .cal-nav-btn:hover { background: var(--border); }
 
   /* ==================== SELECTOR DE MES ==================== */
@@ -429,6 +437,9 @@
   .command-palette-item { padding: 10px 12px; border-radius: var(--radius-md); font-size: 13px; cursor: pointer; color: var(--text); }
   .command-palette-item.active, .command-palette-item:hover { background: var(--surface-alt); }
   .command-palette-empty { padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px; }
+  .logout-confirm-box { max-width: 320px; }
+  .logout-confirm-actions { display: flex; gap: 8px; }
+  .logout-confirm-actions button { flex: 1; }
 
   /* ==================== TOAST ==================== */
   #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--accent-contrast); padding: 10px 22px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; box-shadow: var(--shadow-md); transition: opacity .25s ease; pointer-events: none; }
@@ -3522,7 +3533,7 @@ function cerrarModal() {
 }
 
 function toggleUserMenu() {
-  if (confirm('¿Cerrar sesión?')) signOut();
+  openLogoutConfirm();
 }
 
 // Vuelve a disparar la animación de entrada del contenido al cambiar de
@@ -3610,6 +3621,7 @@ function cpCanOpen() {
   if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return false;
   if (document.querySelector('.modal-overlay')) return false;
   if (document.getElementById('command-palette-overlay')) return false;
+  if (document.getElementById('logout-confirm-overlay')) return false;
   return true;
 }
 
@@ -3670,10 +3682,15 @@ function handleCommandPaletteKeydown(e) {
     cpSelectedIndex = Math.max(0, cpSelectedIndex - 1);
     renderCommandPaletteList(document.getElementById('command-palette-input').value);
   } else if (e.key === 'Enter') {
+    // Sin stopPropagation, este mismo ENTER burbujea hasta el listener
+    // global que ABRE el buscador — lo cerraba y lo volvía a abrir en el
+    // mismo instante, pareciendo que nunca se cerraba.
     e.preventDefault();
+    e.stopPropagation();
     if (filtered[cpSelectedIndex]) selectCommandPaletteItem(cpSelectedIndex);
   } else if (e.key === 'Escape') {
     e.preventDefault();
+    e.stopPropagation();
     closeCommandPalette();
   }
 }
@@ -3718,6 +3735,53 @@ document.addEventListener('keydown', (e) => {
   if (!btn) return;
   e.preventDefault();
   btn.click();
+});
+
+// ============================================================
+// CONFIRMACIÓN DE CIERRE DE SESIÓN (ESC) — mismo patrón que Bitácora
+// ============================================================
+function openLogoutConfirm() {
+  if (document.getElementById('logout-confirm-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'logout-confirm-overlay';
+  overlay.className = 'command-palette-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeLogoutConfirm(); };
+  overlay.innerHTML = `
+    <div class="command-palette-box logout-confirm-box">
+      <div class="command-palette-prompt" style="margin-bottom:20px;text-align:center">¿Quieres cerrar tu <span class="cp-accent">sesión</span>?</div>
+      <div class="logout-confirm-actions">
+        <button class="btn btn-secondary" style="margin:0" onclick="closeLogoutConfirm()">No</button>
+        <button class="btn btn-primary" style="margin:0" onclick="confirmLogoutEsc()">Sí</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function closeLogoutConfirm() {
+  document.getElementById('logout-confirm-overlay')?.remove();
+}
+
+async function confirmLogoutEsc() {
+  closeLogoutConfirm();
+  await signOut();
+}
+
+// Con la confirmación abierta, ENTER equivale a pulsar "Sí".
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || !document.getElementById('logout-confirm-overlay')) return;
+  e.preventDefault();
+  confirmLogoutEsc();
+});
+
+// ESC: cierra lo que haya abierto (buscador, tarjeta/modal, confirmación de
+// sesión); si no hay nada abierto, pregunta si se quiere cerrar sesión.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('logout-confirm-overlay')) { closeLogoutConfirm(); return; }
+  if (document.getElementById('command-palette-overlay')) { closeCommandPalette(); return; }
+  if (document.querySelector('.modal-overlay')) { cerrarModal(); return; }
+  if (!cpCanOpen()) return;
+  openLogoutConfirm();
 });
 
 // ============================================================
