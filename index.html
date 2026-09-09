@@ -76,7 +76,6 @@
   /* ==================== ESTILOS GLOBALES ==================== */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); font-family: 'Poppins', -apple-system, system-ui, sans-serif; color: var(--text); overflow: hidden; height: 100dvh; font-size: var(--font-base); line-height: 1.5; transition: background 0.25s ease, color 0.25s ease; }
-  button:focus-visible, button:focus { outline: 3px solid #3b82f6; outline-offset: 2px; }
   #app { display: flex; height: 100dvh; width: 100%; background: var(--bg); }
 
   /* ==================== SIDEBAR (escritorio) ==================== */
@@ -204,6 +203,17 @@
   .btn-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
   .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 
+  /* Botones-icono circulares (editar / eliminar) — mismo lenguaje que Bitácora:
+     fondo blanco fijo (independiente del tema), lápiz para editar, cruz roja
+     granate y gruesa para eliminar. */
+  .icon-btn { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 1px 3px rgba(0,0,0,.2); font-size: 13px; flex-shrink: 0; transition: background .15s ease; }
+  .icon-btn-edit { color: #1a1a1a; }
+  .icon-btn-edit:hover { background: #e5e5e5; }
+  .icon-btn-delete { color: #7f1d1d; font-weight: 900; font-size: 16px; }
+  .icon-btn-delete:hover { background: #fee2e2; }
+  .icon-btn-delete-sm { background: none; box-shadow: none; border: none; color: #b3261e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 0 3px; width: auto; height: auto; border-radius: 6px; }
+  .icon-btn-delete-sm:hover { background: var(--danger-bg); }
+
   /* ==================== BADGES ==================== */
   .badge { padding: 3px 9px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; letter-spacing: .2px; display: inline-block; }
   .badge-baja { background: var(--danger-bg); color: var(--danger); }
@@ -221,11 +231,18 @@
   .aviso-azul { background: var(--info-bg); border-color: var(--info); }
   .aviso-gris { background: var(--surface-alt); border-color: var(--text-muted); }
 
+  /* ==================== HERO (próxima tarea) ==================== */
+  .home-hero { background: var(--surface); border: 1.5px solid var(--border-strong); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 16px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; box-shadow: var(--shadow-sm); }
+  .home-hero:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .home-hero-kicker { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; color: var(--danger); }
+  .home-hero-title { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+  .home-hero-meta { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
   /* ==================== CALENDARIO ==================== */
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
   .cal-wd { font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
-  .cal-day { background: var(--surface-alt); border-radius: var(--radius); padding: 8px 2px; border: 1px solid var(--border); cursor: pointer; transition: background .2s; }
-  .cal-day:hover { background: var(--border); }
+  .cal-day { background: var(--surface-alt); border-radius: var(--radius); padding: 8px 2px; border: 1px solid var(--border); cursor: pointer; transition: background .2s, transform .15s ease; }
+  .cal-day:hover { background: var(--border); transform: translateY(-1px); }
   .cal-day.hoy { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
   .cal-day-num { font-size: 13px; font-weight: 600; }
   .cal-dot { width: 8px; height: 8px; border-radius: 50%; margin: 4px auto 0; }
@@ -284,13 +301,21 @@
   /* ==================== PERSONAL ==================== */
   .worker-search { width: 100%; padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 14px; margin-bottom: 12px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s ease; }
   .worker-search:focus { border-color: var(--accent); }
-  .worker-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; cursor: pointer; margin-bottom: 8px; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
-  .worker-item:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-  .worker-name { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .worker-stats { font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .bolsa-pos { color: var(--success); font-weight: 700; }
-  .bolsa-neg { color: var(--danger); font-weight: 700; }
-  .vac-bar { height: 5px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 4px; }
+  .worker-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--text-soft); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; box-shadow: var(--shadow-sm); }
+  .worker-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .worker-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .worker-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .worker-name { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .worker-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .worker-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; }
+  .worker-stat { background: var(--surface-alt); border-radius: var(--radius); padding: 8px 2px; }
+  .worker-stat-value { font-size: 14px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .worker-stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+  .worker-cost { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+  .bolsa-pos { color: var(--success); }
+  .bolsa-neg { color: var(--danger); }
+  .vac-bar { height: 5px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; margin-top: 10px; }
   .vac-bar-fill { height: 100%; background: var(--success); border-radius: 3px; }
 
   /* ==================== TAREAS ==================== */
@@ -385,6 +410,19 @@
   .login-field { position: relative; margin-bottom: 12px; }
   .login-field input { margin-bottom: 0; padding-right: 42px; }
   .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-muted); padding: 4px; }
+
+  /* ==================== BUSCADOR (ENTER) ==================== */
+  .command-palette-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 300; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+  .command-palette-box { background: var(--surface); border-radius: var(--radius-lg); width: 100%; max-width: 480px; margin: 0 16px; padding: 18px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; }
+  .command-palette-prompt { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+  .command-palette-prompt .cp-accent { color: var(--accent); font-weight: 800; }
+  .command-palette-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 15px; font-family: 'Poppins', sans-serif; outline: none; background: var(--surface-alt); color: var(--text); margin-bottom: 10px; }
+  .command-palette-input:focus { border-color: var(--accent); }
+  .command-palette-list-wrap { overflow: hidden; }
+  .command-palette-list { max-height: 320px; overflow-y: auto; }
+  .command-palette-item { padding: 10px 12px; border-radius: var(--radius-md); font-size: 13px; cursor: pointer; color: var(--text); }
+  .command-palette-item.active, .command-palette-item:hover { background: var(--surface-alt); }
+  .command-palette-empty { padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px; }
 
   /* ==================== TOAST ==================== */
   #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--accent-contrast); padding: 10px 22px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; box-shadow: var(--shadow-md); transition: opacity .25s ease; pointer-events: none; }
@@ -1511,8 +1549,23 @@ function renderHome() {
   const hoy = new Date();
   const diaHoy = hoy.getDate();
   const esHoyMes = hoy.getMonth() === mes && hoy.getFullYear() === anio;
-  
-  let html = `<div class="card"><div class="card-header"><div class="cal-nav"><button class="cal-nav-btn" onclick="cambiarHomeMes(-1)">◀</button><span class="cal-nav-title">${MESES_NOMBRES[mes]} ${anio}</span><button class="cal-nav-btn" onclick="cambiarHomeMes(1)">▶</button></div></div><div class="card-body"><div class="cal-grid">`;
+  const hoyStr = hoy.toISOString().slice(0,10);
+
+  let html = '';
+  const proximaTarea = [...state.tareas]
+    .filter(t => !t.completada && t.fecha && t.fecha >= hoyStr)
+    .sort((a,b) => a.fecha.localeCompare(b.fecha))[0];
+  if (proximaTarea) {
+    const diffDias = Math.round((new Date(proximaTarea.fecha) - new Date(hoyStr)) / 86400000);
+    const cuando = diffDias <= 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`;
+    html += `<div class="home-hero" onclick="mostrarEventosDia(${new Date(proximaTarea.fecha).getFullYear()}, ${new Date(proximaTarea.fecha).getMonth()}, ${new Date(proximaTarea.fecha).getDate()})">
+      <div class="home-hero-kicker">Próxima tarea · ${cuando}</div>
+      <div class="home-hero-title">${proximaTarea.nombre}</div>
+      <div class="home-hero-meta">${proximaTarea.fecha}</div>
+    </div>`;
+  }
+
+  html += `<div class="card"><div class="card-header"><div class="cal-nav"><button class="cal-nav-btn" onclick="cambiarHomeMes(-1)">◀</button><span class="cal-nav-title">${MESES_NOMBRES[mes]} ${anio}</span><button class="cal-nav-btn" onclick="cambiarHomeMes(1)">▶</button></div></div><div class="card-body"><div class="cal-grid">`;
   DIAS_SEMANA.forEach(d => html += `<div class="cal-wd">${d}</div>`);
   const primerDia = new Date(anio, mes, 1).getDay();
   for (let i = 0; i < primerDia; i++) html += `<div></div>`;
@@ -1726,10 +1779,6 @@ function renderCuadrante() {
     ${tieneRol('coordinador') ? '<button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>' : ''}
     <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
   </div>`;
-  const incidenciasLegales = validarCuadranteCompleto();
-  if (incidenciasLegales.length) {
-    html += `<div class="card" style="margin-bottom:8px;border:1px solid var(--danger)"><div class="card-header" style="color:var(--danger)">⚠ Incidencias legales (${incidenciasLegales.length})</div><div class="card-body">${incidenciasLegales.slice(0,8).map(i => `<div class="alerta-legal">${i}</div>`).join('')}${incidenciasLegales.length>8?`<div class="aviso aviso-gris">... y ${incidenciasLegales.length-8} más</div>`:''}</div></div>`;
-  }
   html += `<div class="aviso aviso-gris" style="margin-bottom:8px;font-size:11px">${tieneRol('coordinador') ? `Pulsa una celda para cambiar el turno · Preaviso legal: ${state.parametros.preavisoDias} días` : 'Modo consulta · Solo puedes consultar tu propio horario y gestionar tus solicitudes'}</div>`;
   html += `<div class="wrap"><table><thead><tr><th style="border:0.5px solid var(--border);padding:6px 4px;text-align:left;position:sticky;left:0;background:var(--surface-alt);min-width:180px;">Trabajador</th>`;
   for (let d = 1; d <= dias; d++) {
@@ -1748,7 +1797,7 @@ function renderCuadrante() {
     let rowStyle = '';
     if (t.estado === 'baja') rowStyle = 'opacity:0.55; background:var(--danger-bg);';
     if (t.tipo === 'sustituto') rowStyle = 'color:var(--danger);';
-    html += `<tr style="${rowStyle}"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--surface);font-weight:600;"><span onclick="modalDetalleWorker('${t.id}')" style="cursor:pointer">${t.nombre}</span>${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠' : ''}${bolsa < -40 ? ' 📉' : ''}${tieneRol('coordinador') ? ` <button class="btn-icon" title="Eliminar trabajador" onclick="event.stopPropagation(); eliminarTrabajador('${t.id}')" style="border:none;background:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 2px;">🗑</button>` : ''}</td>`;
+    html += `<tr style="${rowStyle}"><td style="border:0.5px solid var(--border);padding:4px 6px;text-align:left;position:sticky;left:0;background:var(--surface);font-weight:600;"><span onclick="modalDetalleWorker('${t.id}')" style="cursor:pointer">${t.nombre}</span>${t.estado === 'baja' ? ' <span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? ' <span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${seg > state.parametros.maxDiasSeguidos ? ' ⚠' : ''}${bolsa < -40 ? ' 📉' : ''}${tieneRol('coordinador') ? ` <button class="icon-btn-delete-sm" title="Eliminar trabajador" onclick="event.stopPropagation(); eliminarTrabajador('${t.id}')">✕</button>` : ''}</td>`;
     for (let d = 0; d < dias; d++) {
       const val = turnos[t.id]?.[d] || '';
       const fds = esFinDeSemana(d + 1, mes, anio);
@@ -1781,6 +1830,11 @@ function renderCuadrante() {
         <button class="btn btn-primary btn-sm" onclick="guardarComentario()">Publicar comentario</button>
       </div>` : ''}
   </div>`;
+
+  const incidenciasLegales = validarCuadranteCompleto();
+  if (incidenciasLegales.length) {
+    html += `<div class="card" style="margin-top:12px;border:1px solid var(--danger)"><div class="card-header" style="color:var(--danger)">⚠ Incidencias legales (${incidenciasLegales.length})</div><div class="card-body">${incidenciasLegales.slice(0,8).map(i => `<div class="alerta-legal">${i}</div>`).join('')}${incidenciasLegales.length>8?`<div class="aviso aviso-gris">... y ${incidenciasLegales.length-8} más</div>`:''}</div></div>`;
+  }
 
   content.innerHTML = html;
   actualizarNombreHeader();
@@ -1872,8 +1926,8 @@ function htmlListaZonas() {
     const trabajadoresZona = state.trabajadores.filter(t => t.zona_principal_id === z.id);
     html += `<div class="zona-card" style="border-left:4px solid ${z.color || 'var(--border)'}">
       <div class="zona-card-header"><div class="zona-nombre">${z.nombre}</div>
-      <div><button class="btn btn-secondary btn-xs" onclick="modalEditarZona('${z.id}')">✏</button>
-      <button class="btn btn-danger btn-xs" onclick="eliminarZona('${z.id}')">🗑</button></div></div>
+      <div style="display:flex;gap:6px"><button class="icon-btn icon-btn-edit" title="Editar" onclick="modalEditarZona('${z.id}')">✎</button>
+      <button class="icon-btn icon-btn-delete" title="Eliminar" onclick="eliminarZona('${z.id}')">✕</button></div></div>
       <div class="zona-turnos">
         <div class="zona-turno-box"><div class="zona-turno-label">MAÑANA</div><div class="zona-turno-num">${z.cobertura_min_m || 0}</div></div>
         <div class="zona-turno-box"><div class="zona-turno-label">TARDE</div><div class="zona-turno-num">${z.cobertura_min_t || 0}</div></div>
@@ -2007,7 +2061,9 @@ function renderPersonal() {
   });
   
   html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${filtrados.length} trabajadores</div>`;
+  html += `<div class="workers-grid">`;
   filtrados.forEach(t => html += cardWorkerHtml(t, mes, anio));
+  html += `</div>`;
   
   if (tieneRol('coordinador')) {
     html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
@@ -2025,8 +2081,28 @@ function cardWorkerHtml(t, mes, anio) {
   const vacDis = getVacacionesDisfrutadas(t.id);
   const vacTot = t.vacaciones_totales || 22;
   const vacPct = Math.min(100, Math.round(vacDis / vacTot * 100));
-  
-  return `<div class="worker-item" onclick="modalDetalleWorker('${t.id}')"><div class="worker-name">${t.nombre}${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}</div><div class="worker-stats"><span>${horas}h mes</span><span class="${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h bolsa</span><span>${seg} días</span><span>${vacDis}/${vacTot}</span><span>${t.antiguedad_anios || 0} años</span>${tieneRol('coordinador') && Number(t.coste_hora)>0 ? `<span>${Number(t.coste_hora).toFixed(2)} €/h</span>` : ''}</div><div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>${tieneRol('coordinador') ? `<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button></div>` : ''}</div>`;
+  const zona = state.zonas.find(z => z.id === t.zona_principal_id);
+  const color = zona?.color || 'var(--text-soft)';
+  const iniciales = t.nombre.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
+
+  return `<div class="worker-card" style="border-top-color:${color}" onclick="modalDetalleWorker('${t.id}')">
+    <div class="worker-card-head">
+      <div class="worker-avatar" style="background:${color}33;color:${zona ? color : 'var(--text-muted)'}">${iniciales}</div>
+      <div style="min-width:0;flex:1">
+        <div class="worker-name">${t.nombre}</div>
+        <div class="worker-badges">${t.estado === 'baja' ? '<span class="badge badge-baja">BAJA</span>' : ''}${t.tipo === 'sustituto' ? '<span class="badge badge-sustituto">SUSTITUTO</span>' : ''}${zona ? `<span class="badge badge-blue">${zona.nombre}</span>` : ''}</div>
+      </div>
+    </div>
+    <div class="worker-stats-grid">
+      <div class="worker-stat"><div class="worker-stat-value">${horas}h</div><div class="worker-stat-label">Mes</div></div>
+      <div class="worker-stat"><div class="worker-stat-value ${bolsa >= 0 ? 'bolsa-pos' : 'bolsa-neg'}">${bolsa >= 0 ? '+' : ''}${bolsa}h</div><div class="worker-stat-label">Bolsa</div></div>
+      <div class="worker-stat"><div class="worker-stat-value">${seg}</div><div class="worker-stat-label">Seguidos</div></div>
+      <div class="worker-stat"><div class="worker-stat-value">${vacDis}/${vacTot}</div><div class="worker-stat-label">Vacac.</div></div>
+    </div>
+    <div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>
+    ${tieneRol('coordinador') && Number(t.coste_hora) > 0 ? `<div class="worker-cost">${Number(t.coste_hora).toFixed(2)} €/h · ${t.antiguedad_anios || 0} años antigüedad</div>` : ''}
+    ${tieneRol('coordinador') ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button>` : ''}
+  </div>`;
 }
 
 function setFiltroZona(val) { personalFiltroZona = val; renderPersonal(); }
@@ -2246,7 +2322,7 @@ function renderTareas() {
         <div class="tarea-nombre">${t.nombre}</div>
         <div class="tarea-meta">${fecha.getDate()}/${fecha.getMonth()+1} · <span class="badge ${badgeClass}">${t.prioridad}</span>${nombresAsignados ? ' · Asignada a: ' + nombresAsignados : ''}</div>
       </div>
-      <div><button class="btn btn-success btn-sm" onclick="completarTarea('${t.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="eliminarTarea('${t.id}')">🗑</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="completarTarea('${t.id}')">✓ Hecha</button><button class="icon-btn icon-btn-delete" title="Eliminar" onclick="eliminarTarea('${t.id}')">✕</button></div>
     </div>`;
   });
   html += `<button class="btn btn-primary" style="margin-top:10px" onclick="modalNuevaTarea()">+ Nueva tarea</button></div></div>`;
@@ -3423,6 +3499,155 @@ function render() {
     renderLogin();
   }
 }
+
+// ============================================================
+// BUSCADOR "¿DÓNDE QUIERES IR?" (tecla ENTER) — mismo patrón que Bitácora
+// ============================================================
+const CP_SECTIONS = [
+  { view: 'home', text: 'Inicio' },
+  { view: 'cuadrante', text: 'Cuadrante' },
+  { view: 'personal', text: 'Personal', soloCoordinador: true },
+  { view: 'tareas', text: 'Tareas', soloCoordinador: true },
+  { view: 'analitica', text: 'Analítica', soloCoordinador: true },
+  { view: 'ajustes', text: 'Ajustes' },
+];
+
+let cpSelectedIndex = 0;
+
+function cpNavItems() {
+  return CP_SECTIONS.filter(s => !s.soloCoordinador || tieneRol('coordinador')).map(s => ({ kind: 'view', view: s.view, text: s.text }));
+}
+
+// Cuando lo escrito no coincide con ninguna sección, busca por nombre entre
+// trabajadores y tareas — igual que Bitácora busca entre entradas y notas.
+function cpSearch(q) {
+  const results = [];
+  if (tieneRol('coordinador')) {
+    (state.trabajadores || []).forEach(t => {
+      if (t.nombre && t.nombre.toLowerCase().includes(q)) results.push({ kind: 'worker', id: t.id, text: t.nombre });
+    });
+    (state.tareas || []).forEach(t => {
+      if (t.nombre && t.nombre.toLowerCase().includes(q)) results.push({ kind: 'tarea', id: t.id, text: t.nombre });
+    });
+  }
+  return results.slice(0, 20);
+}
+
+function cpCanOpen() {
+  if (!state.userProfile) return false;
+  const el = document.activeElement;
+  if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return false;
+  if (document.querySelector('.modal-overlay')) return false;
+  if (document.getElementById('command-palette-overlay')) return false;
+  return true;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || !cpCanOpen()) return;
+  e.preventDefault();
+  openCommandPalette();
+});
+
+function openCommandPalette() {
+  if (document.getElementById('command-palette-overlay')) return;
+  cpSelectedIndex = 0;
+  const overlay = document.createElement('div');
+  overlay.id = 'command-palette-overlay';
+  overlay.className = 'command-palette-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeCommandPalette(); };
+  overlay.innerHTML = `
+    <div class="command-palette-box">
+      <div class="command-palette-prompt">¿Dónde quieres <span class="cp-accent">ir</span>?</div>
+      <input id="command-palette-input" class="command-palette-input" autocomplete="off" placeholder="Escribe para buscar...">
+      <div class="command-palette-list-wrap"><div id="command-palette-list" class="command-palette-list"></div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  renderCommandPaletteList('');
+  const input = document.getElementById('command-palette-input');
+  input.addEventListener('input', () => { cpSelectedIndex = 0; renderCommandPaletteList(input.value); });
+  input.addEventListener('keydown', handleCommandPaletteKeydown);
+  setTimeout(() => input.focus(), 30);
+}
+
+function closeCommandPalette() {
+  document.getElementById('command-palette-overlay')?.remove();
+}
+
+function renderCommandPaletteList(query) {
+  const q = query.trim().toLowerCase();
+  const list = document.getElementById('command-palette-list');
+  if (!list) return;
+  const navMatches = q ? cpNavItems().filter(i => i.text.toLowerCase().includes(q)) : cpNavItems();
+  const filtered = navMatches.length ? navMatches : (q ? cpSearch(q) : navMatches);
+  if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
+  list.innerHTML = filtered.length ? filtered.map((item, i) => `
+    <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">${item.text}</div>
+  `).join('') : '<div class="command-palette-empty">Sin resultados</div>';
+  list._filtered = filtered;
+  list.querySelector('.command-palette-item.active')?.scrollIntoView({ block: 'nearest' });
+}
+
+function handleCommandPaletteKeydown(e) {
+  const list = document.getElementById('command-palette-list');
+  const filtered = list?._filtered || [];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    cpSelectedIndex = filtered.length ? Math.min(filtered.length - 1, cpSelectedIndex + 1) : 0;
+    renderCommandPaletteList(document.getElementById('command-palette-input').value);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    cpSelectedIndex = Math.max(0, cpSelectedIndex - 1);
+    renderCommandPaletteList(document.getElementById('command-palette-input').value);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (filtered[cpSelectedIndex]) selectCommandPaletteItem(cpSelectedIndex);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeCommandPalette();
+  }
+}
+
+function selectCommandPaletteItem(index) {
+  const list = document.getElementById('command-palette-list');
+  const item = list?._filtered?.[index];
+  closeCommandPalette();
+  if (!item) return;
+  if (item.kind === 'view') showView(item.view);
+  else if (item.kind === 'worker') { showView('personal'); modalDetalleWorker(item.id); }
+  else if (item.kind === 'tarea') showView('tareas');
+}
+
+// ============================================================
+// POP-UPS: autofoco en el primer campo + ENTER para confirmar
+// (cada modalX() crea su propio overlay con appendChild, así que en vez
+// de tocar cada función se observa la aparición de cualquier .modal-overlay).
+// ============================================================
+new MutationObserver((mutaciones) => {
+  mutaciones.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.nodeType !== 1 || !node.classList?.contains('modal-overlay')) return;
+      setTimeout(() => {
+        const campo = node.querySelector(
+          'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+        );
+        campo?.focus();
+        if (campo?.tagName === 'INPUT' && (campo.type === 'text' || campo.type === '')) campo.select?.();
+      }, 0);
+    });
+  });
+}).observe(document.body, { childList: true });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  const el = document.activeElement;
+  if (!el || el.tagName !== 'INPUT' || el.hasAttribute('onkeydown')) return;
+  const box = el.closest('.modal-box');
+  if (!box) return;
+  const btn = box.querySelector('.btn-modal-ok');
+  if (!btn) return;
+  e.preventDefault();
+  btn.click();
+});
 
 // ============================================================
 // INICIALIZACIÓN
