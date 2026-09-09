@@ -167,6 +167,14 @@
   #save-indicator { font-size: 11px; color: var(--success); opacity: 0; transition: opacity .4s; white-space: nowrap; }
   #save-indicator.show { opacity: 1; }
 
+  .notif-wrap { position: relative; }
+  .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--danger); color: #fff; font-size: 9px; font-weight: 800; line-height: 1; min-width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 2px; }
+  .notif-panel { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; max-height: 360px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 50; padding: 6px; }
+  .notif-item { padding: 8px 10px; border-radius: var(--radius-sm); border-bottom: 1px solid var(--border); }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-texto { font-size: 12px; color: var(--text); }
+  .notif-hora { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
   .logout-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: var(--radius-pill); cursor: pointer; transition: all .2s ease; }
   .logout-btn:hover { color: var(--text); background: var(--surface-alt); }
 
@@ -257,7 +265,7 @@
   .cal-dot.verde { background: var(--success); }
   .festivo-icon { font-size: 10px; margin-left: 2px; }
 
-  .cal-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 14px; }
+  .cal-nav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 14px; width: 100%; }
   .cal-nav-title { text-align: center; font-weight: 800; font-size: 15px; letter-spacing: -.2px; }
   .cal-nav-btn { width: 34px; height: 34px; flex-shrink: 0; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: var(--text); transition: all .15s ease; }
   .cal-nav-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -421,9 +429,6 @@
   .login-links a:hover { text-decoration: underline; }
   .login-back { display: block; text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 14px; cursor: pointer; }
   .login-back:hover { color: var(--text); }
-  .login-field { position: relative; margin-bottom: 12px; }
-  .login-field input { margin-bottom: 0; padding-right: 42px; }
-  .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-muted); padding: 4px; }
 
   /* ==================== BUSCADOR (ENTER) ==================== */
   .command-palette-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 300; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
@@ -466,8 +471,9 @@
   .centro-selector select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 4px 8px; font-size: 12px; color: var(--text); outline: none; }
 
   /* ==================== TOGGLE TEMA ==================== */
-  .theme-toggle { background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px; border-radius: var(--radius-pill); color: var(--text-muted); transition: background .15s ease, color .15s ease; }
+  .theme-toggle { background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px; border-radius: var(--radius-pill); color: var(--text-muted); transition: background .15s ease, color .15s ease; display: inline-flex; align-items: center; justify-content: center; }
   .theme-toggle:hover { background: var(--surface-alt); color: var(--text); }
+  .theme-icon { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(90deg, #111 50%, #fff 50%); border: 1px solid var(--border-strong); flex-shrink: 0; }
 
 
   .metric-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -487,6 +493,17 @@
     .codigo-compartido { font-size: 20px; letter-spacing: 2px; }
   }
 
+  /* ==================== VISTA DE IMPRESIÓN (punto 33) ====================
+     Imprime tal cual lo que se ve en pantalla del Cuadrante (respeta el
+     filtro/búsqueda activos), a diferencia de "Cuadrante PDF" que genera un
+     documento aparte con paginación propia por trabajador. */
+  @media print {
+    #sidebar, #main-header, #banner-convenio, .mes-selector, .cuad-toolbar,
+    .aviso-gris, #mobile-menu-overlay, #mobile-menu-panel, #toast { display: none !important; }
+    #app, #main, #content { display: block !important; height: auto !important; overflow: visible !important; }
+    .wrap { overflow: visible !important; }
+    table { font-size: 9px; }
+  }
 </style>
 </head>
 <body>
@@ -518,13 +535,17 @@
         <span class="ni"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M13 16V8"/><path d="M18 16V4"/></svg></span>
         <span class="nl">Analítica</span>
       </button>
+      <button onclick="showView('consolidado')" id="nav-consolidado" data-view="consolidado">
+        <span class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+        <span class="nl">Vista consolidada</span>
+      </button>
       <button onclick="showView('ajustes')" id="nav-ajustes" data-view="ajustes">
         <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
         <span class="nl">Ajustes</span>
       </button>
     </div>
     <div class="sidebar-actions">
-      <button class="theme-toggle" onclick="toggleTema()" title="Cambiar tema">🌓</button>
+      <button class="theme-toggle" onclick="toggleTema()" title="Cambiar tema"><span class="theme-icon"></span></button>
       <button class="logout-btn" onclick="toggleUserMenu()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M7 5a8 8 0 1 0 10 0"/></svg>
         <span>Cerrar sesión</span>
@@ -541,6 +562,12 @@
       </div>
       <div class="header-right">
         <span id="save-indicator">Guardado</span>
+        <div class="notif-wrap">
+          <button class="icon-btn" id="btn-notificaciones" onclick="toggleNotificaciones()" title="Notificaciones">
+            🔔<span id="notif-badge" class="notif-badge hidden">0</span>
+          </button>
+          <div id="notif-panel" class="notif-panel hidden"></div>
+        </div>
         <div id="centro-selector-wrap" class="centro-selector hidden">
           <select id="centro-selector" onchange="cambiarCentroActivo(this.value)"></select>
         </div>
@@ -581,13 +608,17 @@
       <span class="ni"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M13 16V8"/><path d="M18 16V4"/></svg></span>
       <span class="nl">Analítica</span>
     </button>
+    <button onclick="showView('consolidado')" data-view="consolidado">
+      <span class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+      <span class="nl">Vista consolidada</span>
+    </button>
     <button onclick="showView('ajustes')" data-view="ajustes">
       <span class="ni"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
       <span class="nl">Ajustes</span>
     </button>
   </div>
   <div class="menu-actions">
-    <button class="theme-toggle" onclick="toggleTema()" title="Cambiar tema">🌓</button>
+    <button class="theme-toggle" onclick="toggleTema()" title="Cambiar tema"><span class="theme-icon"></span></button>
     <button class="logout-btn" onclick="toggleUserMenu()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M7 5a8 8 0 1 0 10 0"/></svg>
       <span>Cerrar sesión</span>
@@ -615,7 +646,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============================================================
 const APP_VERSION = 30;
 const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DIAS_SEMANA = ["D","L","M","X","J","V","S"];
+const DIAS_SEMANA = ["L","M","X","J","V","S","D"];
 const CODIGOS_TURNO = [
   { cod:"L",   label:"Libre",       horas:0 },
   { cod:"D",   label:"Descanso",    horas:0 },
@@ -635,6 +666,14 @@ const CODIGOS_TURNO = [
   { cod:"HE",  label:"Hora Extra",  horas:0 },
 ];
 
+const GRUPOS_TRABAJADOR = [
+  { id: 'manana', label: 'Mañana' },
+  { id: 'tarde', label: 'Tarde' },
+  { id: 'noche', label: 'Noche' },
+  { id: 'peon', label: 'Peón' },
+  { id: 'sustituto', label: 'Sustituto' }
+];
+
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
@@ -645,6 +684,8 @@ let state = {
   centroId: null,
   centroActual: null,
   centrosDisponibles: [],
+  puedeVerCostes: true,
+  documentosPorCaducar: [],
   trabajadores: [],
   zonas: [],
   tareas: [],
@@ -665,8 +706,14 @@ let state = {
     vacacionesAnuales: 22,
     convenioVencido: true,
     convenioTexto: "Convenio Limpieza Hospitalaria SALUD Aragón · Tablas 2026 (ultraactividad)",
-    horasCodigos: {}
+    horasCodigos: {},
+    turnosHorario: {},
+    limitesPorGrupo: {},
+    maxHorasExtraAnuales: 80,
+    plantillaMinima: 0,
+    maxVacacionesSimultaneas: 0
   },
+  notificaciones: [],
   tema: "claro"
 };
 
@@ -677,6 +724,8 @@ let personalFiltro = "";
 let personalFiltroZona = "todas";
 let personalFiltroTurno = "todos";
 let homeMes = new Date().getMonth();
+let vacCalMes = new Date().getMonth();
+let vacCalAnio = new Date().getFullYear();
 let undoStack = [];
 let realtimeChannel = null;
 let lastAuthError = null;
@@ -754,9 +803,6 @@ function aplicarTema(modo) {
   document.documentElement.setAttribute('data-theme', modo);
   state.tema = modo;
   localStorage.setItem('theme', modo);
-  // Actualizar botón
-  const btn = document.querySelector('.theme-toggle');
-  if (btn) btn.textContent = modo === 'claro' ? '🌙' : '☀️';
   // Guardar en Supabase si hay usuario
   if (currentUserAuth && state.centroId) {
     sb.from('perfiles').update({ tema: modo }).eq('id', currentUserAuth.id).then(() => {}).catch(() => {});
@@ -1092,10 +1138,13 @@ async function loadData() {
     loadTareas(),
     loadTurnos(),
     loadParametros(),
-    loadSolicitudesAusencia()
+    loadSolicitudesAusencia(),
+    cargarPermisoCostes(),
+    cargarDocumentosPorCaducar()
   ]);
   render();
   setupRealtime();
+  comprobarBackupSemanal();
 }
 
 async function loadTrabajadores() {
@@ -1175,9 +1224,44 @@ async function loadParametros() {
       presupuestoMensual: Number(data.presupuesto_mensual || 0),
       convenioVencido: data.convenio_vencido || false,
       convenioTexto: data.convenio_texto || 'Convenio Limpieza Hospitalaria SALUD Aragón',
-      horasCodigos: data.horas_codigos || {}
+      horasCodigos: data.horas_codigos || {},
+      turnosHorario: data.turnos_horario || {},
+      limitesPorGrupo: data.limites_por_grupo || {},
+      maxHorasExtraAnuales: Number(data.max_horas_extra_anuales) || 80,
+      plantillaMinima: Number(data.plantilla_minima) || 0,
+      maxVacacionesSimultaneas: Number(data.max_vacaciones_simultaneas) || 0
     };
   }
+}
+
+// Punto 13: documentos con caducidad próxima (≤30 días), de todo el centro,
+// para el aviso en Inicio. Se guarda en caché en `state` (igual que el resto
+// de datos) para que renderHome() siga siendo síncrona.
+async function cargarDocumentosPorCaducar() {
+  if (!tieneRol('coordinador') || !state.centroId) { state.documentosPorCaducar = []; return; }
+  const limite = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const { data, error } = await sb.from('documentos_trabajador')
+    .select('id, nombre, fecha_caducidad, trabajador_id')
+    .eq('centro_id', state.centroId)
+    .not('fecha_caducidad', 'is', null)
+    .lte('fecha_caducidad', limite)
+    .order('fecha_caducidad', { ascending: true });
+  if (error) { state.documentosPorCaducar = []; return; }
+  state.documentosPorCaducar = data || [];
+}
+
+// Permiso por acción (punto 8): si el Encargado tiene o no visibilidad de
+// costes laborales. El Gestor (administrador) siempre los ve.
+async function cargarPermisoCostes() {
+  if (tieneRol('administrador')) { state.puedeVerCostes = true; return; }
+  if (!currentUserAuth?.id || !state.centroId) { state.puedeVerCostes = false; return; }
+  const { data, error } = await sb.from('miembros_centro')
+    .select('puede_ver_costes')
+    .eq('centro_id', state.centroId)
+    .eq('user_id', currentUserAuth.id)
+    .maybeSingle();
+  if (error) { state.puedeVerCostes = true; return; }
+  state.puedeVerCostes = data?.puede_ver_costes !== false;
 }
 
 async function loadSolicitudesAusencia() {
@@ -1220,6 +1304,16 @@ function setupRealtime() {
         handleTurnoChange(payload);
       }
     )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'solicitudes_ausencia',
+        filter: `centro_id=eq.${state.centroId}`
+      },
+      (payload) => handleSolicitudChange(payload)
+    )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         const sub = document.getElementById('header-sub');
@@ -1249,6 +1343,66 @@ function handleTurnoChange(payload) {
     actualizarCeldaEnTabla(registro.trabajador_id, dia - 1, payload.eventType === 'DELETE' ? '' : registro.codigo);
     mostrarToast('Cuadrante actualizado por otro usuario');
   }
+
+  const esPropio = state.userProfile?.trabajador_id && state.userProfile.trabajador_id === registro.trabajador_id;
+  if (tieneRol('coordinador') || esPropio) {
+    const nombreT = esPropio ? 'Tu horario' : (state.trabajadores.find(x => x.id === registro.trabajador_id)?.nombre || 'Un trabajador');
+    const valorTexto = payload.eventType === 'DELETE' ? 'vacío' : registro.codigo;
+    agregarNotificacion(`${nombreT}: día ${dia} de ${MESES_NOMBRES[mes]} → ${valorTexto}`);
+  }
+}
+
+// Punto 22: notificaciones in-app — se alimentan del canal realtime ya
+// existente (turnos + solicitudes_ausencia). Viven solo en memoria de la
+// sesión, coherente con que esta es una herramienta de apoyo y no un
+// sistema de mensajería con historial persistente.
+function handleSolicitudChange(payload) {
+  const registro = payload.eventType === 'DELETE' ? payload.old : payload.new;
+  if (!registro) return;
+  const etiquetaTipo = registro.tipo === 'vacaciones' ? 'vacaciones' : registro.tipo === 'permiso' ? 'un permiso retribuido' : 'conciliación familiar';
+
+  if (payload.eventType === 'INSERT' && tieneRol('coordinador') && registro.solicitante_id !== currentUserAuth?.id) {
+    const nombre = state.trabajadores.find(t => t.id === registro.trabajador_id)?.nombre || 'Un trabajador';
+    agregarNotificacion(`${nombre} ha solicitado ${etiquetaTipo}`);
+    loadSolicitudesAusencia().then(() => { if (currentView === 'home' || currentView === 'ajustes') render(); });
+  } else if (payload.eventType === 'UPDATE' && registro.estado !== 'pendiente' && registro.solicitante_id === currentUserAuth?.id) {
+    agregarNotificacion(`Tu solicitud de ${etiquetaTipo} ha sido ${registro.estado}`);
+    loadSolicitudesAusencia().then(() => { if (currentView === 'home' || currentView === 'ajustes') render(); });
+  }
+}
+
+function agregarNotificacion(texto) {
+  state.notificaciones.unshift({ id: Date.now() + Math.random(), texto, ts: new Date().toISOString(), leida: false });
+  if (state.notificaciones.length > 30) state.notificaciones.length = 30;
+  actualizarBadgeNotificaciones();
+}
+
+function actualizarBadgeNotificaciones() {
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  const noLeidas = state.notificaciones.filter(n => !n.leida).length;
+  badge.textContent = noLeidas > 9 ? '9+' : String(noLeidas);
+  badge.classList.toggle('hidden', noLeidas === 0);
+}
+
+function toggleNotificaciones() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  const seVaAAbrir = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !seVaAAbrir);
+  if (seVaAAbrir) {
+    renderNotificacionesPanel();
+    state.notificaciones.forEach(n => n.leida = true);
+    actualizarBadgeNotificaciones();
+  }
+}
+
+function renderNotificacionesPanel() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  panel.innerHTML = state.notificaciones.length
+    ? state.notificaciones.map(n => `<div class="notif-item"><div class="notif-texto">${n.texto}</div><div class="notif-hora">${new Date(n.ts).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div></div>`).join('')
+    : '<div class="empty" style="padding:14px">Sin notificaciones</div>';
 }
 
 // ============================================================
@@ -1431,14 +1585,47 @@ function coberturaDelDia(dia, mes, anio) {
   return result;
 }
 
+// Límite legal aplicable a un trabajador para un campo concreto: si su
+// grupo tiene un valor propio configurado (Ajustes → Límites por grupo),
+// ese manda; si no, se usa el parámetro global de siempre.
+function limiteLegal(campo, grupo) {
+  const override = state.parametros?.limitesPorGrupo?.[grupo]?.[campo];
+  if (override !== undefined && override !== null && override !== '') return Number(override);
+  return state.parametros[campo];
+}
+
+// Hora de inicio configurada para un código (popup "Horas por turno"). Sin
+// hora configurada no se puede calcular el descanso entre jornadas para ese
+// código (p.ej. Vacaciones, Permiso), así que esos turnos se ignoran en esa
+// comprobación concreta.
+function horaInicioCodigo(cod) {
+  return state.parametros?.turnosHorario?.[String(cod).trim().toUpperCase()] || null;
+}
+
+function finTurno(cod, fechaBase) {
+  const hi = horaInicioCodigo(cod);
+  const horas = horasCodigo(cod);
+  if (!hi || !horas) return null;
+  const [h, m] = hi.split(':').map(Number);
+  const inicio = new Date(fechaBase);
+  inicio.setHours(h, m, 0, 0);
+  return { inicio, fin: new Date(inicio.getTime() + horas * 3600000) };
+}
+
 function obtenerIncidenciasLegalesTrabajador(t, mes, anio) {
   const incidencias = [];
   const dias = diasEnMes(mes, anio);
   const key = clavesMes(mes, anio);
   const turnos = state.turnos[key]?.[t.id] || {};
+  const jornadaMaxDiaria = limiteLegal('jornadaMaxDiaria', t.grupo);
+  const jornadaMinDiaria = limiteLegal('jornadaMinDiaria', t.grupo);
+  const jornadaMaxSemanal = limiteLegal('jornadaMaxSemanal', t.grupo);
+  const maxDiasSeguidos = limiteLegal('maxDiasSeguidos', t.grupo);
   let seg = 0;
   let semanaHoras = 0;
   let semanaInicio = null;
+  let diasTrabajadosSemana = 0;
+  let turnoAnterior = null; // { fin: Date } del último turno con horario conocido
   for (let d = 0; d < dias; d++) {
     const fecha = new Date(anio, mes, d + 1);
     const lunes = new Date(fecha);
@@ -1446,30 +1633,69 @@ function obtenerIncidenciasLegalesTrabajador(t, mes, anio) {
     lunes.setDate(fecha.getDate() - dow + 1);
     const semanaKey = `${lunes.getFullYear()}-${lunes.getMonth()}-${lunes.getDate()}`;
     if (semanaKey !== semanaInicio) {
-      if (semanaInicio !== null && semanaHoras > state.parametros.jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${state.parametros.jornadaMaxSemanal}h)`);
-      semanaInicio = semanaKey; semanaHoras = 0;
+      if (semanaInicio !== null) {
+        if (semanaHoras > jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${jornadaMaxSemanal}h)`);
+        if (diasTrabajadosSemana >= 7) incidencias.push(`${t.nombre}: sin ningún día de descanso en la semana del ${semanaInicio.split('-')[2]}`);
+      }
+      semanaInicio = semanaKey; semanaHoras = 0; diasTrabajadosSemana = 0;
     }
     const valor = turnos[d] || '';
     const horas = horasCodigo(valor);
     if (horas > 0) {
-      if (horas > state.parametros.jornadaMaxDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (máx. diario ${state.parametros.jornadaMaxDiaria}h)`);
-      if (horas < state.parametros.jornadaMinDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (mín. diario ${state.parametros.jornadaMinDiaria}h)`);
+      if (horas > jornadaMaxDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (máx. diario ${jornadaMaxDiaria}h)`);
+      if (horas < jornadaMinDiaria) incidencias.push(`${t.nombre}: ${horas}h el día ${d + 1} (mín. diario ${jornadaMinDiaria}h)`);
       seg++;
-      if (seg > state.parametros.maxDiasSeguidos) incidencias.push(`${t.nombre}: ${seg} días seguidos trabajados al llegar al día ${d + 1} (máx. ${state.parametros.maxDiasSeguidos})`);
+      diasTrabajadosSemana++;
+      if (seg > maxDiasSeguidos) incidencias.push(`${t.nombre}: ${seg} días seguidos trabajados al llegar al día ${d + 1} (máx. ${maxDiasSeguidos})`);
       semanaHoras += horas;
+
+      const actual = finTurno(valor, fecha);
+      if (actual && turnoAnterior) {
+        const descansoHoras = (actual.inicio - turnoAnterior.fin) / 3600000;
+        if (descansoHoras < 0) {
+          incidencias.push(`${t.nombre}: los turnos del día ${d} y el día ${d + 1} se solapan según su horario configurado`);
+        } else if (descansoHoras < 12) {
+          incidencias.push(`${t.nombre}: solo ${descansoHoras.toFixed(1)}h de descanso entre el turno del día ${d} y el del día ${d + 1} (mín. 12h)`);
+        }
+      }
+      if (actual) turnoAnterior = actual;
     } else {
       seg = 0;
     }
   }
-  if (semanaHoras > state.parametros.jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${state.parametros.jornadaMaxSemanal}h)`);
+  if (semanaHoras > jornadaMaxSemanal) incidencias.push(`${t.nombre}: ${semanaHoras}h en una semana (máx. ${jornadaMaxSemanal}h)`);
+  if (diasTrabajadosSemana >= 7) incidencias.push(`${t.nombre}: sin ningún día de descanso en la última semana del mes`);
   return incidencias;
+}
+
+// Horas extra (código HE o numéricas) acumuladas en los meses de ese año
+// que ya se han cargado en memoria (los que el usuario ha visitado) — no es
+// un cómputo anual exhaustivo si no se han abierto todos los meses, pero
+// sirve como aviso de apoyo mientras se cuadra.
+function horasExtraAnioCargadas(t, anio) {
+  let total = 0;
+  Object.keys(state.turnos).forEach(key => {
+    if (!key.startsWith(`${anio}-`)) return;
+    const turnos = state.turnos[key]?.[t.id];
+    if (!turnos) return;
+    Object.values(turnos).forEach(cod => {
+      const valor = String(cod || '').trim().toUpperCase();
+      if (valor === 'HE' || /^HE(\d+(?:[.,]\d+)?)$/.test(valor)) total += horasCodigo(valor);
+    });
+  });
+  return total;
 }
 
 function validarCuadranteCompleto() {
   const incidencias = [];
   const mes = state.mesActual;
   const anio = state.anio;
-  state.trabajadores.filter(t => t.estado === 'activo').forEach(t => incidencias.push(...obtenerIncidenciasLegalesTrabajador(t, mes, anio)));
+  const maxHE = state.parametros.maxHorasExtraAnuales || 80;
+  state.trabajadores.filter(t => t.estado === 'activo').forEach(t => {
+    incidencias.push(...obtenerIncidenciasLegalesTrabajador(t, mes, anio));
+    const he = horasExtraAnioCargadas(t, anio);
+    if (he > maxHE) incidencias.push(`${t.nombre}: ${he}h extra en ${anio} (de los meses ya consultados) — supera el máximo de ${maxHE}h/año`);
+  });
   return [...new Set(incidencias)];
 }
 
@@ -1485,10 +1711,7 @@ function renderLogin(mensajeError) {
         <div id="mode-login">
           <h1>bienvenido a <span class="login-brand-accent">Cuadrant+</span></h1>
           <input type="email" id="login-email" placeholder="Email" autocomplete="username">
-          <div class="login-field">
-            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility('login-password')">👁</button>
-          </div>
+          <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
           <button id="login-submit-btn" onclick="handleLogin()">Entrar</button>
           <div id="login-error" class="login-error${mensajeError ? ' show' : ''}">${mensajeError || ''}</div>
           <div class="login-links">
@@ -1502,10 +1725,7 @@ function renderLogin(mensajeError) {
           <input type="text" id="signup-nombre" placeholder="Nombre">
           <input type="text" id="signup-apellido" placeholder="Apellido">
           <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
-          <div class="login-field">
-            <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
-            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility('signup-password')">👁</button>
-          </div>
+          <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
           <input type="text" id="signup-codigo" placeholder="Introduce tu código de trabajador">
           <p class="sub" style="margin:-6px 0 14px;font-size:11px">Tu código de trabajador determina qué puedes ver y modificar en el cuadrante. Si no tienes uno, pídeselo a tu Gestor.</p>
           <button id="login-register-btn" onclick="handleRegister()">Crear cuenta</button>
@@ -1517,12 +1737,6 @@ function renderLogin(mensajeError) {
   `;
   document.getElementById('app')?.classList.remove('authed');
   document.getElementById('login-email')?.focus();
-}
-
-function togglePasswordVisibility(id) {
-  const pass = document.getElementById(id || 'login-password');
-  if (!pass) return;
-  pass.type = pass.type === 'password' ? 'text' : 'password';
 }
 
 let loginMode = 'login';
@@ -1575,6 +1789,20 @@ function renderHome() {
   const hoyStr = hoy.toISOString().slice(0,10);
 
   let html = '';
+
+  if (!tieneRol('coordinador')) {
+    const propio = obtenerTrabajadorActual();
+    const proximoTurno = propio ? obtenerProximoTurno(propio.id) : null;
+    if (proximoTurno) {
+      const cuando = proximoTurno.esHoy ? 'Hoy' : proximoTurno.esMañana ? 'Mañana' : `En ${proximoTurno.diasFaltan} días`;
+      html += `<div class="home-hero" onclick="showView('cuadrante')">
+        <div class="home-hero-kicker">Tu próximo turno · ${cuando}</div>
+        <div class="home-hero-title">${proximoTurno.label} (${proximoTurno.codigo})</div>
+        <div class="home-hero-meta">${proximoTurno.dia} de ${MESES_NOMBRES[proximoTurno.mes]}${proximoTurno.horaInicio ? ` · desde las ${proximoTurno.horaInicio}` : ''}</div>
+      </div>`;
+    }
+  }
+
   const proximaTarea = [...state.tareas]
     .filter(t => !t.completada && t.fecha && t.fecha >= hoyStr)
     .sort((a,b) => a.fecha.localeCompare(b.fecha))[0];
@@ -1590,7 +1818,7 @@ function renderHome() {
 
   html += `<div class="card"><div class="card-header"><div class="cal-nav"><button class="cal-nav-btn" onclick="cambiarHomeMes(-1)">◀</button><span class="cal-nav-title">${MESES_NOMBRES[mes]} ${anio}</span><button class="cal-nav-btn" onclick="cambiarHomeMes(1)">▶</button></div></div><div class="card-body"><div class="cal-grid">`;
   DIAS_SEMANA.forEach(d => html += `<div class="cal-wd">${d}</div>`);
-  const primerDia = new Date(anio, mes, 1).getDay();
+  const primerDia = (new Date(anio, mes, 1).getDay() + 6) % 7;
   for (let i = 0; i < primerDia; i++) html += `<div></div>`;
   for (let d = 1; d <= dias; d++) {
     const tareasDia = state.tareas.filter(t => !t.completada && new Date(t.fecha).getDate() === d && new Date(t.fecha).getMonth() === mes);
@@ -1620,6 +1848,35 @@ function renderHome() {
     html += `</div></div>`;
   }
   
+  if (tieneRol('coordinador')) {
+    const hoyMs = new Date(hoyStr).getTime();
+    const contratosPorVencer = state.trabajadores.filter(t => {
+      if (t.estado !== 'activo' || !t.fecha_fin_contrato) return false;
+      const diff = (new Date(t.fecha_fin_contrato).getTime() - hoyMs) / 86400000;
+      return diff >= 0 && diff <= 30;
+    }).sort((a, b) => a.fecha_fin_contrato.localeCompare(b.fecha_fin_contrato));
+    const plantillaMinima = Number(state.parametros.plantillaMinima || 0);
+    const activosCount = state.trabajadores.filter(t => t.estado === 'activo').length;
+    const documentosPorCaducar = state.documentosPorCaducar || [];
+    if (contratosPorVencer.length || documentosPorCaducar.length || (plantillaMinima > 0 && activosCount < plantillaMinima)) {
+      html += `<div class="card"><div class="card-header">Avisos de plantilla</div><div class="card-body">`;
+      if (plantillaMinima > 0 && activosCount < plantillaMinima) {
+        html += `<div class="aviso aviso-rojo">Por debajo de la plantilla mínima: ${activosCount}/${plantillaMinima} trabajadores activos</div>`;
+      }
+      contratosPorVencer.forEach(t => {
+        const diff = Math.round((new Date(t.fecha_fin_contrato).getTime() - hoyMs) / 86400000);
+        html += `<div class="aviso aviso-amber" style="cursor:pointer" onclick="modalDetalleWorker('${t.id}')">${t.nombre}: contrato vence ${diff === 0 ? 'hoy' : diff === 1 ? 'mañana' : `en ${diff} días`} (${t.fecha_fin_contrato})</div>`;
+      });
+      documentosPorCaducar.forEach(d => {
+        const nombreTrab = state.trabajadores.find(t => t.id === d.trabajador_id)?.nombre || 'Trabajador';
+        const diff = Math.round((new Date(d.fecha_caducidad).getTime() - hoyMs) / 86400000);
+        const vencido = diff < 0;
+        html += `<div class="aviso ${vencido ? 'aviso-rojo' : 'aviso-amber'}" style="cursor:pointer" onclick="mostrarResumenTrabajador('${d.trabajador_id}')">${nombreTrab}: "${d.nombre}" ${vencido ? 'caducado' : `caduca ${diff === 0 ? 'hoy' : diff === 1 ? 'mañana' : `en ${diff} días`}`} (${d.fecha_caducidad})</div>`;
+      });
+      html += `</div></div>`;
+    }
+  }
+
   if (!tieneRol('coordinador')) {
     html += renderSolicitudesPropias();
   } else {
@@ -1696,8 +1953,82 @@ function obtenerTrabajadorActual() {
   return state.trabajadores.find(t => t.id === id) || state.trabajadores[0] || null;
 }
 
+// Punto 32: recordatorio del próximo turno para el trabajador. Solo busca
+// dentro del mes que ya está cargado en memoria (state.mesActual/anio) —
+// el resto de meses no se traen hasta que el trabajador navega a ellos, y
+// no queremos disparar una petición extra solo para esta tarjeta.
+function obtenerProximoTurno(trabajadorId) {
+  const hoy = new Date();
+  if (hoy.getMonth() !== state.mesActual || hoy.getFullYear() !== state.anio) return null;
+  const map = state.turnos[clavesMes(state.mesActual, state.anio)]?.[trabajadorId] || {};
+  const dias = diasEnMes(state.mesActual, state.anio);
+  for (let d = hoy.getDate() - 1; d < dias; d++) {
+    const cod = String(map[d] || '').trim().toUpperCase();
+    if (cod && horasCodigo(cod) > 0) {
+      const entry = CODIGOS_TURNO.find(c => c.cod === cod);
+      const diasFaltan = d - (hoy.getDate() - 1);
+      return {
+        dia: d + 1,
+        mes: state.mesActual,
+        anio: state.anio,
+        codigo: cod,
+        label: entry?.label || cod,
+        horaInicio: horaInicioCodigo(cod),
+        diasFaltan,
+        esHoy: diasFaltan === 0,
+        esMañana: diasFaltan === 1
+      };
+    }
+  }
+  return null;
+}
+
 function renderSolicitudesPropias() {
   return `<div class="card"><div class="card-header">Mis solicitudes</div><div class="card-body"><button class="btn btn-primary btn-sm" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button><div style="margin-top:10px">${state.solicitudesAusencia.slice(0,5).map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No tienes solicitudes recientes.</div>'}</div><button class="btn btn-secondary btn-sm" onclick="showView('ajustes')">Ver todas</button></div></div>`;
+}
+
+// Punto 23: calendario de vacaciones de equipo. Reutiliza las solicitudes
+// de ausencia ya cargadas en `state.solicitudesAusencia` (solo aprobadas),
+// sin ninguna petición extra a Supabase.
+function cambiarMesVacaciones(delta) {
+  vacCalMes += delta;
+  if (vacCalMes > 11) { vacCalMes = 0; vacCalAnio++; }
+  if (vacCalMes < 0) { vacCalMes = 11; vacCalAnio--; }
+  renderAjustes();
+}
+
+function renderCalendarioVacaciones() {
+  const dias = diasEnMes(vacCalMes, vacCalAnio);
+  const fechaInicioMes = `${vacCalAnio}-${String(vacCalMes+1).padStart(2,'0')}-01`;
+  const fechaFinMes = `${vacCalAnio}-${String(vacCalMes+1).padStart(2,'0')}-${String(dias).padStart(2,'0')}`;
+  const aprobadas = state.solicitudesAusencia.filter(s => s.estado === 'aprobada' && s.fecha_inicio <= fechaFinMes && s.fecha_fin >= fechaInicioMes);
+  if (!aprobadas.length) return '<div class="empty">Nadie tiene vacaciones o permisos aprobados este mes.</div>';
+  let html = `<div class="cal-grid">`;
+  DIAS_SEMANA.forEach(d => html += `<div class="cal-wd">${d}</div>`);
+  const primerDia = (new Date(vacCalAnio, vacCalMes, 1).getDay() + 6) % 7;
+  for (let i = 0; i < primerDia; i++) html += `<div></div>`;
+  for (let d = 1; d <= dias; d++) {
+    const fechaStr = `${vacCalAnio}-${String(vacCalMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const enEsteDia = aprobadas.filter(s => s.fecha_inicio <= fechaStr && s.fecha_fin >= fechaStr);
+    html += `<div class="cal-day" ${enEsteDia.length ? `onclick="mostrarVacacionesDia('${fechaStr}')"` : 'style="cursor:default"'}><div class="cal-day-num">${d}</div>${enEsteDia.length ? `<div class="cal-dot verde"></div>` : ''}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function mostrarVacacionesDia(fechaStr) {
+  const aprobadas = state.solicitudesAusencia.filter(s => s.estado === 'aprobada' && s.fecha_inicio <= fechaStr && s.fecha_fin >= fechaStr);
+  if (!aprobadas.length) { mostrarToast('Nadie de vacaciones ese día'); return; }
+  const [anio, mes, dia] = fechaStr.split('-').map(Number);
+  const listaHtml = aprobadas.map(s => {
+    const nombre = state.trabajadores.find(t => t.id === s.trabajador_id)?.nombre || 'Trabajador';
+    const tipo = s.tipo === 'vacaciones' ? 'Vacaciones' : s.tipo === 'permiso' ? 'Permiso retribuido' : 'Conciliación familiar';
+    return `<div class="evento-item"><div class="evento-emoji">🏖️</div><div class="evento-info"><div class="evento-titulo">${nombre}</div><div class="evento-desc">${tipo} · ${s.fecha_inicio} → ${s.fecha_fin}</div></div></div>`;
+  }).join('');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box centered"><div class="modal-title">${dia} de ${MESES_NOMBRES[mes-1]} de ${anio}</div><div class="eventos-list">${listaHtml}</div><div class="modal-btns"><button class="btn-modal-ok" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  document.body.appendChild(overlay);
 }
 
 function solicitudHtml(s, gestion=false) {
@@ -1729,7 +2060,14 @@ async function resolverSolicitud(id, estado) {
   const s=state.solicitudesAusencia.find(x=>x.id===id); if(!s)return;
   const comentario=estado==='rechazada' ? (prompt('Motivo del rechazo (opcional):')||'') : '';
   if(estado==='rechazada' && !confirm('¿Rechazar esta solicitud?')) return;
-  if(estado==='aprobada' && !confirm('¿Aprobar y reflejar automáticamente la ausencia en el cuadrante?')) return;
+  if(estado==='aprobada'){
+    const maxSimultaneas = Number(state.parametros.maxVacacionesSimultaneas || 0);
+    if (maxSimultaneas > 0 && s.tipo === 'vacaciones') {
+      const solapadas = state.solicitudesAusencia.filter(x => x.id !== id && x.estado === 'aprobada' && x.tipo === 'vacaciones' && x.fecha_inicio <= s.fecha_fin && x.fecha_fin >= s.fecha_inicio).length;
+      if (solapadas + 1 > maxSimultaneas && !confirm(`Ya hay ${solapadas} trabajador(es) de vacaciones en ese periodo (límite recomendado: ${maxSimultaneas}). ¿Aprobar igualmente?`)) return;
+    }
+    if (!confirm('¿Aprobar y reflejar automáticamente la ausencia en el cuadrante?')) return;
+  }
   const {error}=await sb.from('solicitudes_ausencia').update({estado,aprobado_por:currentUserAuth.id,fecha_resolucion:new Date().toISOString(),comentario_gestor:comentario}).eq('id',id).eq('centro_id',state.centroId);
   if(error){mostrarToast('No se pudo resolver la solicitud',true);return;}
   if(estado==='aprobada'){
@@ -1761,6 +2099,7 @@ async function cargarTurnosAnio(ano) {
 
 async function renderAnalitica() {
   if(!tieneRol('coordinador')){showView('cuadrante');return;}
+  const verCostes = tieneRol('administrador') || state.puedeVerCostes;
   const content=document.getElementById('content'); if(!content)return;
   content.innerHTML='<div class="card"><div class="card-body"><div class="empty">Calculando analítica…</div></div></div>';
   try { await cargarTurnosAnio(state.anio); } catch(e){content.innerHTML='<div class="card"><div class="card-body"><div class="empty">No se pudo cargar la analítica.</div></div></div>';return;}
@@ -1772,9 +2111,108 @@ async function renderAnalitica() {
   const rotacionPct=((rotacionAltas+rotacionBajas)/(2*plantillaMedia)*100);
   const diasTrabajados=meses.reduce((sum,m)=>sum + state.trabajadores.reduce((st,t)=>{const map=state.turnos[clavesMes(m,state.anio)]?.[t.id]||{};return st+Object.values(map).filter(v=>{const h=horasCodigo(v);return h>0;}).length;},0),0);
   const tasaAbsentismo=totalIT/(totalIT+diasTrabajados||1)*100;
-  const tabla=meses.map(m=>`<tr><td>${m.nombre}</td><td>${m.horas}h</td><td>${m.coste.toFixed(2)} €</td><td>${m.it}</td><td>${m.heHoras.toFixed(1)}</td></tr>`).join('');
+  const costePorHora = totalHoras > 0 ? totalCoste / totalHoras : 0;
+  const sustitutosCount = state.trabajadores.filter(t => t.tipo === 'sustituto').length;
+  const fijosCount = state.trabajadores.length - sustitutosCount;
+  const ratioSustitutos = fijosCount > 0 ? (sustitutosCount / fijosCount * 100) : (sustitutosCount > 0 ? 100 : 0);
+  const tabla=meses.map(m=>`<tr><td>${m.nombre}</td><td>${m.horas}h</td>${verCostes?`<td>${m.coste.toFixed(2)} €</td>`:''}<td>${m.it}</td><td>${m.heHoras.toFixed(1)}</td></tr>`).join('');
   const presupuesto=Number(state.parametros.presupuestoMensual||0);
-  content.innerHTML=`<div class="card"><div class="card-header">Analítica ${state.anio}</div><div class="card-body"><div class="metric-grid"><div class="metric-card"><div class="metric-value">${totalHoras}h</div><div class="metric-label">Horas planificadas</div></div><div class="metric-card"><div class="metric-value">${totalCoste.toFixed(2)} €</div><div class="metric-label">Coste laboral acumulado</div></div><div class="metric-card"><div class="metric-value">${totalIT}</div><div class="metric-label">Días IT · ${tasaAbsentismo.toFixed(1)}% tasa</div></div><div class="metric-card"><div class="metric-value">${totalHEHoras.toFixed(1)}h</div><div class="metric-label">Horas extra codificadas (HE2, HE3...)</div></div><div class="metric-card"><div class="metric-value">${rotacionAltas}/${rotacionBajas}</div><div class="metric-label">Altas / bajas · rotación ${rotacionPct.toFixed(1)}%</div></div></div></div></div><div class="card"><div class="card-header">Comparativa mensual</div><div class="card-body"><div style="overflow:auto"><table style="width:100%;font-size:11px"><thead><tr><th>Mes</th><th>Horas</th><th>Coste</th><th>IT</th><th>HE (h)</th></tr></thead><tbody>${tabla}</tbody></table></div></div></div><div class="card"><div class="card-header">Presupuesto</div><div class="card-body"><div style="font-size:12px">Presupuesto mensual configurado: <strong>${presupuesto.toFixed(2)} €</strong></div>${presupuesto?meses.map(m=>{const diff=m.coste-presupuesto;return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px"><span>${m.nombre}</span><strong style="color:${diff>0?'var(--danger)':'var(--success)'}">${diff>0?'+':''}${diff.toFixed(2)} €</strong></div>`}).join(''):'<div class="empty">Configura un presupuesto mensual en Ajustes para comparar.</div>'}</div></div>`;
+  content.innerHTML=`<div class="card"><div class="card-header">Analítica ${state.anio}</div><div class="card-body"><div class="metric-grid"><div class="metric-card"><div class="metric-value">${totalHoras}h</div><div class="metric-label">Horas planificadas</div></div>${verCostes?`<div class="metric-card"><div class="metric-value">${totalCoste.toFixed(2)} €</div><div class="metric-label">Coste laboral acumulado</div></div><div class="metric-card"><div class="metric-value">${costePorHora.toFixed(2)} €/h</div><div class="metric-label">Coste medio por hora trabajada</div></div>`:''}<div class="metric-card"><div class="metric-value">${totalIT}</div><div class="metric-label">Días IT · ${tasaAbsentismo.toFixed(1)}% tasa</div></div><div class="metric-card"><div class="metric-value">${totalHEHoras.toFixed(1)}h</div><div class="metric-label">Horas extra codificadas (HE2, HE3...)</div></div><div class="metric-card"><div class="metric-value">${rotacionAltas}/${rotacionBajas}</div><div class="metric-label">Altas / bajas · rotación ${rotacionPct.toFixed(1)}%</div></div><div class="metric-card"><div class="metric-value">${sustitutosCount}/${fijosCount}</div><div class="metric-label">Sustitutos/plantilla fija · ratio ${ratioSustitutos.toFixed(1)}%</div></div></div></div></div><div class="card"><div class="card-header">Comparativa mensual</div><div class="card-body"><div style="overflow:auto"><table style="width:100%;font-size:11px"><thead><tr><th>Mes</th><th>Horas</th>${verCostes?'<th>Coste</th>':''}<th>IT</th><th>HE (h)</th></tr></thead><tbody>${tabla}</tbody></table></div></div></div>${verCostes?`<div class="card"><div class="card-header">Presupuesto</div><div class="card-body"><div style="font-size:12px">Presupuesto mensual configurado: <strong>${presupuesto.toFixed(2)} €</strong></div>${presupuesto?meses.map(m=>{const diff=m.coste-presupuesto;return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px"><span>${m.nombre}</span><strong style="color:${diff>0?'var(--danger)':'var(--success)'}">${diff>0?'+':''}${diff.toFixed(2)} €</strong></div>`}).join(''):'<div class="empty">Configura un presupuesto mensual en Ajustes para comparar.</div>'}</div></div>`:''}`;
+}
+
+// ============================================================
+// VISTA CONSOLIDADA (punto 9) — resumen del mes en curso de todos los
+// centros del Gestor, uno junto a otro. Solo lectura, sin cambiar de
+// centro activo.
+// ============================================================
+async function cargarResumenCentro(centroId) {
+  const mes = new Date().getMonth(), anio = new Date().getFullYear();
+  const fechaInicio = `${anio}-${String(mes+1).padStart(2,'0')}-01`;
+  const fechaFin = `${anio}-${String(mes+1).padStart(2,'0')}-${String(diasEnMes(mes,anio)).padStart(2,'0')}`;
+  const [trabajadoresRes, turnosRes, centroRes] = await Promise.all([
+    sb.from('trabajadores').select('*').eq('centro_id', centroId),
+    sb.from('turnos').select('trabajador_id, fecha, codigo').eq('centro_id', centroId).gte('fecha', fechaInicio).lte('fecha', fechaFin),
+    sb.from('centros').select('*').eq('id', centroId).maybeSingle()
+  ]);
+  const trabajadoresTodos = trabajadoresRes.data || [];
+  const activos = trabajadoresTodos.filter(t => t.estado === 'activo');
+  const key = clavesMes(mes, anio);
+  const turnosDelCentro = {};
+  (turnosRes.data || []).forEach(r => {
+    if (!turnosDelCentro[r.trabajador_id]) turnosDelCentro[r.trabajador_id] = {};
+    const dia = parseInt(String(r.fecha).slice(8, 10), 10) - 1;
+    turnosDelCentro[r.trabajador_id][dia] = r.codigo;
+  });
+  const d = centroRes.data || {};
+  const parametrosCentro = {
+    jornadaMaxDiaria: d.jornada_max_diaria || 9, jornadaMinDiaria: d.jornada_min_diaria || 7,
+    jornadaMaxSemanal: d.jornada_max_semanal || 35, maxDiasSeguidos: d.max_dias_seguidos || 6,
+    horasCodigos: d.horas_codigos || {}, turnosHorario: d.turnos_horario || {},
+    limitesPorGrupo: d.limites_por_grupo || {}, maxHorasExtraAnuales: Number(d.max_horas_extra_anuales) || 80
+  };
+  // Cálculo aislado: uso el motor legal ya existente (obtenerIncidenciasLegalesTrabajador
+  // / horasCodigo) intercambiando temporalmente el estado global, ya que ese motor
+  // trabaja siempre sobre el centro activo. No hay ningún await entre el intercambio
+  // y la restauración, así que ninguna otra función puede leer el estado a medias.
+  const backupParametros = state.parametros, backupTurnos = state.turnos;
+  state.parametros = parametrosCentro;
+  state.turnos = { [key]: turnosDelCentro };
+  const incidencias = [];
+  let coste = 0;
+  activos.forEach(t => {
+    incidencias.push(...obtenerIncidenciasLegalesTrabajador(t, mes, anio));
+    const map = turnosDelCentro[t.id] || {};
+    let horas = 0;
+    for (let dd = 0; dd < diasEnMes(mes, anio); dd++) horas += horasCodigo(map[dd] || '');
+    coste += horas * Number(t.coste_hora || 0);
+  });
+  state.parametros = backupParametros; state.turnos = backupTurnos;
+
+  return {
+    activos: activos.length,
+    incidencias: [...new Set(incidencias)],
+    coste,
+    plantillaMinima: Number(d.plantilla_minima) || 0
+  };
+}
+
+async function renderConsolidado() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  if (!tieneRol('administrador') || state.centrosDisponibles.length <= 1) { showView('home'); return; }
+  content.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;color:var(--text-muted);padding:30px">Cargando resumen de todos los centros...</div></div>`;
+  const hoy = new Date();
+  let resumenes;
+  try {
+    resumenes = await Promise.all(state.centrosDisponibles.map(async m => ({
+      ...(await cargarResumenCentro(m.centros.id)),
+      nombre: m.centros.nombre
+    })));
+  } catch (e) {
+    content.innerHTML = `<div class="card"><div class="card-body"><div class="empty">No se pudo cargar la vista consolidada.</div></div></div>`;
+    return;
+  }
+  let html = `<div class="card"><div class="card-header">Vista consolidada · ${MESES_NOMBRES[hoy.getMonth()]} ${hoy.getFullYear()}</div><div class="card-body" style="font-size:12px;color:var(--text-muted)">Resumen del mes en curso de todos tus centros. No cambia tu centro activo.</div></div>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">`;
+  resumenes.forEach(r => {
+    const bajoMinimo = r.plantillaMinima > 0 && r.activos < r.plantillaMinima;
+    html += `<div class="card" style="margin:0">
+      <div class="card-header">${r.nombre}</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="text-align:center;padding:10px;background:var(--surface-alt);border-radius:var(--radius)"><div style="font-size:18px;font-weight:800">${r.activos}</div><div style="font-size:10px;color:var(--text-muted)">Trabajadores activos</div></div>
+          <div style="text-align:center;padding:10px;background:${r.incidencias.length ? 'var(--danger-bg)' : 'var(--success-bg)'};border-radius:var(--radius)"><div style="font-size:18px;font-weight:800;color:${r.incidencias.length ? 'var(--danger)' : 'var(--success)'}">${r.incidencias.length}</div><div style="font-size:10px;color:var(--text-muted)">Incidencias legales</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Coste del mes: <strong style="color:var(--text)">${r.coste.toFixed(2)} €</strong></div>
+        ${bajoMinimo ? `<div class="aviso aviso-rojo" style="font-size:11px;padding:6px 10px;margin-bottom:6px">Bajo plantilla mínima (${r.activos}/${r.plantillaMinima})</div>` : ''}
+        ${r.incidencias.slice(0, 3).map(i => `<div class="aviso aviso-amber" style="font-size:11px;padding:6px 10px;margin-bottom:4px">${i}</div>`).join('')}
+        ${r.incidencias.length > 3 ? `<div style="font-size:11px;color:var(--text-muted)">... y ${r.incidencias.length - 3} más</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  content.innerHTML = html;
+  actualizarNombreHeader();
 }
 
 // ============================================================
@@ -1795,7 +2233,8 @@ function renderCuadrante() {
   html += `<div class="cuad-toolbar">
     <input class="cuad-search" id="cuad-search" type="text" placeholder="Buscar trabajador..." value="${cuadFiltro}" onkeyup="filtrarCuadrante(this.value)">
     <button class="btn btn-secondary btn-sm" onclick="undoUltimoCambio()">↩ Deshacer</button>
-    ${tieneRol('coordinador') ? '<button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button><button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button>' : ''}
+    ${tieneRol('coordinador') ? '<button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button><button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button><button class="btn btn-secondary btn-sm" onclick="exportarNominaExcel()">🧾 Nómina</button>' : ''}
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Imprimir</button>
     <button class="btn btn-secondary btn-sm" onclick="abrirModalPDFPersonal()">📄 Mi cuadrante (PDF)</button>
     ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button><button class="btn btn-secondary btn-sm" onclick="copiarMesAnterior()">↶ Mes anterior</button>' : ''}
     ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button><button class="btn btn-secondary btn-sm" onclick="mostrarHorasCodigos()">⏱ Horas por turno</button><button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>' : ''}
@@ -1911,13 +2350,17 @@ function mostrarHorasCodigos() {
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal-box">
     <div class="modal-title">Horas por tipo de casilla</div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Cambia cuántas horas suma cada código al total del trabajador. Por ejemplo, que "M" sume 8h en vez de 7h.</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Cambia cuántas horas suma cada código al total del trabajador (p.ej. que "M" sume 8h en vez de 7h). La hora de inicio es opcional y solo se usa para avisar si el descanso entre dos turnos es menor de 12h.</p>
+    <div style="display:flex;gap:10px;padding:0 0 4px;font-size:9px;color:var(--text-muted);text-transform:uppercase;font-weight:700">
+      <div style="width:46px">Código</div><div style="flex:1"></div><div style="width:70px">Horas</div><div style="width:80px">Inicio</div>
+    </div>
     <div id="horas-codigos-list">
       ${CODIGOS_TURNO.map(c => `
         <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
           <div style="width:46px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px">${c.cod}</div>
           <div style="flex:1;font-size:12px;color:var(--text-muted)">${c.label}</div>
           <input class="modal-input" type="number" step="0.5" min="0" style="width:70px;margin:0" id="hc-${c.cod}" value="${horasCodigo(c.cod)}">
+          <input class="modal-input" type="time" style="width:80px;margin:0" id="hi-${c.cod}" value="${horaInicioCodigo(c.cod) || ''}">
         </div>`).join('')}
     </div>
     <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarHorasCodigos()">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
@@ -1928,20 +2371,27 @@ function mostrarHorasCodigos() {
 
 async function guardarHorasCodigos() {
   const horas = {};
+  const horario = {};
   CODIGOS_TURNO.forEach(c => {
     const val = document.getElementById(`hc-${c.cod}`)?.value;
     if (val !== '' && val !== null && val !== undefined) horas[c.cod] = parseFloat(val) || 0;
+    const hi = document.getElementById(`hi-${c.cod}`)?.value;
+    if (hi) horario[c.cod] = hi;
   });
-  const { error } = await sb.from('centros').update({ horas_codigos: horas }).eq('id', state.centroId);
+  const { error } = await sb.from('centros').update({ horas_codigos: horas, turnos_horario: horario }).eq('id', state.centroId);
   if (error) { mostrarToast('Error al guardar' + (error.message ? ': ' + error.message : ''), true); return; }
   state.parametros.horasCodigos = horas;
+  state.parametros.turnosHorario = horario;
   cerrarModal();
   if (currentView === 'cuadrante') renderCuadrante();
   mostrarToast('Horas por turno actualizadas');
 }
 
 function restablecerHorasCodigos() {
-  CODIGOS_TURNO.forEach(c => { const el = document.getElementById(`hc-${c.cod}`); if (el) el.value = c.horas; });
+  CODIGOS_TURNO.forEach(c => {
+    const el = document.getElementById(`hc-${c.cod}`); if (el) el.value = c.horas;
+    const elh = document.getElementById(`hi-${c.cod}`); if (elh) elh.value = '';
+  });
 }
 
 function mostrarParametros() {
@@ -2089,6 +2539,33 @@ async function seleccionarTurno(trabajadorId, dia, valor) {
   if (!ok) return;
   cerrarModal();
   mostrarToast(`${t?.nombre.split(' ')[0] || ''}: día ${dia+1} → ${valor || 'vacío'}`);
+  avisarSiIncidenciaEnDia(t, dia);
+  avisarSiRestriccionTurno(t, valor);
+}
+
+// Aviso (no bloqueo) del punto 15: si el trabajador tiene anotada una
+// restricción de turno y el código de la etiqueta del turno asignado se
+// menciona en ese texto libre, se avisa — no se impide el guardado, ya que
+// puede haber excepciones puntuales que el encargado decida conscientemente.
+function avisarSiRestriccionTurno(t, valor) {
+  if (!t?.restricciones_turno || !valor) return;
+  const entry = CODIGOS_TURNO.find(c => c.cod === String(valor).trim().toUpperCase());
+  if (!entry) return;
+  const texto = normalizarNombre(t.restricciones_turno);
+  if (texto.includes(normalizarNombre(entry.label)) || texto.includes(normalizarNombre(entry.cod))) {
+    setTimeout(() => mostrarToast(`⚠ ${t.nombre.split(' ')[0]} tiene una restricción anotada: "${t.restricciones_turno}"`, true), 900);
+  }
+}
+
+// Aviso legal en el momento (no bloquea el guardado, solo informa): tras
+// guardar la celda, se recalculan las incidencias de ese trabajador y, si
+// alguna menciona el día que se acaba de tocar, se avisa con un segundo
+// toast en vez de tener que esperar a pulsar "Validar".
+function avisarSiIncidenciaEnDia(t, dia) {
+  if (!t || t.estado !== 'activo') return;
+  const incidencias = obtenerIncidenciasLegalesTrabajador(t, state.mesActual, state.anio);
+  const relevante = incidencias.find(i => i.includes(`día ${dia + 1}`));
+  if (relevante) setTimeout(() => mostrarToast('⚠ ' + relevante, true), 1700);
 }
 
 function seleccionarTurnoManual(trabajadorId, dia) {
@@ -2162,7 +2639,7 @@ function cardWorkerHtml(t, mes, anio) {
       <div class="worker-stat"><div class="worker-stat-value">${vacDis}/${vacTot}</div><div class="worker-stat-label">Vacac.</div></div>
     </div>
     <div class="vac-bar"><div class="vac-bar-fill" style="width:${vacPct}%"></div></div>
-    ${tieneRol('coordinador') && Number(t.coste_hora) > 0 ? `<div class="worker-cost">${Number(t.coste_hora).toFixed(2)} €/h · ${t.antiguedad_anios || 0} años antigüedad</div>` : ''}
+    ${tieneRol('coordinador') && state.puedeVerCostes && Number(t.coste_hora) > 0 ? `<div class="worker-cost">${Number(t.coste_hora).toFixed(2)} €/h · ${t.antiguedad_anios || 0} años antigüedad</div>` : ''}
     ${tieneRol('coordinador') ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="event.stopPropagation(); mostrarResumenTrabajador('${t.id}')">📊 Ver resumen</button>` : ''}
   </div>`;
 }
@@ -2183,7 +2660,11 @@ function modalDetalleWorker(id) {
       <option value="baja" ${t.estado==='baja'?'selected':''}>Baja</option>
       <option value="inactivo" ${t.estado==='inactivo'?'selected':''}>Inactivo</option>
     </select>
-    <label class="modal-label">Coste laboral (€/h)</label><input class="modal-input" type="number" step="0.01" min="0" id="dw-coste" value="${Number(t.coste_hora || 0)}">
+    ${(tieneRol('administrador') || state.puedeVerCostes) ? `<label class="modal-label">Coste laboral (€/h)</label><input class="modal-input" type="number" step="0.01" min="0" id="dw-coste" value="${Number(t.coste_hora || 0)}">` : ''}
+    <label class="modal-label">Fin de contrato (si aplica)</label>
+    <input class="modal-input" type="date" id="dw-fecha-fin-contrato" value="${t.fecha_fin_contrato || ''}">
+    <label class="modal-label">Preferencias / restricciones de turno</label>
+    <textarea class="modal-input" id="dw-restricciones" rows="2" placeholder="Ej: no puede hacer noches, prefiere mañanas...">${t.restricciones_turno || ''}</textarea>
     <label class="modal-label">Grupo</label><select class="modal-input" id="dw-grupo">
       <option value="manana" ${t.grupo==='manana'?'selected':''}>Mañana</option>
       <option value="tarde" ${t.grupo==='tarde'?'selected':''}>Tarde</option>
@@ -2202,10 +2683,44 @@ function modalDetalleWorker(id) {
       <button type="button" class="btn btn-secondary btn-sm" style="margin:0" onclick="document.getElementById('dw-codigo').value = generarCodigoTrabajador()">Generar</button>
     </div>
     <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarWorker('${id}')">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
+    ${tieneRol('administrador') && state.centrosDisponibles.length > 1 ? `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <label class="modal-label" style="margin-top:0">Trasladar a otro centro</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="modal-input" id="dw-centro-destino" style="margin-bottom:0">
+          ${state.centrosDisponibles.filter(m => m.centros.id !== state.centroId).map(m => `<option value="${m.centros.id}">${m.centros.nombre}</option>`).join('')}
+        </select>
+        <button type="button" class="btn btn-secondary btn-sm" style="margin:0" onclick="trasladarTrabajador('${id}')">Trasladar</button>
+      </div>
+    </div>` : ''}
     <button class="btn btn-danger" style="margin-top:8px" onclick="iniciarBajaWorker('${id}')">Registrar baja</button>
     <button class="btn btn-danger" style="margin-top:4px" onclick="eliminarTrabajador('${id}')">Eliminar</button>
   </div>`;
   document.body.appendChild(overlay);
+}
+
+async function trasladarTrabajador(id) {
+  if (!tieneRol('administrador')) return;
+  const destino = document.getElementById('dw-centro-destino')?.value;
+  if (!destino) return;
+  const t = state.trabajadores.find(w => w.id === id);
+  if (!t) return;
+  const centroDestinoNombre = state.centrosDisponibles.find(m => m.centros.id === destino)?.centros.nombre || 'otro centro';
+  if (!confirm(`¿Trasladar a ${t.nombre} a ${centroDestinoNombre}? Dejará de aparecer en este centro.`)) return;
+  const { error } = await sb.from('trabajadores').update({ centro_id: destino }).eq('id', id);
+  if (error) { mostrarToast('Error al trasladar' + (error.message ? ': ' + error.message : ''), true); return; }
+  sb.from('historial_cambios').insert({
+    centro_id: state.centroId,
+    trabajador_id: id,
+    usuario_id: currentUserAuth?.id,
+    usuario_nombre: state.userProfile?.nombre_completo || 'Usuario',
+    fecha_turno: new Date().toISOString().slice(0, 10),
+    valor_anterior: `Traslado desde este centro`,
+    valor_nuevo: `Trasladado a ${centroDestinoNombre}`
+  }).then(() => {}).catch(() => {});
+  state.trabajadores = state.trabajadores.filter(w => w.id !== id);
+  cerrarModal(); renderPersonal();
+  mostrarToast(`${t.nombre.split(' ')[0]} trasladado a ${centroDestinoNombre}`);
 }
 
 async function guardarWorker(id) {
@@ -2214,14 +2729,17 @@ async function guardarWorker(id) {
   const nombre = document.getElementById('dw-nombre')?.value?.trim() || t.nombre;
   const estado = document.getElementById('dw-estado')?.value || t.estado;
   const grupo = document.getElementById('dw-grupo')?.value || t.grupo;
-  const costeHora = Math.max(0, parseFloat(document.getElementById('dw-coste')?.value) || 0);
+  const inputCoste = document.getElementById('dw-coste');
+  const costeHora = inputCoste ? Math.max(0, parseFloat(inputCoste.value) || 0) : Number(t.coste_hora || 0);
   const rolAsignado = document.getElementById('dw-rol')?.value || 'lector';
   const codigoAcceso = document.getElementById('dw-codigo')?.value?.trim() || null;
+  const fechaFinContrato = document.getElementById('dw-fecha-fin-contrato')?.value || null;
+  const restricciones = document.getElementById('dw-restricciones')?.value?.trim() || null;
 
   const estadoAnterior = t.estado;
   const { error } = await sb
     .from('trabajadores')
-    .update({ nombre, estado, grupo, coste_hora: costeHora, rol_asignado: rolAsignado, codigo_acceso: codigoAcceso })
+    .update({ nombre, estado, grupo, coste_hora: costeHora, rol_asignado: rolAsignado, codigo_acceso: codigoAcceso, fecha_fin_contrato: fechaFinContrato, restricciones_turno: restricciones })
     .eq('id', id);
   if (error) { mostrarToast('Error al guardar' + (error.message ? ': ' + error.message : ''), true); return; }
 
@@ -2248,7 +2766,7 @@ async function guardarWorker(id) {
     }
   }
 
-  t.nombre = nombre; t.estado = estado; t.grupo = grupo; t.coste_hora = costeHora; t.rol_asignado = rolAsignado; t.codigo_acceso = codigoAcceso;
+  t.nombre = nombre; t.estado = estado; t.grupo = grupo; t.coste_hora = costeHora; t.rol_asignado = rolAsignado; t.codigo_acceso = codigoAcceso; t.fecha_fin_contrato = fechaFinContrato; t.restricciones_turno = restricciones;
   cerrarModal(); renderPersonal();
   mostrarToast(`${nombre.split(' ')[0]} actualizado`);
 }
@@ -3035,11 +3553,12 @@ async function mostrarResumenTrabajador(trabajadorId) {
     }
   }
 
-  const { data: bajas, error: bajasError } = await sb.from('periodos_baja').select('*')
-    .eq('centro_id', state.centroId)
-    .eq('trabajador_id', trabajadorId)
-    .order('fecha_inicio', { ascending: false });
-  const bajasMostrar = bajasError ? [] : (bajas || []);
+  const [bajasRes, documentos, incidencias] = await Promise.all([
+    sb.from('periodos_baja').select('*').eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId).order('fecha_inicio', { ascending: false }),
+    cargarDocumentosTrabajador(trabajadorId),
+    cargarIncidenciasTrabajador(trabajadorId)
+  ]);
+  const bajasMostrar = bajasRes.error ? [] : (bajasRes.data || []);
 
   const zona = state.zonas.find(z => z.id === t.zona_principal_id);
   const overlay = document.createElement('div');
@@ -3062,9 +3581,183 @@ async function mostrarResumenTrabajador(trabajadorId) {
     <div>${bajasMostrar.length ? bajasMostrar.map(b => `<div class="hist-item">${b.fecha_inicio} → ${b.fecha_fin || 'actualidad'} ${b.motivo ? '· ' + b.motivo : ''}</div>`).join('') : '<div class="empty">Sin bajas registradas</div>'}</div>
     <div style="font-size:12px;font-weight:700;margin:10px 0 4px">Zona principal</div>
     <div>${zona?.nombre || 'Sin asignar'}</div>
+    ${t.restricciones_turno ? `<div style="font-size:12px;font-weight:700;margin:10px 0 4px">Preferencias / restricciones de turno</div><div class="aviso aviso-amber" style="font-size:11px">${t.restricciones_turno}</div>` : ''}
+
+    <div style="font-size:12px;font-weight:700;margin:14px 0 4px">Documentos (${documentos.length})</div>
+    <div id="docs-lista-${trabajadorId}">${documentos.length ? documentos.map(d => docTrabajadorHtml(d, trabajadorId)).join('') : '<div class="empty">Sin documentos registrados</div>'}</div>
+    <div style="display:grid;gap:6px;margin-top:6px;background:var(--surface-alt);border-radius:8px;padding:8px">
+      <input class="modal-input" id="doc-nombre-${trabajadorId}" placeholder="Nombre del documento (ej: Carné de manipulador)" style="margin:0">
+      <div style="display:flex;gap:6px">
+        <input class="modal-input" type="date" id="doc-caducidad-${trabajadorId}" style="margin:0;flex:1" title="Fecha de caducidad (opcional)">
+        <input class="modal-input" type="file" id="doc-archivo-${trabajadorId}" style="margin:0;flex:1;padding:6px">
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="subirDocumentoTrabajador('${trabajadorId}')">+ Añadir documento</button>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;margin:14px 0 4px">Incidencias registradas (${incidencias.length})</div>
+    <div id="incidencias-lista-${trabajadorId}">${incidencias.length ? incidencias.map(incidenciaTrabajadorHtml).join('') : '<div class="empty">Sin incidencias registradas</div>'}</div>
+    <div style="display:grid;gap:6px;margin-top:6px;background:var(--surface-alt);border-radius:8px;padding:8px">
+      <select class="modal-input" id="inc-tipo-${trabajadorId}" style="margin:0">
+        <option value="observacion">Observación</option>
+        <option value="amonestacion">Amonestación</option>
+        <option value="reconocimiento">Reconocimiento</option>
+      </select>
+      <textarea class="modal-input" id="inc-descripcion-${trabajadorId}" rows="2" placeholder="Descripción" style="margin:0"></textarea>
+      <button class="btn btn-secondary btn-sm" onclick="registrarIncidenciaTrabajador('${trabajadorId}')">+ Registrar incidencia</button>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;margin:14px 0 4px">Datos del trabajador (RGPD)</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary btn-sm" style="margin:0" onclick="exportarDatosTrabajador('${trabajadorId}')">Exportar todos sus datos</button>
+      ${tieneRol('administrador') ? `<button class="btn btn-danger btn-sm" style="margin:0" onclick="purgarDatosTrabajador('${trabajadorId}')">Purgar datos</button>` : ''}
+    </div>
+
     <div class="modal-btns"><button class="btn-modal-ok" onclick="cerrarModal()">Cerrar</button></div>
   </div>`;
   document.body.appendChild(overlay);
+}
+
+async function exportarDatosTrabajador(trabajadorId) {
+  const t = state.trabajadores.find(w => w.id === trabajadorId);
+  if (!t) return;
+  const [turnosRes, solicitudesRes, incidenciasRes, documentosRes, historialRes, bajasRes] = await Promise.all([
+    sb.from('turnos').select('*').eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('solicitudes_ausencia').select('*').eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('incidencias_trabajador').select('*').eq('trabajador_id', trabajadorId),
+    sb.from('documentos_trabajador').select('*').eq('trabajador_id', trabajadorId),
+    sb.from('historial_cambios').select('*').eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('periodos_baja').select('*').eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId)
+  ]);
+  const datos = {
+    trabajador: t,
+    turnos: turnosRes.data || [],
+    solicitudes_ausencia: solicitudesRes.data || [],
+    incidencias: incidenciasRes.data || [],
+    documentos: documentosRes.data || [],
+    historial_cambios: historialRes.data || [],
+    periodos_baja: bajasRes.data || []
+  };
+  const a = document.createElement('a');
+  a.download = `datos_${normalizarNombre(t.nombre).replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }));
+  a.click();
+  URL.revokeObjectURL(a.href);
+  mostrarToast('Datos del trabajador exportados');
+}
+
+async function purgarDatosTrabajador(trabajadorId) {
+  if (!tieneRol('administrador')) { mostrarToast('Solo el Gestor puede purgar datos', true); return; }
+  const t = state.trabajadores.find(w => w.id === trabajadorId);
+  if (!t) return;
+  if (!confirm(`¿Purgar TODOS los datos de ${t.nombre}? Esto borra turnos, solicitudes, incidencias, documentos e historial de forma permanente y no se puede deshacer. Se recomienda exportar antes.`)) return;
+  if (!confirm('Confirmación final: esta acción es irreversible. ¿Continuar?')) return;
+  const documentos = await cargarDocumentosTrabajador(trabajadorId);
+  const rutas = documentos.map(d => d.storage_path).filter(Boolean);
+  if (rutas.length) await sb.storage.from('documentos-personal').remove(rutas).catch(() => {});
+  await Promise.all([
+    sb.from('turnos').delete().eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('solicitudes_ausencia').delete().eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('incidencias_trabajador').delete().eq('trabajador_id', trabajadorId),
+    sb.from('documentos_trabajador').delete().eq('trabajador_id', trabajadorId),
+    sb.from('historial_cambios').delete().eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId),
+    sb.from('periodos_baja').delete().eq('centro_id', state.centroId).eq('trabajador_id', trabajadorId)
+  ]);
+  const { error } = await sb.from('trabajadores').delete().eq('id', trabajadorId);
+  if (error) { mostrarToast('Se purgaron los datos asociados, pero no se pudo eliminar la ficha del trabajador', true); }
+  else mostrarToast(`${t.nombre.split(' ')[0]} purgado por completo`);
+  state.trabajadores = state.trabajadores.filter(w => w.id !== trabajadorId);
+  cerrarModal();
+  renderPersonal();
+}
+
+function docTrabajadorHtml(d, trabajadorId) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const caduca = d.fecha_caducidad && d.fecha_caducidad <= hoy;
+  const porCaducar = d.fecha_caducidad && !caduca && (new Date(d.fecha_caducidad) - new Date(hoy)) / 86400000 <= 30;
+  const clase = caduca ? 'aviso-rojo' : porCaducar ? 'aviso-amber' : 'aviso-gris';
+  return `<div class="aviso ${clase}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px">
+    <span>${d.nombre}${d.fecha_caducidad ? ` · caduca ${d.fecha_caducidad}` : ''}</span>
+    <span style="display:flex;gap:4px">
+      ${d.storage_path ? `<button class="icon-btn-delete-sm" style="background:var(--info-bg);color:var(--info)" title="Descargar" onclick="descargarDocumentoTrabajador('${d.storage_path}')">⬇</button>` : ''}
+      <button class="icon-btn-delete-sm" title="Eliminar" onclick="eliminarDocumentoTrabajador('${d.id}', '${trabajadorId}', ${d.storage_path ? `'${d.storage_path}'` : 'null'})">✕</button>
+    </span>
+  </div>`;
+}
+
+function incidenciaTrabajadorHtml(i) {
+  const etiqueta = i.tipo === 'amonestacion' ? 'Amonestación' : i.tipo === 'reconocimiento' ? 'Reconocimiento' : 'Observación';
+  const clase = i.tipo === 'amonestacion' ? 'aviso-rojo' : i.tipo === 'reconocimiento' ? 'aviso-verde' : 'aviso-gris';
+  return `<div class="aviso ${clase}" style="font-size:11px"><strong>${etiqueta}</strong> · ${i.fecha}${i.registrado_por_nombre ? ` · ${i.registrado_por_nombre}` : ''}<br>${i.descripcion}</div>`;
+}
+
+async function cargarDocumentosTrabajador(trabajadorId) {
+  const { data, error } = await sb.from('documentos_trabajador').select('*')
+    .eq('trabajador_id', trabajadorId).order('fecha_caducidad', { ascending: true });
+  if (error) { console.warn('No se pudieron cargar los documentos:', error); return []; }
+  return data || [];
+}
+
+async function subirDocumentoTrabajador(trabajadorId) {
+  if (!tieneRol('coordinador')) return;
+  const nombre = document.getElementById(`doc-nombre-${trabajadorId}`)?.value?.trim();
+  if (!nombre) { mostrarToast('Ponle un nombre al documento', true); return; }
+  const fechaCaducidad = document.getElementById(`doc-caducidad-${trabajadorId}`)?.value || null;
+  const archivo = document.getElementById(`doc-archivo-${trabajadorId}`)?.files?.[0];
+  let storagePath = null;
+  if (archivo) {
+    storagePath = `${state.centroId}/${trabajadorId}/${Date.now()}_${archivo.name}`;
+    const { error: uploadError } = await sb.storage.from('documentos-personal').upload(storagePath, archivo);
+    if (uploadError) { mostrarToast('Error al subir el archivo: ' + uploadError.message, true); return; }
+  }
+  const { error } = await sb.from('documentos_trabajador').insert({
+    centro_id: state.centroId, trabajador_id: trabajadorId, nombre, fecha_caducidad: fechaCaducidad, storage_path: storagePath
+  });
+  if (error) { mostrarToast('Error al guardar el documento' + (error.message ? ': ' + error.message : ''), true); return; }
+  mostrarToast('Documento añadido');
+  cerrarModal();
+  mostrarResumenTrabajador(trabajadorId);
+}
+
+async function eliminarDocumentoTrabajador(docId, trabajadorId, storagePath) {
+  if (!tieneRol('coordinador')) return;
+  if (!confirm('¿Eliminar este documento?')) return;
+  if (storagePath) await sb.storage.from('documentos-personal').remove([storagePath]).catch(() => {});
+  const { error } = await sb.from('documentos_trabajador').delete().eq('id', docId);
+  if (error) { mostrarToast('Error al eliminar el documento', true); return; }
+  mostrarToast('Documento eliminado');
+  cerrarModal();
+  mostrarResumenTrabajador(trabajadorId);
+}
+
+async function descargarDocumentoTrabajador(storagePath) {
+  if (!storagePath) return;
+  const { data, error } = await sb.storage.from('documentos-personal').createSignedUrl(storagePath, 300);
+  if (error || !data?.signedUrl) { mostrarToast('No se pudo generar el enlace de descarga', true); return; }
+  window.open(data.signedUrl, '_blank');
+}
+
+async function cargarIncidenciasTrabajador(trabajadorId) {
+  const { data, error } = await sb.from('incidencias_trabajador').select('*')
+    .eq('trabajador_id', trabajadorId).order('fecha', { ascending: false });
+  if (error) { console.warn('No se pudieron cargar las incidencias:', error); return []; }
+  return data || [];
+}
+
+async function registrarIncidenciaTrabajador(trabajadorId) {
+  if (!tieneRol('coordinador')) return;
+  const tipo = document.getElementById(`inc-tipo-${trabajadorId}`)?.value || 'observacion';
+  const descripcion = document.getElementById(`inc-descripcion-${trabajadorId}`)?.value?.trim();
+  if (!descripcion) { mostrarToast('Describe la incidencia', true); return; }
+  const { error } = await sb.from('incidencias_trabajador').insert({
+    centro_id: state.centroId, trabajador_id: trabajadorId, tipo, descripcion,
+    fecha: new Date().toISOString().slice(0, 10),
+    registrado_por: currentUserAuth?.id,
+    registrado_por_nombre: state.userProfile?.nombre_completo || 'Usuario'
+  });
+  if (error) { mostrarToast('Error al registrar la incidencia' + (error.message ? ': ' + error.message : ''), true); return; }
+  mostrarToast('Incidencia registrada');
+  cerrarModal();
+  mostrarResumenTrabajador(trabajadorId);
 }
 
 function renderAjustes() {
@@ -3075,7 +3768,7 @@ function renderAjustes() {
   const p = state.parametros;
 
   if (!esCoordinador) {
-    let html = `<div class="card"><div class="card-header">Mi cuenta</div><div class="card-body"><div style="font-size:13px;font-weight:700">${state.userProfile?.nombre_completo || 'Trabajador/a'}</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Solo tienes acceso a tu propio horario y a tus solicitudes.</div><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button></div></div><div class="card"><div class="card-header">Mis solicitudes</div><div class="card-body">${state.solicitudesAusencia.map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No tienes solicitudes.</div>'}</div></div><div class="card"><div class="card-header">Preferencias</div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between"><span>Tema oscuro</span><button class="theme-toggle" onclick="toggleTema()">${state.tema === 'claro' ? '🌙' : '☀️'}</button></div></div></div>`;
+    let html = `<div class="card"><div class="card-header">Mi cuenta</div><div class="card-body"><div style="font-size:13px;font-weight:700">${state.userProfile?.nombre_completo || 'Trabajador/a'}</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Solo tienes acceso a tu propio horario y a tus solicitudes.</div><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirSolicitudAusencia()">+ Solicitar vacaciones / permiso</button></div></div><div class="card"><div class="card-header">Mis solicitudes</div><div class="card-body">${state.solicitudesAusencia.map(s => solicitudHtml(s, false)).join('') || '<div class="empty">No tienes solicitudes.</div>'}</div></div><div class="card"><div class="card-header">Preferencias</div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between"><span>Tema oscuro</span><button class="theme-toggle" onclick="toggleTema()"><span class="theme-icon"></span></button></div></div></div>`;
     content.innerHTML = html; actualizarNombreHeader(); return;
   }
 
@@ -3094,7 +3787,7 @@ function renderAjustes() {
       <div class="card-body">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
           <span>Tema oscuro</span>
-          <button class="theme-toggle" onclick="toggleTema()" style="font-size:20px;">${state.tema === 'claro' ? '🌙' : '☀️'}</button>
+          <button class="theme-toggle" onclick="toggleTema()"><span class="theme-icon" style="width:20px;height:20px"></span></button>
         </div>
       </div>
     </div>`;
@@ -3120,6 +3813,12 @@ function renderAjustes() {
         <input class="modal-input" type="number" id="param-jornadaAnualNocturna" value="${p.jornadaAnualNocturna}">
         <label class="modal-label">Vacaciones anuales (días)</label>
         <input class="modal-input" type="number" id="param-vacacionesAnuales" value="${p.vacacionesAnuales}">
+        <label class="modal-label">Máx. horas extra al año</label>
+        <input class="modal-input" type="number" id="param-maxHorasExtraAnuales" value="${p.maxHorasExtraAnuales || 80}">
+        <label class="modal-label">Plantilla mínima de este centro</label>
+        <input class="modal-input" type="number" min="0" id="param-plantillaMinima" value="${p.plantillaMinima || 0}">
+        <label class="modal-label">Máx. trabajadores de vacaciones a la vez (0 = sin límite)</label>
+        <input class="modal-input" type="number" min="0" id="param-maxVacacionesSimultaneas" value="${p.maxVacacionesSimultaneas || 0}">
         <label class="modal-label">Presupuesto laboral mensual (€)</label>
         <input class="modal-input" type="number" step="0.01" min="0" id="param-presupuestoMensual" value="${p.presupuestoMensual || 0}">
         <label class="modal-label">Texto del convenio aplicable</label>
@@ -3129,6 +3828,23 @@ function renderAjustes() {
           Convenio vencido (ultraactividad)
         </label>
         <button class="btn btn-primary" style="margin-top:14px" onclick="guardarParametros()">Guardar parámetros</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Límites por grupo</div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Si un grupo necesita un límite distinto al general (arriba), ponlo aquí. Vacío = usa el límite general.</p>
+        ${GRUPOS_TRABAJADOR.map(g => `
+          <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+            <div style="font-weight:800;font-size:12px;margin-bottom:6px">${g.label}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><label class="modal-label" style="margin-top:0">Máx. diaria (h)</label><input class="modal-input" type="number" id="lg-${g.id}-jornadaMaxDiaria" placeholder="${p.jornadaMaxDiaria}" value="${state.parametros.limitesPorGrupo?.[g.id]?.jornadaMaxDiaria ?? ''}"></div>
+              <div><label class="modal-label" style="margin-top:0">Mín. diaria (h)</label><input class="modal-input" type="number" id="lg-${g.id}-jornadaMinDiaria" placeholder="${p.jornadaMinDiaria}" value="${state.parametros.limitesPorGrupo?.[g.id]?.jornadaMinDiaria ?? ''}"></div>
+              <div><label class="modal-label" style="margin-top:0">Máx. semanal (h)</label><input class="modal-input" type="number" id="lg-${g.id}-jornadaMaxSemanal" placeholder="${p.jornadaMaxSemanal}" value="${state.parametros.limitesPorGrupo?.[g.id]?.jornadaMaxSemanal ?? ''}"></div>
+              <div><label class="modal-label" style="margin-top:0">Máx. días seguidos</label><input class="modal-input" type="number" id="lg-${g.id}-maxDiasSeguidos" placeholder="${p.maxDiasSeguidos}" value="${state.parametros.limitesPorGrupo?.[g.id]?.maxDiasSeguidos ?? ''}"></div>
+            </div>
+          </div>`).join('')}
+        <button class="btn btn-primary" onclick="guardarLimitesPorGrupo()">Guardar límites por grupo</button>
       </div>
     </div>`;
   }
@@ -3164,6 +3880,14 @@ function renderAjustes() {
   if (esCoordinador) {
     html += `
     <div class="card">
+      <div class="card-header"><div class="cal-nav"><button class="cal-nav-btn" onclick="cambiarMesVacaciones(-1)">◀</button><span class="cal-nav-title">Vacaciones de equipo · ${MESES_NOMBRES[vacCalMes]} ${vacCalAnio}</span><button class="cal-nav-btn" onclick="cambiarMesVacaciones(1)">▶</button></div></div>
+      <div class="card-body">${renderCalendarioVacaciones()}</div>
+    </div>`;
+  }
+
+  if (esCoordinador) {
+    html += `
+    <div class="card">
       <div class="card-header">Historial de cambios</div>
       <div class="card-body" id="historial-lista">
         <div class="empty">Cargando...</div>
@@ -3181,10 +3905,22 @@ function renderAjustes() {
     </div>`;
   }
 
+  if (esAdmin) {
+    html += `
+    <div class="card">
+      <div class="card-header">Copias de seguridad automáticas</div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Cada semana se guarda automáticamente una copia de los datos de este centro. Puedes descargarlas o cargarlas en pantalla para revisarlas.</p>
+        <div id="backups-lista"><div class="empty">Cargando copias...</div></div>
+      </div>
+    </div>`;
+  }
+
   content.innerHTML = html;
   actualizarNombreHeader();
   if (esAdmin) cargarMiembros();
   if (esCoordinador) cargarHistorial();
+  if (esAdmin) cargarBackupsAutomaticos();
 }
 
 function tieneRol(rolMinimo) {
@@ -3213,6 +3949,9 @@ async function guardarParametros() {
     jornada_anual_diurna: leer('param-jornadaAnualDiurna'),
     jornada_anual_nocturna: leer('param-jornadaAnualNocturna'),
     vacaciones_anuales: leer('param-vacacionesAnuales'),
+    max_horas_extra_anuales: leer('param-maxHorasExtraAnuales') || 80,
+    plantilla_minima: leer('param-plantillaMinima'),
+    max_vacaciones_simultaneas: leer('param-maxVacacionesSimultaneas'),
     presupuesto_mensual: leer('param-presupuestoMensual'),
     convenio_texto: document.getElementById('param-convenioTexto')?.value || '',
     convenio_vencido: document.getElementById('param-convenioVencido')?.checked || false
@@ -3228,10 +3967,27 @@ async function guardarParametros() {
   mostrarToast('Parámetros actualizados');
 }
 
+async function guardarLimitesPorGrupo() {
+  const campos = ['jornadaMaxDiaria', 'jornadaMinDiaria', 'jornadaMaxSemanal', 'maxDiasSeguidos'];
+  const limites = {};
+  GRUPOS_TRABAJADOR.forEach(g => {
+    const overrides = {};
+    campos.forEach(campo => {
+      const val = document.getElementById(`lg-${g.id}-${campo}`)?.value;
+      if (val !== '' && val !== null && val !== undefined) overrides[campo] = parseFloat(val);
+    });
+    if (Object.keys(overrides).length) limites[g.id] = overrides;
+  });
+  const { error } = await sb.from('centros').update({ limites_por_grupo: limites }).eq('id', state.centroId);
+  if (error) { mostrarToast('Error al guardar' + (error.message ? ': ' + error.message : ''), true); return; }
+  state.parametros.limitesPorGrupo = limites;
+  mostrarToast('Límites por grupo actualizados');
+}
+
 async function cargarMiembros() {
   if (!tieneRol('administrador')) return;
   const { data, error } = await sb.from('miembros_centro')
-    .select('id, user_id, rol, rol_solicitado')
+    .select('id, user_id, rol, rol_solicitado, puede_ver_costes')
     .eq('centro_id', state.centroId);
   if (error) { console.error('Error loading miembros:', error); return; }
 
@@ -3265,8 +4021,20 @@ async function cargarMiembros() {
         </select>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-top:7px"><span style="font-size:10px;color:var(--text-muted);min-width:72px">Vincular a:</span><select class="modal-input" style="flex:1;padding:5px 8px" onchange="vincularTrabajadorMiembro('${m.user_id}', this.value)"><option value="">Sin trabajador</option>${state.trabajadores.map(t => `<option value="${t.id}" ${perfilPorId[m.user_id]?.trabajador_id === t.id ? 'selected' : ''}>${t.nombre}</option>`).join('')}</select></div>
+      ${m.rol !== 'administrador' ? `<label style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:11px;color:var(--text-muted)"><input type="checkbox" ${m.puede_ver_costes !== false ? 'checked' : ''} onchange="cambiarPermisoCostes('${m.id}', this.checked)"> Puede ver costes laborales</label>` : ''}
     </div>
   `).join('');
+}
+
+async function cambiarPermisoCostes(membresiaId, valor) {
+  if (!tieneRol('administrador')) return;
+  const { error } = await sb.from('miembros_centro')
+    .update({ puede_ver_costes: valor })
+    .eq('id', membresiaId)
+    .eq('centro_id', state.centroId);
+  if (error) { mostrarToast('Error al guardar el permiso', true); return; }
+  mostrarToast('Permiso de costes actualizado');
+  if (currentUserAuth?.id) await cargarPermisoCostes();
 }
 
 async function vincularTrabajadorMiembro(userId, trabajadorId) {
@@ -3358,6 +4126,86 @@ async function recibirCuadrante() {
 // ============================================================
 // BACKUP Y EXPORTACIÓN
 // ============================================================
+// ============================================================
+// COPIAS DE SEGURIDAD AUTOMÁTICAS (punto 30)
+// ============================================================
+function isoWeekKey(fecha = new Date()) {
+  const d = new Date(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+// Se llama tras cargar los datos del centro (sin await desde loadData, para
+// no retrasar el primer render): si no hay ya una copia de esta semana ISO,
+// guarda una con los datos que ya están en memoria — sin ninguna petición
+// extra de lectura a Supabase.
+async function comprobarBackupSemanal() {
+  if (!tieneRol('administrador') || !state.centroId) return;
+  const semana = isoWeekKey();
+  const { data: existente, error } = await sb.from('backups_automaticos')
+    .select('id').eq('centro_id', state.centroId).eq('semana', semana).maybeSingle();
+  if (error || existente) return;
+  const datos = {
+    trabajadores: state.trabajadores,
+    zonas: state.zonas,
+    tareas: state.tareas.map(t => ({ ...t, asignados: undefined })),
+    parametros: state.parametros,
+    turnos: state.turnos
+  };
+  await sb.from('backups_automaticos').insert({ centro_id: state.centroId, semana, datos }).then(() => {}).catch(() => {});
+}
+
+async function cargarBackupsAutomaticos() {
+  if (!tieneRol('administrador')) return;
+  const { data, error } = await sb.from('backups_automaticos')
+    .select('id, semana, creado_en')
+    .eq('centro_id', state.centroId)
+    .order('semana', { ascending: false })
+    .limit(12);
+  const cont = document.getElementById('backups-lista');
+  if (!cont) return;
+  if (error || !data?.length) { cont.innerHTML = '<div class="empty">Sin copias automáticas todavía. Se genera una la próxima vez que entres esta semana.</div>'; return; }
+  cont.innerHTML = data.map(b => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span>Semana ${b.semana}</span>
+      <span style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-xs" onclick="descargarBackupAutomatico('${b.id}')">Descargar</button>
+        <button class="btn btn-warning btn-xs" onclick="restaurarBackupAutomatico('${b.id}')">Cargar en pantalla</button>
+      </span>
+    </div>`).join('');
+}
+
+async function descargarBackupAutomatico(id) {
+  const { data, error } = await sb.from('backups_automaticos').select('*').eq('id', id).maybeSingle();
+  if (error || !data) { mostrarToast('No se pudo leer la copia', true); return; }
+  const a = document.createElement('a');
+  a.download = `cuadrante_backup_semana_${data.semana}.json`;
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data.datos, null, 2)], { type: 'application/json' }));
+  a.click();
+  URL.revokeObjectURL(a.href);
+  mostrarToast('Copia descargada');
+}
+
+// "Restaurar" solo carga la copia en la pantalla actual para poder
+// revisarla o compararla — no sobrescribe nada en Supabase. Si tras
+// revisarla el Gestor quiere que sea la versión real, tendría que volver a
+// guardar cada cambio manualmente (evita un borrado masivo accidental).
+async function restaurarBackupAutomatico(id) {
+  if (!confirm('¿Cargar esta copia en pantalla? Sustituirá temporalmente lo que ves ahora mismo. No se guarda nada en la base de datos hasta que tú lo hagas manualmente.')) return;
+  const { data, error } = await sb.from('backups_automaticos').select('*').eq('id', id).maybeSingle();
+  if (error || !data) { mostrarToast('No se pudo leer la copia', true); return; }
+  state.trabajadores = data.datos.trabajadores || [];
+  state.zonas = data.datos.zonas || [];
+  state.tareas = data.datos.tareas || [];
+  state.parametros = { ...state.parametros, ...data.datos.parametros };
+  state.turnos = data.datos.turnos || {};
+  render();
+  mostrarToast('Copia cargada en pantalla — revisa los datos antes de darlos por buenos');
+}
+
 function exportarBackup() {
   const data = {
     version: APP_VERSION,
@@ -3425,6 +4273,47 @@ function exportarCuadranteExcel() {
   const nombreArchivo = `cuadrante_${MESES_NOMBRES[mes].toLowerCase()}_${anio}.xlsx`;
   XLSX.writeFile(wb, nombreArchivo);
   mostrarToast('Cuadrante Excel descargado');
+}
+
+// ============================================================
+// EXPORTACIÓN PARA NÓMINAS / GESTORÍA (punto 25)
+// ============================================================
+function exportarNominaExcel() {
+  if (!tieneRol('coordinador')) { mostrarToast('Solo el Encargado o el Gestor pueden exportar la nómina', true); return; }
+  if (typeof XLSX === 'undefined') { mostrarToast('No se pudo cargar el generador de Excel', true); return; }
+  const verCostes = tieneRol('administrador') || state.puedeVerCostes;
+  const mes = state.mesActual, anio = state.anio;
+  const dias = diasEnMes(mes, anio);
+  const key = clavesMes(mes, anio);
+  const turnos = state.turnos[key] || {};
+
+  const cabecera = ['Trabajador', 'Grupo', 'Horas totales', 'Horas extra (HE)', 'Días IT', 'Días vacaciones/permiso'];
+  if (verCostes) cabecera.push('Coste (€)');
+
+  const filas = [cabecera];
+  state.trabajadores.forEach(t => {
+    const map = turnos[t.id] || {};
+    let horasExtra = 0, diasIT = 0, diasAusencia = 0;
+    for (let d = 0; d < dias; d++) {
+      const v = String(map[d] || '').trim().toUpperCase();
+      if (v === 'IT') diasIT++;
+      if (['V', 'VA', 'PR', 'CF', 'LD', 'LDA', 'LIB'].includes(v)) diasAusencia++;
+      if (v === 'HE' || /^HE\d+(?:[.,]\d+)?$/.test(v)) horasExtra += horasCodigo(v);
+    }
+    const horasTotales = getTotalHorasMes(t.id, mes, anio);
+    const fila = [t.nombre, GRUPOS_TRABAJADOR.find(g => g.id === t.grupo)?.label || t.grupo || '', horasTotales, horasExtra, diasIT, diasAusencia];
+    if (verCostes) fila.push(Number((horasTotales * Number(t.coste_hora || 0)).toFixed(2)));
+    filas.push(fila);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols'] = [{ wch: 26 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 10 }, { wch: 22 }, ...(verCostes ? [{ wch: 12 }] : [])];
+  ws['!autofilter'] = { ref: `A1:${XLSX.utils.encode_col(cabecera.length - 1)}${filas.length}` };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Nómina');
+  XLSX.writeFile(wb, `nomina_${MESES_NOMBRES[mes].toLowerCase()}_${anio}.xlsx`);
+  mostrarToast('Exportación para nóminas descargada');
 }
 
 // ============================================================
@@ -3555,6 +4444,7 @@ function toggleMobileMenu() {
 function showView(view) {
   if (!state.userProfile) return;
   if (!tieneRol('coordinador') && ['personal','tareas','analitica'].includes(view)) view = 'cuadrante';
+  if ((!tieneRol('administrador') || state.centrosDisponibles.length <= 1) && view === 'consolidado') view = 'home';
   currentView = view;
   document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.view === view);
@@ -3565,6 +4455,7 @@ function showView(view) {
   else if (view === 'tareas') renderTareas();
   else if (view === 'ajustes') renderAjustes();
   else if (view === 'analitica') renderAnalitica();
+  else if (view === 'consolidado') renderConsolidado();
   animateContentSwitch();
   const mobilePanel = document.getElementById('mobile-menu-panel');
   if (mobilePanel && mobilePanel.classList.contains('open')) toggleMobileMenu();
@@ -3576,6 +4467,7 @@ function render() {
     document.querySelectorAll('.sidebar-nav [data-view="personal"], #mobile-menu-panel [data-view="personal"]').forEach(b => b.classList.toggle('hidden', !tieneRol('coordinador')));
     document.querySelectorAll('.sidebar-nav [data-view="tareas"], #mobile-menu-panel [data-view="tareas"]').forEach(b => b.classList.toggle('hidden', !tieneRol('coordinador')));
     document.querySelectorAll('.sidebar-nav [data-view="analitica"], #mobile-menu-panel [data-view="analitica"]').forEach(b => b.classList.toggle('hidden', !tieneRol('coordinador')));
+    document.querySelectorAll('.sidebar-nav [data-view="consolidado"], #mobile-menu-panel [data-view="consolidado"]').forEach(b => b.classList.toggle('hidden', !tieneRol('administrador') || state.centrosDisponibles.length <= 1));
     showView(currentView);
   } else {
     renderLogin();
@@ -3591,13 +4483,17 @@ const CP_SECTIONS = [
   { view: 'personal', text: 'Personal', soloCoordinador: true },
   { view: 'tareas', text: 'Tareas', soloCoordinador: true },
   { view: 'analitica', text: 'Analítica', soloCoordinador: true },
+  { view: 'consolidado', text: 'Vista consolidada', soloAdmin: true },
   { view: 'ajustes', text: 'Ajustes' },
 ];
 
 let cpSelectedIndex = 0;
 
 function cpNavItems() {
-  return CP_SECTIONS.filter(s => !s.soloCoordinador || tieneRol('coordinador')).map(s => ({ kind: 'view', view: s.view, text: s.text }));
+  return CP_SECTIONS
+    .filter(s => !s.soloCoordinador || tieneRol('coordinador'))
+    .filter(s => !s.soloAdmin || (tieneRol('administrador') && state.centrosDisponibles.length > 1))
+    .map(s => ({ kind: 'view', view: s.view, text: s.text }));
 }
 
 // Cuando lo escrito no coincide con ninguna sección, busca por nombre entre
@@ -3664,7 +4560,7 @@ function renderCommandPaletteList(query) {
   const filtered = navMatches.length ? navMatches : (q ? cpSearch(q) : navMatches);
   if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
   list.innerHTML = filtered.length ? filtered.map((item, i) => `
-    <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">${item.text}</div>
+    <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">${item.kind === 'view' ? `<strong>${item.text}</strong>` : item.text}</div>
   `).join('') : '<div class="command-palette-empty">Sin resultados</div>';
   list._filtered = filtered;
   list.querySelector('.command-palette-item.active')?.scrollIntoView({ block: 'nearest' });
