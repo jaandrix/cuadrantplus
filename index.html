@@ -22,9 +22,9 @@
     --text: #111111;
     --text-muted: #6B6B6B;
     --text-soft: #A3A3A3;
-    --accent: #111111;
-    --accent-hover: #2B2B2B;
-    --accent-soft: #ECECEC;
+    --accent: #D97D3D;
+    --accent-hover: #C36B2E;
+    --accent-soft: #FBE4D0;
     --accent-contrast: #FFFFFF;
     --danger: #B3261E;
     --danger-bg: #F6E6E4;
@@ -55,10 +55,10 @@
     --text: #FFFFFF;
     --text-muted: #9A9A9A;
     --text-soft: #5C5C5C;
-    --accent: #FFFFFF;
-    --accent-hover: #E5E5E5;
-    --accent-soft: #262626;
-    --accent-contrast: #000000;
+    --accent: #E08A4E;
+    --accent-hover: #EDA06C;
+    --accent-soft: #3A2415;
+    --accent-contrast: #FFFFFF;
     --danger: #E2A29C;
     --danger-bg: #2B1917;
     --warning: #D9BD85;
@@ -395,18 +395,24 @@
   .evento-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .evento-badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 9px; font-weight: 700; }
 
-  /* ==================== LOGIN ==================== */
+  /* ==================== LOGIN (estilo Bitácora) ==================== */
   .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 20px; }
-  .login-box { background: var(--surface); border-radius: var(--radius-lg); padding: 32px 24px; width: 100%; max-width: 400px; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
-  .login-box h2 { font-size: 23px; font-weight: 800; margin-bottom: 8px; }
-  .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 14px; margin-bottom: 12px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s ease, box-shadow .15s ease; }
+  .login-box { background: var(--surface); border-radius: var(--radius-lg); padding: 32px 28px; width: 100%; max-width: 340px; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
+  .login-box h1 { font-size: 20px; font-weight: 800; margin-bottom: 24px; text-align: center; color: var(--text); }
+  .login-brand-accent { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .login-box p.sub { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 20px; }
+  .login-box input { width: 100%; padding: 10px 12px; margin-bottom: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface-alt); color: var(--text); font-family: 'Poppins', sans-serif; font-size: 14px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
   .login-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-  .login-box .btn { margin-bottom: 8px; }
-  .login-box .switch { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 12px; }
-  .login-box .switch a { color: var(--accent); font-weight: 700; cursor: pointer; }
-  .login-error { display: none; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; margin-bottom: 12px; }
-  .login-error.show { display: block; }
+  .login-box button { width: 100%; padding: 11px 12px; border-radius: var(--radius-md); border: none; background: var(--accent); color: var(--accent-contrast); font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; transition: opacity .15s ease; }
+  .login-box button:hover { opacity: .88; }
+  .login-box button:disabled { opacity: 0.6; cursor: default; }
+  .login-error { display: none; color: var(--danger); font-size: 12px; text-align: center; margin-top: 10px; min-height: 14px; }
+  .login-error.show, .login-error:not(:empty) { display: block; }
+  .login-links { display: flex; justify-content: center; margin-top: 14px; }
+  .login-links a { font-size: 12px; color: var(--accent); font-weight: 700; text-decoration: none; cursor: pointer; }
+  .login-links a:hover { text-decoration: underline; }
+  .login-back { display: block; text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 14px; cursor: pointer; }
+  .login-back:hover { color: var(--text); }
   .login-field { position: relative; margin-bottom: 12px; }
   .login-field input { margin-bottom: 0; padding-right: 42px; }
   .login-field .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-muted); padding: 4px; }
@@ -647,7 +653,8 @@ let state = {
     jornadaAnualNocturna: 1350,
     vacacionesAnuales: 22,
     convenioVencido: true,
-    convenioTexto: "Convenio Limpieza Hospitalaria SALUD Aragón · Tablas 2026 (ultraactividad)"
+    convenioTexto: "Convenio Limpieza Hospitalaria SALUD Aragón · Tablas 2026 (ultraactividad)",
+    horasCodigos: {}
   },
   tema: "claro"
 };
@@ -715,6 +722,10 @@ function normalizarNombre(valor) {
 function horasCodigo(cod) {
   if (!cod) return 0;
   const valor = String(cod).trim().toUpperCase();
+  // Las horas configuradas a mano (popup "Horas por turno") tienen prioridad
+  // sobre el valor por defecto de CODIGOS_TURNO.
+  const override = state.parametros?.horasCodigos?.[valor];
+  if (override !== undefined && override !== null && override !== '') return Number(override);
   const entry = CODIGOS_TURNO.find(c => c.cod === valor);
   if (entry) return entry.horas;
   // Los códigos numéricos 2-9 representan horas; códigos como F6 o LD25 NO.
@@ -967,7 +978,7 @@ async function signIn(email, password) {
   return true;
 }
 
-async function signUp(email, password, nombre) {
+async function signUp(email, password, nombre, codigo) {
   const { data, error } = await sb.auth.signUp({ email, password });
   if (error) { mostrarToast(error.message, true); return false; }
   if (!data.user) { mostrarToast('No se pudo crear el usuario.', true); return false; }
@@ -978,6 +989,24 @@ async function signUp(email, password, nombre) {
   }
 
   currentUserAuth = data.user;
+
+  // Con código de trabajador: la propia RPC crea el perfil, lo vincula al
+  // trabajador y le asigna el rol que le corresponda — sin pasar por el
+  // camino de "primer usuario = administrador" ni por el código de centro.
+  if (codigo) {
+    const { error: codigoError } = await sb.rpc('vincular_por_codigo_trabajador', { p_codigo: codigo });
+    if (codigoError) {
+      renderLogin('Código de trabajador no válido. Comprueba que lo has escrito bien.');
+      return false;
+    }
+    await sb.from('perfiles').update({ nombre_completo: nombre }).eq('id', currentUserAuth.id);
+    const okCodigo = await loadUserProfile();
+    if (!okCodigo) { renderLogin(lastAuthError || 'No se pudo completar el registro.'); return false; }
+    render();
+    mostrarToast('Cuenta vinculada a tu código de trabajador');
+    return true;
+  }
+
   let ok = await loadUserProfile();
   if (!ok && !state.userProfile) {
     const { data: centrosIniciales, error: centroError } = await sb.rpc('obtener_centro_inicial');
@@ -1134,7 +1163,8 @@ async function loadParametros() {
       vacacionesAnuales: data.vacaciones_anuales || 22,
       presupuestoMensual: Number(data.presupuesto_mensual || 0),
       convenioVencido: data.convenio_vencido || false,
-      convenioTexto: data.convenio_texto || 'Convenio Limpieza Hospitalaria SALUD Aragón'
+      convenioTexto: data.convenio_texto || 'Convenio Limpieza Hospitalaria SALUD Aragón',
+      horasCodigos: data.horas_codigos || {}
     };
   }
 }
@@ -1433,7 +1463,7 @@ function validarCuadranteCompleto() {
 }
 
 // ============================================================
-// VISTA LOGIN
+// VISTA LOGIN (estilo Bitácora)
 // ============================================================
 function renderLogin(mensajeError) {
   const content = document.getElementById('content');
@@ -1441,30 +1471,45 @@ function renderLogin(mensajeError) {
   content.innerHTML = `
     <div class="login-container">
       <div class="login-box">
-        <h2>Gestión Cuadrantes</h2>
-        <p>Inicia sesión para gestionar el cuadrante</p>
-        <div id="login-error" class="login-error${mensajeError ? ' show' : ''}">${mensajeError || ''}</div>
-        <div id="login-form">
-          <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
+        <div id="mode-login">
+          <h1>bienvenido a <span class="login-brand-accent">Cuadrant+</span></h1>
+          <input type="email" id="login-email" placeholder="Email" autocomplete="username">
           <div class="login-field">
             <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility()">👁</button>
+            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility('login-password')">👁</button>
           </div>
-          <button class="btn btn-primary" id="login-submit-btn" onclick="handleLogin()">Iniciar sesión</button>
-          <button class="btn btn-secondary" id="login-register-btn" onclick="handleRegister()">Registrarse</button>
-          <div class="switch">¿Primera vez? <a onclick="toggleLoginMode()">Regístrate aquí</a></div>
+          <button id="login-submit-btn" onclick="handleLogin()">Entrar</button>
+          <div id="login-error" class="login-error${mensajeError ? ' show' : ''}">${mensajeError || ''}</div>
+          <div class="login-links">
+            <a onclick="toggleLoginMode()">Crear cuenta</a>
+          </div>
+        </div>
+
+        <div id="mode-signup" style="display:none">
+          <h1>Crear cuenta</h1>
+          <p class="sub">Regístrate con tu código de trabajador</p>
+          <input type="text" id="signup-nombre" placeholder="Nombre">
+          <input type="text" id="signup-apellido" placeholder="Apellido">
+          <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
+          <div class="login-field">
+            <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
+            <button type="button" class="toggle-pass" onclick="togglePasswordVisibility('signup-password')">👁</button>
+          </div>
+          <input type="text" id="signup-codigo" placeholder="Introduce tu código de trabajador">
+          <p class="sub" style="margin:-6px 0 14px;font-size:11px">Tu código de trabajador determina qué puedes ver y modificar en el cuadrante. Si no tienes uno, pídeselo a tu Gestor.</p>
+          <button id="login-register-btn" onclick="handleRegister()">Crear cuenta</button>
+          <div id="signup-error" class="login-error"></div>
+          <a class="login-back" onclick="toggleLoginMode()">← Volver a iniciar sesión</a>
         </div>
       </div>
     </div>
   `;
-  const sub = document.getElementById('header-sub');
-  if (sub) sub.textContent = 'Inicia sesión';
   document.getElementById('app')?.classList.remove('authed');
   document.getElementById('login-email')?.focus();
 }
 
-function togglePasswordVisibility() {
-  const pass = document.getElementById('login-password');
+function togglePasswordVisibility(id) {
+  const pass = document.getElementById(id || 'login-password');
   if (!pass) return;
   pass.type = pass.type === 'password' ? 'text' : 'password';
 }
@@ -1472,43 +1517,9 @@ function togglePasswordVisibility() {
 let loginMode = 'login';
 function toggleLoginMode() {
   loginMode = loginMode === 'login' ? 'register' : 'login';
-  const form = document.getElementById('login-form');
-  const email = document.getElementById('login-email');
-  const btn = form.querySelector('.btn-primary');
-  const btn2 = form.querySelector('.btn-secondary');
-  const switchLink = form.querySelector('.switch a');
-
-  if (loginMode === 'register') {
-    const niNombre = document.createElement('input');
-    niNombre.id = 'login-nombre';
-    niNombre.type = 'text';
-    niNombre.placeholder = 'Nombre';
-    niNombre.className = 'modal-input';
-    niNombre.style.marginBottom = '8px';
-
-    const niApellido = document.createElement('input');
-    niApellido.id = 'login-apellido';
-    niApellido.type = 'text';
-    niApellido.placeholder = 'Apellido';
-    niApellido.className = 'modal-input';
-    niApellido.style.marginBottom = '12px';
-
-    form.insertBefore(niApellido, email);
-    form.insertBefore(niNombre, niApellido);
-    btn.textContent = 'Registrarse';
-    btn.onclick = handleRegister;
-    btn2.style.display = 'none';
-    switchLink.textContent = 'Ya tengo cuenta';
-    switchLink.onclick = toggleLoginMode;
-  } else {
-    document.getElementById('login-nombre')?.remove();
-    document.getElementById('login-apellido')?.remove();
-    btn.textContent = 'Iniciar sesión';
-    btn.onclick = handleLogin;
-    btn2.style.display = '';
-    switchLink.textContent = 'Regístrate aquí';
-    switchLink.onclick = toggleLoginMode;
-  }
+  document.getElementById('mode-login').style.display = loginMode === 'login' ? '' : 'none';
+  document.getElementById('mode-signup').style.display = loginMode === 'register' ? '' : 'none';
+  (loginMode === 'register' ? document.getElementById('signup-nombre') : document.getElementById('login-email'))?.focus();
 }
 
 async function handleLogin() {
@@ -1518,23 +1529,24 @@ async function handleLogin() {
   const btn = document.getElementById('login-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
   try { await signIn(email, pass); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; } }
 }
 
 async function handleRegister() {
-  const email = document.getElementById('login-email')?.value.trim();
-  const pass = document.getElementById('login-password')?.value;
-  const nombre = document.getElementById('login-nombre')?.value?.trim();
-  const apellido = document.getElementById('login-apellido')?.value?.trim();
+  const email = document.getElementById('signup-email')?.value.trim();
+  const pass = document.getElementById('signup-password')?.value;
+  const nombre = document.getElementById('signup-nombre')?.value?.trim();
+  const apellido = document.getElementById('signup-apellido')?.value?.trim();
+  const codigo = document.getElementById('signup-codigo')?.value?.trim();
   if (!email || !pass || !nombre || !apellido) {
     mostrarToast('Rellena nombre, apellido, email y contraseña', true);
     return;
   }
   if (pass.length < 6) { mostrarToast('La contraseña debe tener al menos 6 caracteres', true); return; }
-  const btn = document.getElementById('login-register-btn') || document.querySelector('#login-form .btn-primary');
+  const btn = document.getElementById('login-register-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
-  try { await signUp(email, pass, `${nombre} ${apellido}`); }
-  finally { if (btn) { btn.disabled = false; } }
+  try { await signUp(email, pass, `${nombre} ${apellido}`, codigo); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; } }
 }
 
 // ============================================================
@@ -1775,7 +1787,7 @@ function renderCuadrante() {
     ${tieneRol('coordinador') ? '<button class="btn btn-primary btn-sm" onclick="generarPDF()">📄 PDF</button><button class="btn btn-secondary btn-sm" onclick="exportarCuadranteExcel()">📊 Excel</button>' : ''}
     <button class="btn btn-secondary btn-sm" onclick="abrirModalPDFPersonal()">📄 Mi cuadrante (PDF)</button>
     ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="abrirModalImportarExcel()">📥 Importar Excel</button><button class="btn btn-secondary btn-sm" onclick="copiarMesAnterior()">↶ Mes anterior</button>' : ''}
-    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button><button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>' : ''}
+    ${tieneRol('coordinador') ? '<button class="btn btn-secondary btn-sm" onclick="mostrarParametros()">⚙ Parámetros</button><button class="btn btn-secondary btn-sm" onclick="mostrarHorasCodigos()">⏱ Horas por turno</button><button class="btn btn-secondary btn-sm" onclick="abrirModalZonas()">Zonas</button>' : ''}
     ${tieneRol('coordinador') ? '<button class="btn btn-warning btn-sm" onclick="vaciarCuadranteActual()">Vaciar mes</button>' : ''}
     <button class="btn btn-danger btn-sm" onclick="mostrarAlertasCuadrante()">Validar</button>
   </div>`;
@@ -1880,6 +1892,45 @@ async function vaciarCuadranteActual() {
   const errores = resultados.filter(ok => ok !== true).length;
   if (errores) mostrarToast(`El cuadrante se vació con ${errores} errores`, true);
   else mostrarToast(`Cuadrante de ${MESES_NOMBRES[mes]} vaciado`);
+}
+
+function mostrarHorasCodigos() {
+  if (!tieneRol('coordinador')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box">
+    <div class="modal-title">Horas por tipo de casilla</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Cambia cuántas horas suma cada código al total del trabajador. Por ejemplo, que "M" sume 8h en vez de 7h.</p>
+    <div id="horas-codigos-list">
+      ${CODIGOS_TURNO.map(c => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div style="width:46px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px">${c.cod}</div>
+          <div style="flex:1;font-size:12px;color:var(--text-muted)">${c.label}</div>
+          <input class="modal-input" type="number" step="0.5" min="0" style="width:70px;margin:0" id="hc-${c.cod}" value="${horasCodigo(c.cod)}">
+        </div>`).join('')}
+    </div>
+    <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarHorasCodigos()">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="restablecerHorasCodigos()">Restablecer valores por defecto</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function guardarHorasCodigos() {
+  const horas = {};
+  CODIGOS_TURNO.forEach(c => {
+    const val = document.getElementById(`hc-${c.cod}`)?.value;
+    if (val !== '' && val !== null && val !== undefined) horas[c.cod] = parseFloat(val) || 0;
+  });
+  const { error } = await sb.from('centros').update({ horas_codigos: horas }).eq('id', state.centroId);
+  if (error) { mostrarToast('Error al guardar' + (error.message ? ': ' + error.message : ''), true); return; }
+  state.parametros.horasCodigos = horas;
+  cerrarModal();
+  if (currentView === 'cuadrante') renderCuadrante();
+  mostrarToast('Horas por turno actualizadas');
+}
+
+function restablecerHorasCodigos() {
+  CODIGOS_TURNO.forEach(c => { const el = document.getElementById(`hc-${c.cod}`); if (el) el.value = c.horas; });
 }
 
 function mostrarParametros() {
@@ -2129,6 +2180,16 @@ function modalDetalleWorker(id) {
       <option value="peon" ${t.grupo==='peon'?'selected':''}>Peón</option>
       <option value="sustituto" ${t.grupo==='sustituto'?'selected':''}>Sustituto</option>
     </select>
+    <label class="modal-label">Rol asignado (acceso al registrarse con el código)</label><select class="modal-input" id="dw-rol">
+      <option value="lector" ${(t.rol_asignado||'lector')==='lector'?'selected':''}>Trabajador (consulta su horario)</option>
+      <option value="coordinador" ${t.rol_asignado==='coordinador'?'selected':''}>Encargado</option>
+      <option value="administrador" ${t.rol_asignado==='administrador'?'selected':''}>Gestor</option>
+    </select>
+    <label class="modal-label">Código de trabajador</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input class="modal-input" id="dw-codigo" value="${t.codigo_acceso || ''}" placeholder="Sin código" style="margin-bottom:0">
+      <button type="button" class="btn btn-secondary btn-sm" style="margin:0" onclick="document.getElementById('dw-codigo').value = generarCodigoTrabajador()">Generar</button>
+    </div>
     <div class="modal-btns"><button class="btn-modal-ok" onclick="guardarWorker('${id}')">Guardar</button><button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button></div>
     <button class="btn btn-danger" style="margin-top:8px" onclick="iniciarBajaWorker('${id}')">Registrar baja</button>
     <button class="btn btn-danger" style="margin-top:4px" onclick="eliminarTrabajador('${id}')">Eliminar</button>
@@ -2143,13 +2204,15 @@ async function guardarWorker(id) {
   const estado = document.getElementById('dw-estado')?.value || t.estado;
   const grupo = document.getElementById('dw-grupo')?.value || t.grupo;
   const costeHora = Math.max(0, parseFloat(document.getElementById('dw-coste')?.value) || 0);
-  
+  const rolAsignado = document.getElementById('dw-rol')?.value || 'lector';
+  const codigoAcceso = document.getElementById('dw-codigo')?.value?.trim() || null;
+
   const estadoAnterior = t.estado;
   const { error } = await sb
     .from('trabajadores')
-    .update({ nombre, estado, grupo, coste_hora: costeHora })
+    .update({ nombre, estado, grupo, coste_hora: costeHora, rol_asignado: rolAsignado, codigo_acceso: codigoAcceso })
     .eq('id', id);
-  if (error) { mostrarToast('Error al guardar', true); return; }
+  if (error) { mostrarToast('Error al guardar' + (error.message ? ': ' + error.message : ''), true); return; }
 
   if (estadoAnterior !== 'baja' && estado === 'baja') {
     const fechaInicioBaja = new Date().toISOString().slice(0,10);
@@ -2174,9 +2237,17 @@ async function guardarWorker(id) {
     }
   }
 
-  t.nombre = nombre; t.estado = estado; t.grupo = grupo; t.coste_hora = costeHora;
+  t.nombre = nombre; t.estado = estado; t.grupo = grupo; t.coste_hora = costeHora; t.rol_asignado = rolAsignado; t.codigo_acceso = codigoAcceso;
   cerrarModal(); renderPersonal();
   mostrarToast(`${nombre.split(' ')[0]} actualizado`);
+}
+
+function generarCodigoTrabajador() {
+  // 6 caracteres, sin 0/O/1/I para evitar confusiones al dictarlo o escribirlo a mano.
+  const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let codigo = '';
+  for (let i = 0; i < 6; i++) codigo += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+  return codigo;
 }
 
 async function eliminarTrabajador(id) {
